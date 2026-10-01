@@ -1,0 +1,2070 @@
+// DMS Tech Business OS — Prisma schema
+// Phase 1: identity, RBAC, sessions, organization settings, audit, activity,
+// notifications, approvals, domain events. Later phases add their own models
+// (see docs/BUSINESS-OS-ARCHITECTURE.md for the full target schema).
+//
+// Conventions
+// - Every business table carries organizationId (multi-tenancy ready, single org today).
+// - Soft delete via deletedAt where records are referenced by history.
+// - Status columns are Postgres enums.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+enum Locale {
+  ar
+  en
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationCategory {
+  APPROVAL
+  TASK
+  INVOICE
+  PROJECT
+  CONTRACT
+  HR
+  SALES
+  SYSTEM
+}
+
+enum EventStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+// ---------------------------------------------------------------------------
+// Organization
+// ---------------------------------------------------------------------------
+
+model Organization {
+  id                                 String   @id @default(cuid())
+  slug                               String   @unique
+  name                               String
+  nameAr                             String?
+  legalName                          String?
+  vatNumber                          String?
+  crNumber                           String?
+  email                              String?
+  phone                              String?
+  address                            String?
+  city                               String?
+  country                            String   @default("SA")
+  currency                           String   @default("SAR")
+  /// VAT rate in percent (e.g. 15.00). Configurable — used by quotations/invoices from Phase 3.
+  vatRate                            Decimal  @default(15) @db.Decimal(5, 2)
+  timezone                           String   @default("Asia/Riyadh")
+  defaultLocale                      Locale   @default(ar)
+  /// Quotations above this amount require executive approval (Phase 3 rules).
+  quoteApprovalThreshold             Decimal  @default(50000) @db.Decimal(14, 2)
+  /// Discount percent above which manager approval is required (Phase 3 rules).
+  discountApprovalPercent            Decimal  @default(10) @db.Decimal(5, 2)
+  /// Quotations at/above this total need `sales.quotations.approve_executive` (null = no executive tier).
+  quoteExecutiveApprovalThreshold    Decimal? @db.Decimal(14, 2)
+  /// Lines priced away from the catalog (or custom lines) require approval when true.
+  quoteCustomPricingRequiresApproval Boolean  @default(false)
+  /// Default validity of a new quotation in days.
+  quoteValidityDays                  Int      @default(30)
+  /// Owner is warned this many days before a sent quotation expires.
+  quoteExpiryWarningDays             Int      @default(3)
+  /// Active contracts become EXPIRING this many days before their end date.
+  contractExpiryWarningDays          Int      @default(30)
+  /// Phase 4: allow creating a project straight from an accepted quotation (no contract)
+  projectFromQuotationAllowed        Boolean  @default(false)
+  /// Phase 4: allow INTERNAL projects without a client
+  internalProjectsAllowed            Boolean  @default(false)
+  /// Phase 4: maximum minutes one person may log per day (all projects)
+  timesheetMaxDailyMinutes           Int      @default(720)
+  /// Phase 4: a project without activity for this many days needs attention
+  projectInactivityDays              Int      @default(14)
+  createdAt                          DateTime @default(now())
+  updatedAt                          DateTime @updatedAt
+
+  users                      User[]
+  roles                      Role[]
+  departments                Department[]
+  auditLogs                  AuditLog[]
+  activities                 Activity[]
+  notifications              Notification[]
+  approvals                  Approval[]
+  events                     DomainEvent[]
+  /// Phase 5: default payment terms for new invoices (days after issue)
+  invoiceDueDays             Int            @default(30)
+  /// Phase 5: "due soon" reminder window (days)
+  invoiceDueSoonDays         Int            @default(3)
+  /// Phase 5: bank / IBAN / payment instructions printed on invoices (snapshotted at issue)
+  invoicePaymentInstructions String?
+  /// Phase 5: expenses at/above this total need finance.expenses.approve_executive
+  expenseApprovalThreshold   Decimal        @default(5000) @db.Decimal(14, 2)
+  /// Phase 5: outstanding balance per client above which the Command Center flags it
+  largeOutstandingThreshold  Decimal        @default(50000) @db.Decimal(14, 2)
+  /// Phase 5: suggested hourly rate for billing approved time (editable on the draft); null = enter manually
+  defaultHourlyBillingRate   Decimal?       @db.Decimal(14, 2)
+}
+
+// ---------------------------------------------------------------------------
+// Identity & access
+// ---------------------------------------------------------------------------
+
+model User {
+  id                 String     @id @default(cuid())
+  organizationId     String
+  email              String
+  name               String
+  nameAr             String?
+  jobTitle           String?
+  phone              String?
+  avatarUrl          String?
+  passwordHash       String
+  status             UserStatus @default(ACTIVE)
+  locale             Locale     @default(ar)
+  departmentId       String?
+  mustChangePassword Boolean    @default(false)
+  failedLoginCount   Int        @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  deletedAt          DateTime?
+
+  organization       Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  department         Department?    @relation("DepartmentMembers", fields: [departmentId], references: [id], onDelete: SetNull)
+  managedDepartments Department[]   @relation("DepartmentManager")
+  roles              UserRole[]
+  sessions           Session[]
+  notifications      Notification[]
+  requestedApprovals Approval[]     @relation("ApprovalRequester")
+  assignedApprovals  Approval[]     @relation("ApprovalAssignee")
+  decidedApprovals   Approval[]     @relation("ApprovalDecider")
+  activities         Activity[]
+  auditLogs          AuditLog[]
+
+  // CRM (Phase 2)
+  ownedClients         Client[]              @relation("ClientOwner")
+  createdClients       Client[]              @relation("ClientCreator")
+  createdContacts      Contact[]             @relation("ContactCreator")
+  ownedLeads           Lead[]                @relation("LeadOwner")
+  createdLeads         Lead[]                @relation("LeadCreator")
+  ownedOpportunities   Opportunity[]         @relation("OpportunityOwner")
+  createdOpportunities Opportunity[]         @relation("OpportunityCreator")
+  crmActivities        CrmActivity[]         @relation("CrmActivityCreator")
+  crmNotes             CrmNote[]             @relation("CrmNoteAuthor")
+  ownedQuotations      Quotation[]           @relation("QuotationOwner")
+  createdQuotations    Quotation[]           @relation("QuotationCreator")
+  ownedContracts       Contract[]            @relation("ContractOwner")
+  createdContracts     Contract[]            @relation("ContractCreator")
+  managedProjects      Project[]             @relation("ProjectManager")
+  createdProjects      Project[]             @relation("ProjectCreator")
+  projectMemberships   ProjectMember[]       @relation("ProjectMemberships")
+  ownedMilestones      ProjectMilestone[]    @relation("MilestoneOwner")
+  assignedTasks        Task[]                @relation("TaskAssignee")
+  createdTasks         Task[]                @relation("TaskCreator")
+  comments             Comment[]             @relation("CommentAuthor")
+  timeEntries          TimeEntry[]           @relation("TimeEntryUser")
+  timesheets           TimesheetSubmission[] @relation("TimesheetUser")
+  ownedDeliverables    ProjectDeliverable[]  @relation("DeliverableOwner")
+  savedViews           SavedView[]           @relation("UserSavedViews")
+
+  invoicesCreated   Invoice[]               @relation("InvoiceCreator")
+  paymentsCreated   Payment[]               @relation("PaymentCreator")
+  expensesIncurred  Expense[]               @relation("ExpenseUser")
+  expensesSubmitted Expense[]               @relation("ExpenseSubmitter")
+  costRates         UserCostRate[]          @relation("CostRateUser")
+  invoiceNotes      InvoiceCollectionNote[] @relation("InvoiceNoteAuthor")
+
+  @@unique([organizationId, email])
+  @@index([organizationId, status])
+}
+
+model Role {
+  id             String   @id @default(cuid())
+  organizationId String
+  key            String
+  name           String
+  nameAr         String?
+  description    String?
+  isSystem       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  permissions  RolePermission[]
+  users        UserRole[]
+
+  @@unique([organizationId, key])
+}
+
+model RolePermission {
+  roleId     String
+  /// Must be a key of the code catalog (src/server/rbac/permissions.ts) — validated in the service layer.
+  permission String
+  role       Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permission])
+}
+
+model UserRole {
+  userId      String
+  roleId      String
+  grantedById String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+/// Database session. `id` is the SHA-256 of the random token held in the httpOnly cookie.
+model Session {
+  id         String    @id
+  userId     String
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+  ip         String?
+  userAgent  String?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Fixed-window counters for sensitive endpoints (login). Works across serverless instances.
+model RateLimit {
+  key         String   @id
+  count       Int
+  windowStart DateTime
+}
+
+model Department {
+  id             String    @id @default(cuid())
+  organizationId String
+  code           String
+  name           String
+  nameAr         String?
+  managerId      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  manager      User?        @relation("DepartmentManager", fields: [managerId], references: [id], onDelete: SetNull)
+  members      User[]       @relation("DepartmentMembers")
+  services     Service[]
+  projects     Project[]
+
+  expenses Expense[]
+
+  @@unique([organizationId, code])
+}
+
+// ---------------------------------------------------------------------------
+// Cross-cutting: audit, activity, notifications, approvals, events
+// ---------------------------------------------------------------------------
+
+/// Append-only. A database trigger rejects UPDATE and DELETE (see migration).
+model AuditLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  actorId        String?
+  action         String
+  entityType     String
+  entityId       String?
+  before         Json?
+  after          Json?
+  ip             String?
+  userAgent      String?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  actor        User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([organizationId, entityType, entityId])
+  @@index([organizationId, actorId])
+}
+
+model Activity {
+  id             String   @id @default(cuid())
+  organizationId String
+  actorId        String?
+  /// e.g. "user.created", "approval.approved"
+  verb           String
+  entityType     String
+  entityId       String?
+  entityLabel    String?
+  href           String?
+  /// Permission needed to see this item in the feed (null = everyone in the org).
+  visibility     String?
+  meta           Json?
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor        User?        @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+}
+
+model Notification {
+  id             String               @id @default(cuid())
+  organizationId String
+  userId         String
+  category       NotificationCategory
+  priority       Priority             @default(MEDIUM)
+  title          String
+  body           String?
+  href           String?
+  entityType     String?
+  entityId       String?
+  readAt         DateTime?
+  /// Optional idempotency key: the same reminder is never stored twice for a user (sweeps, retries)
+  dedupeKey      String?
+  createdAt      DateTime             @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt, createdAt])
+}
+
+/// Generic approval request. `type` selects a handler registered in src/server/approvals/handlers.ts
+/// which applies the change when approved (e.g. ROLE_GRANT; later QUOTATION, EXPENSE, LEAVE, PO …).
+model Approval {
+  id                 String         @id @default(cuid())
+  organizationId     String
+  type               String
+  entityType         String
+  entityId           String
+  title              String
+  summary            String?
+  payload            Json?
+  amount             Decimal?       @db.Decimal(14, 2)
+  currency           String?
+  priority           Priority       @default(MEDIUM)
+  /// Permission an approver must hold (in addition to approvals.decide).
+  requiredPermission String
+  status             ApprovalStatus @default(PENDING)
+  requestedById      String
+  assigneeId         String?
+  decidedById        String?
+  decidedAt          DateTime?
+  decisionComment    String?
+  dueAt              DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  requestedBy  User         @relation("ApprovalRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+  assignee     User?        @relation("ApprovalAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  decidedBy    User?        @relation("ApprovalDecider", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, entityType, entityId])
+}
+
+/// Outbox of domain events (lead.created, quotation.accepted, …). Subscribers run after commit.
+model DomainEvent {
+  id             String      @id @default(cuid())
+  organizationId String
+  type           String
+  actorId        String?
+  entityType     String?
+  entityId       String?
+  payload        Json
+  status         EventStatus @default(PENDING)
+  error          String?
+  createdAt      DateTime    @default(now())
+  processedAt    DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, type, createdAt])
+  @@index([status])
+}
+
+// ===========================================================================
+// Phase 2 — CRM
+// ===========================================================================
+
+enum ClientType {
+  COMPANY
+  INDIVIDUAL
+}
+
+enum ClientStatus {
+  PROSPECT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum LeadSource {
+  WEBSITE
+  WHATSAPP
+  PHONE
+  REFERRAL
+  LINKEDIN
+  INSTAGRAM
+  GOOGLE_ADS
+  META_ADS
+  TIKTOK
+  GOVERNMENT_OPPORTUNITY
+  PARTNER
+  MANUAL
+  OTHER
+}
+
+/// Lifecycle outcome of a lead (what happened to it).
+enum LeadStatus {
+  OPEN
+  QUALIFIED
+  CONVERTED
+  LOST
+  ARCHIVED
+}
+
+/// Engagement stage while the lead is being worked (how far contact has progressed).
+/// Deliberately separate from LeadStatus and from opportunity pipeline stages.
+enum LeadStage {
+  NEW
+  ATTEMPTED
+  CONTACTED
+  ENGAGED
+  UNRESPONSIVE
+}
+
+enum OpportunityStatus {
+  OPEN
+  WON
+  LOST
+  ARCHIVED
+}
+
+enum CrmEntity {
+  LEAD
+  CLIENT
+  CONTACT
+  OPPORTUNITY
+}
+
+enum CrmActivityType {
+  CALL
+  EMAIL
+  WHATSAPP
+  MEETING
+  NOTE
+  TASK
+  FOLLOW_UP
+  STATUS_CHANGE
+  SYSTEM
+}
+
+/// Concurrency-safe readable identifiers (LEAD-000001 ...): incremented with an atomic UPSERT ... RETURNING.
+model Sequence {
+  organizationId String
+  key            String
+  value          Int    @default(0)
+
+  @@id([organizationId, key])
+}
+
+model Client {
+  id                     String       @id @default(cuid())
+  organizationId         String
+  number                 String
+  type                   ClientType   @default(COMPANY)
+  displayName            String
+  companyName            String?
+  nameAr                 String?
+  nameEn                 String?
+  email                  String?
+  emailNormalized        String?
+  phone                  String?
+  phoneNormalized        String?
+  whatsapp               String?
+  website                String?
+  country                String?      @default("SA")
+  city                   String?
+  address                String?
+  industry               String?
+  taxNumber              String?
+  commercialRegistration String?
+  source                 LeadSource?
+  ownerId                String?
+  status                 ClientStatus @default(PROSPECT)
+  notes                  String?
+  createdById            String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  deletedAt              DateTime?
+
+  owner          User?         @relation("ClientOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdBy      User?         @relation("ClientCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  contacts       Contact[]
+  opportunities  Opportunity[]
+  convertedLeads Lead[]        @relation("LeadConvertedClient")
+  quotations     Quotation[]
+  contracts      Contract[]
+  projects       Project[]
+
+  invoices Invoice[]
+  payments Payment[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([organizationId, ownerId])
+  @@index([organizationId, emailNormalized])
+  @@index([organizationId, phoneNormalized])
+}
+
+/// Only one primary contact per client: enforced by a partial unique index in the migration.
+model Contact {
+  id                String    @id @default(cuid())
+  organizationId    String
+  clientId          String?
+  firstName         String
+  lastName          String?
+  jobTitle          String?
+  email             String?
+  emailNormalized   String?
+  phone             String?
+  phoneNormalized   String?
+  whatsapp          String?
+  isPrimary         Boolean   @default(false)
+  preferredLanguage Locale    @default(ar)
+  notes             String?
+  createdById       String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  client        Client?       @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  createdBy     User?         @relation("ContactCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  opportunities Opportunity[]
+  quotations    Quotation[]
+  contracts     Contract[]
+
+  invoices Invoice[]
+
+  @@index([organizationId, clientId])
+  @@index([organizationId, emailNormalized])
+  @@index([organizationId, phoneNormalized])
+}
+
+model Lead {
+  id                 String     @id @default(cuid())
+  organizationId     String
+  number             String
+  name               String
+  companyName        String?
+  email              String?
+  emailNormalized    String?
+  phone              String?
+  phoneNormalized    String?
+  whatsapp           String?
+  whatsappNormalized String?
+  country            String?
+  city               String?
+  source             LeadSource @default(MANUAL)
+  /// Temporary typed service key (src/lib/crm/services.ts); migrates to a Service FK in Phase 3.
+  /// Legacy Phase 2 service-category key. Kept for history and for values without a catalog match.
+  interestedService  String?
+  /// Phase 3 catalog link (backfilled from interestedService where the key matches Service.key).
+  serviceId          String?
+  budgetMin          Decimal?   @db.Decimal(14, 2)
+  budgetMax          Decimal?   @db.Decimal(14, 2)
+  currency           String     @default("SAR")
+  ownerId            String?
+  stage              LeadStage  @default(NEW)
+  status             LeadStatus @default(OPEN)
+  priority           Priority   @default(MEDIUM)
+  nextFollowUpAt     DateTime?
+  message            String?
+  notes              String?
+  locale             Locale?
+  /// Website capture metadata: utm_*, referrer, form source (never shown publicly).
+  captureMeta        Json?
+  duplicateOfId      String?
+  convertedAt        DateTime?
+  convertedById      String?
+  convertedClientId  String?
+  lostAt             DateTime?
+  lostReason         String?
+  archivedAt         DateTime?
+  lastActivityAt     DateTime?
+  createdById        String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  owner           User?        @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdBy       User?        @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  convertedClient Client?      @relation("LeadConvertedClient", fields: [convertedClientId], references: [id], onDelete: SetNull)
+  duplicateOf     Lead?        @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates      Lead[]       @relation("LeadDuplicates")
+  opportunity     Opportunity? @relation("OpportunitySourceLead")
+  service         Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status, createdAt])
+  @@index([organizationId, ownerId])
+  @@index([organizationId, nextFollowUpAt])
+  @@index([organizationId, emailNormalized])
+  @@index([organizationId, phoneNormalized])
+  @@index([organizationId, whatsappNormalized])
+}
+
+model Pipeline {
+  id             String   @id @default(cuid())
+  organizationId String
+  key            String
+  nameAr         String
+  nameEn         String
+  isDefault      Boolean  @default(false)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  stages        PipelineStage[]
+  opportunities Opportunity[]
+
+  @@unique([organizationId, key])
+}
+
+model PipelineStage {
+  id                 String   @id @default(cuid())
+  pipelineId         String
+  key                String
+  nameAr             String
+  nameEn             String
+  position           Int
+  colorToken         String   @default("neutral")
+  isWonStage         Boolean  @default(false)
+  isLostStage        Boolean  @default(false)
+  defaultProbability Int      @default(10)
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  pipeline      Pipeline      @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  opportunities Opportunity[]
+
+  @@unique([pipelineId, key])
+  @@index([pipelineId, position])
+}
+
+model Opportunity {
+  id                String            @id @default(cuid())
+  organizationId    String
+  number            String
+  clientId          String
+  primaryContactId  String?
+  /// A lead converts into at most one opportunity (unique): also the double-conversion guard.
+  sourceLeadId      String?           @unique
+  title             String
+  description       String?
+  /// Legacy Phase 2 service-category key (see Lead.interestedService).
+  serviceCategory   String?
+  serviceId         String?
+  estimatedValue    Decimal           @default(0) @db.Decimal(14, 2)
+  currency          String            @default("SAR")
+  probability       Int               @default(10)
+  pipelineId        String
+  stageId           String
+  ownerId           String?
+  expectedCloseDate DateTime?
+  nextFollowUpAt    DateTime?
+  status            OpportunityStatus @default(OPEN)
+  lostReason        String?
+  stageChangedAt    DateTime          @default(now())
+  lastActivityAt    DateTime?
+  createdById       String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  wonAt             DateTime?
+  lostAt            DateTime?
+  archivedAt        DateTime?
+
+  client         Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  primaryContact Contact?      @relation(fields: [primaryContactId], references: [id], onDelete: SetNull)
+  sourceLead     Lead?         @relation("OpportunitySourceLead", fields: [sourceLeadId], references: [id], onDelete: SetNull)
+  pipeline       Pipeline      @relation(fields: [pipelineId], references: [id], onDelete: Restrict)
+  stage          PipelineStage @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  owner          User?         @relation("OpportunityOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdBy      User?         @relation("OpportunityCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  service        Service?      @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  quotations     Quotation[]
+  contracts      Contract[]
+  projects       Project[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status, stageId])
+  @@index([organizationId, ownerId])
+  @@index([organizationId, clientId])
+  @@index([organizationId, nextFollowUpAt])
+}
+
+/// CRM timeline entry. isSystem separates generated entries (status changes, captures) from user-logged ones.
+model CrmActivity {
+  id             String          @id @default(cuid())
+  organizationId String
+  entityType     CrmEntity
+  entityId       String
+  /// Denormalised so the Client 360 timeline includes activity of its contacts and opportunities.
+  clientId       String?
+  type           CrmActivityType
+  title          String
+  description    String?
+  isSystem       Boolean         @default(false)
+  createdById    String?
+  occurredAt     DateTime        @default(now())
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+
+  createdBy User? @relation("CrmActivityCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, entityType, entityId, occurredAt])
+  @@index([organizationId, clientId, occurredAt])
+}
+
+/// Internal notes. Never exposed to the public site.
+model CrmNote {
+  id             String    @id @default(cuid())
+  organizationId String
+  entityType     CrmEntity
+  entityId       String
+  clientId       String?
+  body           String
+  authorId       String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  author User? @relation("CrmNoteAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, entityType, entityId])
+}
+
+model CrmTag {
+  id             String         @id @default(cuid())
+  organizationId String
+  name           String
+  colorToken     String         @default("neutral")
+  createdAt      DateTime       @default(now())
+  entities       CrmEntityTag[]
+
+  @@unique([organizationId, name])
+}
+
+model CrmEntityTag {
+  tagId      String
+  entityType CrmEntity
+  entityId   String
+  createdAt  DateTime  @default(now())
+  tag        CrmTag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([tagId, entityType, entityId])
+  @@index([entityType, entityId])
+}
+
+/// Per-user saved list filters (stores the URL query of a list view).
+model SavedView {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  module         String
+  name           String
+  query          String
+  createdAt      DateTime @default(now())
+
+  user User @relation("UserSavedViews", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, module])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3 — Service catalog, quotations, contracts (docs/COMMERCIAL.md)
+// ---------------------------------------------------------------------------
+
+enum PricingModel {
+  FIXED
+  HOURLY
+  MONTHLY
+  ANNUAL
+  PER_USER
+  PER_UNIT
+  CUSTOM
+}
+
+/// STANDARD = organization VAT rate at calculation time; ZERO_RATED / EXEMPT = 0%.
+enum TaxBehavior {
+  STANDARD
+  ZERO_RATED
+  EXEMPT
+}
+
+enum DiscountType {
+  NONE
+  PERCENT
+  FIXED
+}
+
+enum QuotationStatus {
+  DRAFT
+  INTERNAL_REVIEW
+  PENDING_APPROVAL
+  APPROVED
+  SENT
+  VIEWED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  CANCELLED
+  SUPERSEDED
+}
+
+enum SendMethod {
+  EMAIL_MANUAL
+  WHATSAPP_MANUAL
+  IN_PERSON
+  OTHER
+}
+
+enum ContractStatus {
+  DRAFT
+  INTERNAL_REVIEW
+  AWAITING_SIGNATURE
+  ACTIVE
+  EXPIRING
+  EXPIRED
+  TERMINATED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum CommercialDocKind {
+  QUOTATION_PDF
+  CONTRACT_PDF
+  INVOICE_PDF
+}
+
+/// Catalog entry. Source for insertion into quotations only — quotation items keep their own snapshot.
+model Service {
+  id                     String       @id @default(cuid())
+  organizationId         String
+  /// Readable code SRV-000001 (Sequence)
+  code                   String
+  /// Stable slug; matches the Phase 2 category keys / website service slugs for default services.
+  key                    String?
+  nameAr                 String
+  nameEn                 String
+  shortDescriptionAr     String?
+  shortDescriptionEn     String?
+  descriptionAr          String?
+  descriptionEn          String?
+  category               String?
+  pricingModel           PricingModel @default(CUSTOM)
+  basePrice              Decimal      @default(0) @db.Decimal(14, 2)
+  currency               String       @default("SAR")
+  taxBehavior            TaxBehavior  @default(STANDARD)
+  estimatedDeliveryDays  Int?
+  departmentId           String?
+  active                 Boolean      @default(true)
+  quotationDescriptionAr String?
+  quotationDescriptionEn String?
+  defaultTermsAr         String?
+  defaultTermsEn         String?
+  createdById            String?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  archivedAt             DateTime?
+
+  department     Department?          @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  packageItems   ServicePackageItem[]
+  quotationItems QuotationItem[]
+  leads          Lead[]
+  opportunities  Opportunity[]
+  projects       Project[]
+  templates      ProjectTemplate[]
+
+  invoiceItems InvoiceItem[]
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, key])
+  @@index([organizationId, active])
+}
+
+model ServicePackage {
+  id             String      @id @default(cuid())
+  organizationId String
+  /// PKG-000001
+  code           String
+  nameAr         String
+  nameEn         String
+  descriptionAr  String?
+  descriptionEn  String?
+  active         Boolean     @default(true)
+  defaultPrice   Decimal     @default(0) @db.Decimal(14, 2)
+  currency       String      @default("SAR")
+  taxBehavior    TaxBehavior @default(STANDARD)
+  createdById    String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  archivedAt     DateTime?
+
+  items          ServicePackageItem[]
+  quotationItems QuotationItem[]
+
+  @@unique([organizationId, code])
+}
+
+model ServicePackageItem {
+  id        String  @id @default(cuid())
+  packageId String
+  serviceId String
+  quantity  Decimal @default(1) @db.Decimal(12, 3)
+  optional  Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  package ServicePackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  service Service        @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@unique([packageId, serviceId])
+}
+
+/// A commercial proposal (one number, e.g. Q-2026-000012). Its content lives in versions that freeze once they leave DRAFT.
+model Quotation {
+  id                String          @id @default(cuid())
+  organizationId    String
+  number            String
+  clientId          String
+  contactId         String?
+  opportunityId     String?
+  /// Sales owner (record scope ALL / TEAM / OWN applies on this field)
+  ownerId           String?
+  /// Mirrors the current version's status (lists, filters, uniqueness).
+  status            QuotationStatus @default(DRAFT)
+  currentVersionId  String?         @unique
+  acceptedVersionId String?         @unique
+  /// Set when created with "Duplicate" (a separate proposal with its own number).
+  duplicatedFromId  String?
+  createdById       String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  client         Client             @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  contact        Contact?           @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  opportunity    Opportunity?       @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  owner          User?              @relation("QuotationOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdBy      User?              @relation("QuotationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  currentVersion QuotationVersion?  @relation("QuotationCurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  versions       QuotationVersion[] @relation("QuotationVersions")
+  contracts      Contract[]
+  projects       Project[]
+
+  invoices Invoice[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([organizationId, clientId])
+  @@index([organizationId, opportunityId])
+  @@index([organizationId, ownerId])
+}
+
+/// One version of a quotation. Commercial columns and items are frozen by DB triggers once it leaves DRAFT
+/// (migration phase3_commercial); a change after sending means a new version (revision).
+model QuotationVersion {
+  id                    String          @id @default(cuid())
+  organizationId        String
+  quotationId           String
+  versionNumber         Int
+  status                QuotationStatus @default(DRAFT)
+  language              Locale          @default(ar)
+  currency              String          @default("SAR")
+  issueDate             DateTime        @db.Date
+  validUntil            DateTime        @db.Date
+  /// Organization VAT rate captured when totals were calculated
+  vatRate               Decimal         @db.Decimal(5, 2)
+  subtotal              Decimal         @default(0) @db.Decimal(14, 2)
+  discountTotal         Decimal         @default(0) @db.Decimal(14, 2)
+  taxTotal              Decimal         @default(0) @db.Decimal(14, 2)
+  total                 Decimal         @default(0) @db.Decimal(14, 2)
+  paymentTerms          String?
+  deliveryTerms         String?
+  termsAndConditions    String?
+  /// Internal only — never printed
+  notes                 String?
+  clientMessage         String?
+  /// sha256 of the commercial content; set on submit, re-verified on approval
+  contentHash           String?
+  approvalRequired      Boolean         @default(false)
+  approvalReasons       Json?
+  approvalId            String?
+  approvalComment       String?
+  submittedAt           DateTime?
+  submittedById         String?
+  approvedAt            DateTime?
+  approvedById          String?
+  sentAt                DateTime?
+  sentById              String?
+  sendMethod            SendMethod?
+  sentNote              String?
+  viewedAt              DateTime?
+  acceptedAt            DateTime?
+  acceptedRecordedById  String?
+  acceptanceNote        String?
+  rejectedAt            DateTime?
+  rejectionReason       String?
+  rejectionRecordedById String?
+  expiredAt             DateTime?
+  expiringNotifiedAt    DateTime?
+  cancelledAt           DateTime?
+  cancelReason          String?
+  supersededAt          DateTime?
+  revisedFromId         String?
+  createdById           String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  quotation Quotation            @relation("QuotationVersions", fields: [quotationId], references: [id], onDelete: Cascade)
+  currentOf Quotation?           @relation("QuotationCurrentVersion")
+  items     QuotationItem[]
+  documents CommercialDocument[]
+  contracts Contract[]
+  projects  Project[]
+
+  invoices Invoice[]
+
+  @@unique([quotationId, versionNumber])
+  @@index([organizationId, status, validUntil])
+}
+
+/// Historical commercial snapshot of a line. Never re-read from the catalog after insertion.
+model QuotationItem {
+  id               String       @id @default(cuid())
+  versionId        String
+  sortOrder        Int          @default(0)
+  serviceId        String?
+  packageId        String?
+  name             String
+  description      String?
+  unit             String?
+  quantity         Decimal      @db.Decimal(12, 3)
+  unitPrice        Decimal      @db.Decimal(14, 2)
+  /// Catalog price when the line was saved (null for custom lines)
+  catalogUnitPrice Decimal?     @db.Decimal(14, 2)
+  discountType     DiscountType @default(NONE)
+  discountValue    Decimal      @default(0) @db.Decimal(14, 2)
+  grossAmount      Decimal      @db.Decimal(14, 2)
+  discountAmount   Decimal      @db.Decimal(14, 2)
+  /// Net line amount after discount, before tax
+  subtotal         Decimal      @db.Decimal(14, 2)
+  taxBehavior      TaxBehavior  @default(STANDARD)
+  taxRate          Decimal      @db.Decimal(5, 2)
+  taxAmount        Decimal      @db.Decimal(14, 2)
+  total            Decimal      @db.Decimal(14, 2)
+
+  version QuotationVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  service Service?         @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  package ServicePackage?  @relation(fields: [packageId], references: [id], onDelete: SetNull)
+
+  @@index([versionId, sortOrder])
+}
+
+/// Generated file kept as the exact artifact (e.g. the PDF of a sent version). Append-only (DB trigger).
+model CommercialDocument {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  kind               CommercialDocKind
+  quotationVersionId String?
+  contractId         String?
+  language           Locale
+  fileName           String
+  mimeType           String            @default("application/pdf")
+  sha256             String
+  size               Int
+  data               Bytes
+  createdById        String?
+  createdAt          DateTime          @default(now())
+
+  quotationVersion QuotationVersion? @relation(fields: [quotationVersionId], references: [id], onDelete: Restrict)
+  contract         Contract?         @relation(fields: [contractId], references: [id], onDelete: Restrict)
+
+  /// Phase 5: issued invoice artifact
+  invoiceId String?
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  @@index([quotationVersionId])
+  @@index([contractId])
+  @@index([invoiceId])
+}
+
+model Contract {
+  id                 String         @id @default(cuid())
+  organizationId     String
+  /// CTR-2026-000001
+  number             String
+  clientId           String
+  contactId          String?
+  opportunityId      String?
+  quotationId        String?
+  /// Exact accepted version this contract was created from
+  quotationVersionId String?
+  title              String
+  status             ContractStatus @default(DRAFT)
+  language           Locale         @default(ar)
+  startDate          DateTime?      @db.Date
+  endDate            DateTime?      @db.Date
+  renewalDate        DateTime?      @db.Date
+  currency           String         @default("SAR")
+  subtotal           Decimal        @default(0) @db.Decimal(14, 2)
+  discountTotal      Decimal        @default(0) @db.Decimal(14, 2)
+  taxTotal           Decimal        @default(0) @db.Decimal(14, 2)
+  contractValue      Decimal        @default(0) @db.Decimal(14, 2)
+  paymentTerms       String?
+  scopeOfWork        String?
+  terms              String?
+  ownerId            String?
+  signedAt           DateTime?
+  activatedAt        DateTime?
+  activatedById      String?
+  terminatedAt       DateTime?
+  terminationReason  String?
+  cancelledAt        DateTime?
+  cancelReason       String?
+  expiredAt          DateTime?
+  expiringNotifiedAt DateTime?
+  createdById        String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  client           Client               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  contact          Contact?             @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  opportunity      Opportunity?         @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  quotation        Quotation?           @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  quotationVersion QuotationVersion?    @relation(fields: [quotationVersionId], references: [id], onDelete: Restrict)
+  owner            User?                @relation("ContractOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdBy        User?                @relation("ContractCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  milestones       ContractMilestone[]
+  documents        CommercialDocument[]
+  projects         Project[]
+
+  invoices Invoice[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status, endDate])
+  @@index([organizationId, clientId])
+  @@index([organizationId, ownerId])
+}
+
+/// Commercial / delivery commitment of a contract (not a project task — that is Phase 4).
+model ContractMilestone {
+  id          String          @id @default(cuid())
+  contractId  String
+  title       String
+  description String?
+  amount      Decimal?        @db.Decimal(14, 2)
+  percentage  Decimal?        @db.Decimal(5, 2)
+  dueDate     DateTime?       @db.Date
+  status      MilestoneStatus @default(PENDING)
+  completedAt DateTime?
+  sortOrder   Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  contract          Contract           @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  projectMilestones ProjectMilestone[]
+
+  invoices Invoice[]
+
+  @@index([contractId, sortOrder])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4 — Project delivery, tasks, milestones, team, time (docs/PROJECTS.md)
+// ---------------------------------------------------------------------------
+
+enum ProjectType {
+  CLIENT
+  INTERNAL
+}
+
+enum ProjectStatus {
+  DRAFT
+  PLANNING
+  ACTIVE
+  WAITING_CLIENT
+  BLOCKED
+  AT_RISK
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum ProjectHealth {
+  HEALTHY
+  NEEDS_ATTENTION
+  AT_RISK
+}
+
+/// Summary of client-side dependencies (derived, stored for lists and filters).
+enum ClientDependencyState {
+  NONE
+  OPEN
+  OVERDUE
+}
+
+enum ProjectMilestoneStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  BLOCKED
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  REVIEW
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum ProjectRole {
+  PROJECT_MANAGER
+  TECH_LEAD
+  DEVELOPER
+  DESIGNER
+  MARKETING
+  QA
+  ACCOUNT_MANAGER
+  CONTRIBUTOR
+  OBSERVER
+}
+
+enum TimeEntryStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum TimesheetStatus {
+  SUBMITTED
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum DeliverableStatus {
+  DRAFT
+  IN_PROGRESS
+  READY
+  DELIVERED
+  ACCEPTED
+  REJECTED
+}
+
+enum ClientApprovalStatus {
+  NOT_REQUIRED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DependencyType {
+  CONTENT
+  BRAND_ASSETS
+  ACCESS
+  CREDENTIALS
+  DATA
+  APPROVAL
+  FEEDBACK
+  OTHER
+}
+
+enum DependencySide {
+  CLIENT
+  INTERNAL
+  THIRD_PARTY
+}
+
+enum DependencyStatus {
+  OPEN
+  WAITING
+  RESOLVED
+  CANCELLED
+}
+
+enum CommentEntity {
+  TASK
+  PROJECT
+}
+
+/// Operational delivery project. Commercial context is COPIED at creation (snapshot); the
+/// project never reads live service descriptions or prices.
+model Project {
+  id                     String                @id @default(cuid())
+  organizationId         String
+  /// PRJ-YYYY-NNNNNN
+  number                 String
+  type                   ProjectType           @default(CLIENT)
+  clientId               String?
+  opportunityId          String?
+  quotationId            String?
+  quotationVersionId     String?
+  contractId             String?
+  serviceId              String?
+  templateId             String?
+  name                   String
+  description            String?
+  scopeSummary           String?
+  deliveryTerms          String?
+  projectManagerId       String?
+  departmentId           String?
+  status                 ProjectStatus         @default(PLANNING)
+  statusReason           String?
+  priority               Priority              @default(MEDIUM)
+  startDate              DateTime?             @db.Date
+  targetEndDate          DateTime?             @db.Date
+  startedAt              DateTime?
+  completedAt            DateTime?
+  completedById          String?
+  completionOverride     String?
+  cancelledAt            DateTime?
+  /// Commercial value copied from the contract / accepted version (net, excl. VAT). Commercial visibility only.
+  budgetAmount           Decimal?              @db.Decimal(14, 2)
+  currency               String                @default("SAR")
+  /// 0–100, derived from weighted milestones (see docs/PROJECTS.md); never typed by hand
+  progress               Int                   @default(0)
+  health                 ProjectHealth         @default(HEALTHY)
+  healthReasons          Json?
+  healthCheckedAt        DateTime?
+  atRiskNotifiedAt       DateTime?
+  clientDependencyStatus ClientDependencyState @default(NONE)
+  lastActivityAt         DateTime              @default(now())
+  createdById            String?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  archivedAt             DateTime?
+
+  client           Client?               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  opportunity      Opportunity?          @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+  quotation        Quotation?            @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  quotationVersion QuotationVersion?     @relation(fields: [quotationVersionId], references: [id], onDelete: Restrict)
+  contract         Contract?             @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  service          Service?              @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  template         ProjectTemplate?      @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  projectManager   User?                 @relation("ProjectManager", fields: [projectManagerId], references: [id], onDelete: SetNull)
+  department       Department?           @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  createdBy        User?                 @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  members          ProjectMember[]
+  milestones       ProjectMilestone[]
+  tasks            Task[]
+  timeEntries      TimeEntry[]
+  timesheets       TimesheetSubmission[]
+  deliverables     ProjectDeliverable[]
+  dependencies     ProjectDependency[]
+
+  invoices Invoice[]
+  expenses Expense[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([organizationId, health])
+  @@index([organizationId, projectManagerId])
+  @@index([organizationId, clientId])
+}
+
+/// Project responsibility (NOT a permission — RBAC still decides what a user may do).
+model ProjectMember {
+  id                String      @id @default(cuid())
+  projectId         String
+  userId            String
+  role              ProjectRole @default(CONTRIBUTOR)
+  /// Declared allocation only (no capacity calendar)
+  allocationPercent Int?
+  joinedAt          DateTime    @default(now())
+  leftAt            DateTime?
+  addedById         String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation("ProjectMemberships", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId, leftAt])
+}
+
+/// Operational delivery checkpoint (different from a commercial ContractMilestone; may reference one).
+model ProjectMilestone {
+  id                  String                 @id @default(cuid())
+  projectId           String
+  title               String
+  description         String?
+  status              ProjectMilestoneStatus @default(NOT_STARTED)
+  startDate           DateTime?              @db.Date
+  dueDate             DateTime               @db.Date
+  completedAt         DateTime?
+  ownerId             String?
+  /// Relative weight for progress (1–100)
+  weight              Int                    @default(10)
+  /// Required milestones must be completed (or cancelled) before the project can complete
+  required            Boolean                @default(true)
+  blockedReason       String?
+  sortOrder           Int                    @default(0)
+  contractMilestoneId String?
+  overdueNotifiedAt   DateTime?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  project           Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  owner             User?                @relation("MilestoneOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  contractMilestone ContractMilestone?   @relation(fields: [contractMilestoneId], references: [id], onDelete: SetNull)
+  tasks             Task[]
+  deliverables      ProjectDeliverable[]
+
+  @@index([projectId, sortOrder])
+  @@index([status, dueDate])
+}
+
+model Task {
+  id                String     @id @default(cuid())
+  organizationId    String
+  /// TASK-000001
+  number            String
+  projectId         String
+  milestoneId       String?
+  /// One level of subtasks (a subtask cannot have subtasks) — no cycles possible
+  parentTaskId      String?
+  title             String
+  description       String?
+  status            TaskStatus @default(TODO)
+  priority          Priority   @default(MEDIUM)
+  assigneeId        String?
+  createdById       String?
+  startDate         DateTime?  @db.Date
+  dueDate           DateTime?  @db.Date
+  completedAt       DateTime?
+  estimateMinutes   Int?
+  blockedReason     String?
+  sortOrder         Int        @default(0)
+  statusChangedAt   DateTime   @default(now())
+  dueSoonNotifiedAt DateTime?
+  overdueNotifiedAt DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  archivedAt        DateTime?
+
+  project     Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone   ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  parent      Task?             @relation("Subtasks", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks    Task[]            @relation("Subtasks")
+  assignee    User?             @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  createdBy   User?             @relation("TaskCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  timeEntries TimeEntry[]
+
+  @@unique([organizationId, number])
+  @@index([projectId, status, sortOrder])
+  @@index([assigneeId, status])
+  @@index([organizationId, dueDate])
+}
+
+/// Reusable internal comments (tasks today, projects too). Soft delete.
+model Comment {
+  id             String        @id @default(cuid())
+  organizationId String
+  entityType     CommentEntity
+  entityId       String
+  authorId       String?
+  body           String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  author User? @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId, createdAt])
+}
+
+model TimeEntry {
+  id              String          @id @default(cuid())
+  organizationId  String
+  projectId       String
+  taskId          String?
+  userId          String
+  date            DateTime        @db.Date
+  minutes         Int
+  description     String?
+  billable        Boolean         @default(true)
+  status          TimeEntryStatus @default(DRAFT)
+  submissionId    String?
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  approvedById    String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  project    Project              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  task       Task?                @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  user       User                 @relation("TimeEntryUser", fields: [userId], references: [id], onDelete: Restrict)
+  submission TimesheetSubmission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+
+  invoiceLinks InvoiceTimeEntry[]
+
+  @@index([userId, date])
+  @@index([projectId, status])
+}
+
+/// A batch of time entries submitted for approval (decided through the Phase 1 approval engine).
+model TimesheetSubmission {
+  id             String          @id @default(cuid())
+  organizationId String
+  projectId      String
+  userId         String
+  status         TimesheetStatus @default(SUBMITTED)
+  periodStart    DateTime        @db.Date
+  periodEnd      DateTime        @db.Date
+  totalMinutes   Int
+  approvalId     String?
+  decidedById    String?
+  decidedAt      DateTime?
+  reason         String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  project Project     @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  user    User        @relation("TimesheetUser", fields: [userId], references: [id], onDelete: Restrict)
+  entries TimeEntry[]
+
+  @@index([projectId, status])
+}
+
+model ProjectDeliverable {
+  id                     String               @id @default(cuid())
+  projectId              String
+  milestoneId            String?
+  name                   String
+  description            String?
+  status                 DeliverableStatus    @default(DRAFT)
+  dueDate                DateTime?            @db.Date
+  ownerId                String?
+  required               Boolean              @default(true)
+  clientApprovalRequired Boolean              @default(false)
+  clientApprovalStatus   ClientApprovalStatus @default(NOT_REQUIRED)
+  deliveredAt            DateTime?
+  approvedAt             DateTime?
+  rejectedAt             DateTime?
+  clientDecisionNote     String?
+  clientDecisionById     String?
+  readyNotifiedAt        DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone ProjectMilestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  owner     User?             @relation("DeliverableOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, status])
+}
+
+/// Things the project waits for (client logo, content, API access, credentials, approvals …).
+model ProjectDependency {
+  id                String           @id @default(cuid())
+  projectId         String
+  title             String
+  description       String?
+  type              DependencyType   @default(OTHER)
+  ownerSide         DependencySide   @default(CLIENT)
+  status            DependencyStatus @default(OPEN)
+  /// Critical dependencies justify WAITING_CLIENT and weigh on health
+  critical          Boolean          @default(false)
+  requestedAt       DateTime         @default(now())
+  dueDate           DateTime?        @db.Date
+  resolvedAt        DateTime?
+  resolvedById      String?
+  resolutionNote    String?
+  overdueNotifiedAt DateTime?
+  createdById       String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@index([status, dueDate])
+}
+
+/// Starting point for a project; applying it creates independent snapshot milestones/tasks.
+model ProjectTemplate {
+  id             String   @id @default(cuid())
+  organizationId String
+  /// Stable code (e.g. "website")
+  code           String
+  nameAr         String
+  nameEn         String
+  descriptionAr  String?
+  descriptionEn  String?
+  serviceId      String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  service    Service?                   @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  milestones ProjectTemplateMilestone[]
+  tasks      ProjectTemplateTask[]
+  projects   Project[]
+
+  @@unique([organizationId, code])
+}
+
+model ProjectTemplateMilestone {
+  id         String @id @default(cuid())
+  templateId String
+  key        String
+  titleAr    String
+  titleEn    String
+  weight     Int    @default(10)
+  /// Due date = project start + offsetDays
+  offsetDays Int    @default(7)
+  sortOrder  Int    @default(0)
+
+  template ProjectTemplate       @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  tasks    ProjectTemplateTask[]
+
+  @@unique([templateId, key])
+}
+
+model ProjectTemplateTask {
+  id              String       @id @default(cuid())
+  templateId      String
+  milestoneId     String?
+  titleAr         String
+  titleEn         String
+  estimateMinutes Int?
+  /// Suggested project role for assignment
+  role            ProjectRole?
+  sortOrder       Int          @default(0)
+
+  template  ProjectTemplate           @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  milestone ProjectTemplateMilestone? @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+}
+
+/// Short-lived lease so scheduled sweeps run on ONE instance at a time (multi-instance safe).
+model JobLease {
+  key         String   @id
+  holder      String
+  lockedUntil DateTime
+  updatedAt   DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5 — Finance: invoices, payments, expenses, vendors, cost rates
+// Operational finance (billing, collection, cost) — NOT a general ledger.
+// ---------------------------------------------------------------------------
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+  VOID
+}
+
+enum InvoiceSource {
+  CONTRACT
+  CONTRACT_MILESTONE
+  QUOTATION
+  PROJECT
+  TIME
+  MANUAL
+}
+
+enum InvoiceSendMethod {
+  EMAIL_MANUAL
+  WHATSAPP_MANUAL
+  IN_PERSON
+  PORTAL_MANUAL
+  OTHER
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CASH
+  CARD
+  PAYMENT_GATEWAY
+  OTHER
+}
+
+enum PaymentStatus {
+  RECORDED
+  REVERSED
+}
+
+enum ExpenseStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  PAID
+  CANCELLED
+}
+
+enum VendorStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum CollectionNoteKind {
+  NOTE
+  REMINDER
+  PROMISE_TO_PAY
+}
+
+enum CollectionChannel {
+  EMAIL
+  PHONE
+  WHATSAPP
+  IN_PERSON
+  OTHER
+}
+
+/// Customer invoice. Commercial content is editable only in DRAFT; from ISSUED on it is frozen
+/// (service + DB trigger). Numbers (INV-YYYY-NNNNNN) are assigned at issue.
+model Invoice {
+  id                  String             @id @default(cuid())
+  organizationId      String
+  number              String?
+  sourceType          InvoiceSource      @default(MANUAL)
+  clientId            String
+  contactId           String?
+  quotationId         String?
+  quotationVersionId  String?
+  contractId          String?
+  projectId           String?
+  contractMilestoneId String?
+  language            Locale             @default(ar)
+  currency            String             @default("SAR")
+  status              InvoiceStatus      @default(DRAFT)
+  issueDate           DateTime           @db.Date
+  dueDate             DateTime           @db.Date
+  subtotal            Decimal            @default(0) @db.Decimal(14, 2)
+  discountTotal       Decimal            @default(0) @db.Decimal(14, 2)
+  taxTotal            Decimal            @default(0) @db.Decimal(14, 2)
+  total               Decimal            @default(0) @db.Decimal(14, 2)
+  paidAmount          Decimal            @default(0) @db.Decimal(14, 2)
+  balanceDue          Decimal            @default(0) @db.Decimal(14, 2)
+  paymentTerms        String?
+  notes               String?
+  /// Snapshots taken at issue — the PDF of an issued invoice never reads current client/company data
+  paymentInstructions String?
+  sellerSnapshot      Json?
+  buyerSnapshot       Json?
+  contentHash         String?
+  /// Corrective re-issue of a voided invoice
+  replacesInvoiceId   String?
+  createdById         String?
+  issuedById          String?
+  issuedAt            DateTime?
+  sentById            String?
+  sentAt              DateTime?
+  sentMethod          InvoiceSendMethod?
+  paidAt              DateTime?
+  cancelledAt         DateTime?
+  cancelledById       String?
+  cancelReason        String?
+  voidedAt            DateTime?
+  voidedById          String?
+  voidReason          String?
+  nextFollowUpAt      DateTime?          @db.Date
+  lastReminderAt      DateTime?
+  dueSoonNotifiedAt   DateTime?
+  overdueNotifiedAt   DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  client            Client                  @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  contact           Contact?                @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  quotation         Quotation?              @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  quotationVersion  QuotationVersion?       @relation(fields: [quotationVersionId], references: [id], onDelete: Restrict)
+  contract          Contract?               @relation(fields: [contractId], references: [id], onDelete: Restrict)
+  project           Project?                @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  contractMilestone ContractMilestone?      @relation(fields: [contractMilestoneId], references: [id], onDelete: Restrict)
+  createdBy         User?                   @relation("InvoiceCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  items             InvoiceItem[]
+  allocations       PaymentAllocation[]
+  timeLinks         InvoiceTimeEntry[]
+  documents         CommercialDocument[]
+  collectionNotes   InvoiceCollectionNote[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status, dueDate])
+  @@index([organizationId, clientId])
+  @@index([projectId])
+  @@index([contractId])
+}
+
+/// Invoice line — all amounts computed on the server (src/lib/commercial/calc.ts); tax rate snapshotted per line.
+model InvoiceItem {
+  id             String       @id @default(cuid())
+  invoiceId      String
+  sortOrder      Int          @default(0)
+  description    String
+  serviceId      String?
+  projectId      String?
+  unit           String?
+  quantity       Decimal      @db.Decimal(12, 3)
+  unitPrice      Decimal      @db.Decimal(14, 2)
+  discountType   DiscountType @default(NONE)
+  discountValue  Decimal      @default(0) @db.Decimal(14, 2)
+  grossAmount    Decimal      @db.Decimal(14, 2)
+  discountAmount Decimal      @db.Decimal(14, 2)
+  /// net after discount, before tax
+  subtotal       Decimal      @db.Decimal(14, 2)
+  taxBehavior    TaxBehavior  @default(STANDARD)
+  taxRate        Decimal      @db.Decimal(5, 2)
+  taxAmount      Decimal      @db.Decimal(14, 2)
+  total          Decimal      @db.Decimal(14, 2)
+
+  invoice   Invoice            @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  service   Service?           @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  timeLinks InvoiceTimeEntry[]
+
+  @@index([invoiceId, sortOrder])
+}
+
+/// Exact linkage of approved billable time to an invoice. A time entry can be linked to at most
+/// one live invoice (partial unique index on timeEntryId WHERE releasedAt IS NULL); cancelling or
+/// voiding the invoice releases the link and the time becomes billable again.
+model InvoiceTimeEntry {
+  id            String    @id @default(cuid())
+  invoiceId     String
+  invoiceItemId String?
+  timeEntryId   String
+  minutes       Int
+  releasedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  invoice   Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  item      InvoiceItem? @relation(fields: [invoiceItemId], references: [id], onDelete: SetNull)
+  timeEntry TimeEntry    @relation(fields: [timeEntryId], references: [id], onDelete: Restrict)
+
+  @@index([invoiceId])
+  @@index([timeEntryId])
+}
+
+/// Manual collection activity (no email/WhatsApp is sent by the system).
+model InvoiceCollectionNote {
+  id          String             @id @default(cuid())
+  invoiceId   String
+  kind        CollectionNoteKind @default(NOTE)
+  channel     CollectionChannel?
+  note        String
+  followUpAt  DateTime?          @db.Date
+  createdById String?
+  createdAt   DateTime           @default(now())
+
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("InvoiceNoteAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId, createdAt])
+}
+
+/// Money received from a client. Must be fully allocated to open invoices of that client
+/// (no unallocated credit in Phase 5). Never deleted — reversed with a reason.
+model Payment {
+  id             String        @id @default(cuid())
+  organizationId String
+  /// PAY-YYYY-NNNNNN
+  number         String
+  clientId       String
+  amount         Decimal       @db.Decimal(14, 2)
+  currency       String        @default("SAR")
+  paymentDate    DateTime      @db.Date
+  method         PaymentMethod
+  reference      String?
+  notes          String?
+  status         PaymentStatus @default(RECORDED)
+  /// client-generated key: a resubmitted form can never record the same payment twice
+  idempotencyKey String?
+  createdById    String?
+  reversedAt     DateTime?
+  reversedById   String?
+  reversalReason String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  client      Client              @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  createdBy   User?               @relation("PaymentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  allocations PaymentAllocation[]
+
+  @@unique([organizationId, number])
+  @@unique([organizationId, idempotencyKey])
+  @@index([organizationId, paymentDate])
+  @@index([organizationId, clientId])
+}
+
+model PaymentAllocation {
+  id        String   @id @default(cuid())
+  paymentId String
+  invoiceId String
+  amount    Decimal  @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  @@unique([paymentId, invoiceId])
+  @@index([invoiceId])
+}
+
+model ExpenseCategory {
+  id             String    @id @default(cuid())
+  organizationId String
+  key            String
+  nameAr         String
+  nameEn         String
+  active         Boolean   @default(true)
+  sortOrder      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  expenses       Expense[]
+
+  @@unique([organizationId, key])
+}
+
+model Vendor {
+  id             String       @id @default(cuid())
+  organizationId String
+  /// VEN-000001
+  number         String
+  name           String
+  contactName    String?
+  phone          String?
+  email          String?
+  taxNumber      String?
+  category       String?
+  paymentTerms   String?
+  status         VendorStatus @default(ACTIVE)
+  notes          String?
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  archivedAt     DateTime?
+  expenses       Expense[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+}
+
+/// Company spending. Approval goes through the Phase 1 engine (Approval type EXPENSE).
+model Expense {
+  id               String         @id @default(cuid())
+  organizationId   String
+  /// EXP-YYYY-NNNNNN
+  number           String
+  categoryId       String
+  vendorId         String?
+  projectId        String?
+  departmentId     String?
+  /// employee who incurred it (reimbursement) — defaults to the submitter
+  userId           String?
+  date             DateTime       @db.Date
+  /// net amount before VAT
+  amount           Decimal        @db.Decimal(14, 2)
+  taxAmount        Decimal        @default(0) @db.Decimal(14, 2)
+  total            Decimal        @db.Decimal(14, 2)
+  currency         String         @default("SAR")
+  paymentMethod    PaymentMethod?
+  description      String
+  reference        String?
+  status           ExpenseStatus  @default(DRAFT)
+  submittedById    String
+  submittedAt      DateTime?
+  approvalId       String?
+  approvedById     String?
+  approvedAt       DateTime?
+  rejectedAt       DateTime?
+  rejectionReason  String?
+  paidAt           DateTime?
+  paidById         String?
+  paymentReference String?
+  cancelledAt      DateTime?
+  cancelReason     String?
+  payReminderAt    DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  vendor      Vendor?         @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  project     Project?        @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  department  Department?     @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  user        User?           @relation("ExpenseUser", fields: [userId], references: [id], onDelete: SetNull)
+  submittedBy User            @relation("ExpenseSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([projectId])
+  @@index([organizationId, date])
+}
+
+/// Internal costing metadata (NOT payroll): hourly cost of a person for project costing.
+/// Restricted to finance.cost_rates.*; never shown to project members.
+model UserCostRate {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String
+  hourlyCost     Decimal   @db.Decimal(14, 2)
+  currency       String    @default("SAR")
+  effectiveFrom  DateTime  @db.Date
+  effectiveTo    DateTime? @db.Date
+  createdById    String?
+  createdAt      DateTime  @default(now())
+
+  user User @relation("CostRateUser", fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId, userId, effectiveFrom])
+}

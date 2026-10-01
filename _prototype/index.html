@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DMS Tech | حلول الذكاء الاصطناعي والأتمتة والنمو الرقمي</title>
+  <meta name="description" content="DMS Tech شريكك التقني في الذكاء الاصطناعي، أتمتة الأعمال، تطوير التطبيقات والمواقع، حلول واتساب، متاجر زد وسلة وشوبيفاي، والتسويق الرقمي.">
+  <meta name="theme-color" content="#162136">
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- Brand icon sprite (not available in Lucide) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-whatsapp" viewBox="0 0 24 24"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></symbol>
+  <symbol id="i-tiktok" viewBox="0 0 24 24"><path fill="currentColor" d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></symbol>
+</svg>
+
+<!-- Announcement bar -->
+<div class="announce">
+  <a href="#nova">
+    <i data-lucide="zap"></i>
+    جديد: منصة <b>NOVA AI</b><span class="announce__long"> لأتمتة المحادثات وسير العمل والتحليلات</span> — <u>اكتشفها الآن</u>
+  </a>
+</div>
+
+<!-- Navigation -->
+<header class="nav" id="nav">
+  <div class="container nav__inner">
+    <a class="nav__logo" href="#top" aria-label="DMS Tech — الصفحة الرئيسية"><img src="assets/img/logo.png" alt="DMS Tech"></a>
+
+    <button class="nav__toggle" id="navToggle" aria-label="القائمة" aria-expanded="false" aria-controls="navMenu"><i data-lucide="menu"></i></button>
+
+    <nav class="nav__menu" id="navMenu" aria-label="القائمة الرئيسية">
+      <div class="nav__item"><a class="nav__link" href="#top">الصفحة الرئيسية</a></div>
+
+      <div class="nav__item has-dd">
+        <button class="nav__link" aria-expanded="false">من نحن <i data-lucide="chevron-down"></i></button>
+        <div class="dropdown">
+          <a class="dd-link" href="#why"><span class="dd-link__icon"><i data-lucide="building-2"></i></span><div><strong>عن DMS Tech</strong><span>شريك تقني للنمو والأتمتة والتحول الرقمي</span></div></a>
+          <a class="dd-link" href="#why"><span class="dd-link__icon"><i data-lucide="award"></i></span><div><strong>لماذا تختارنا</strong><span>استراتيجية، تنفيذ تقني، وتركيز على النمو</span></div></a>
+          <a class="dd-link" href="#process"><span class="dd-link__icon"><i data-lucide="route"></i></span><div><strong>آلية العمل</strong><span>من الاكتشاف حتى الإطلاق والتحسين</span></div></a>
+        </div>
+      </div>
+
+      <div class="nav__item has-dd">
+        <button class="nav__link" aria-expanded="false">خدماتنا <i data-lucide="chevron-down"></i></button>
+        <div class="dropdown dropdown--mega">
+          <a class="dd-link" href="#s-ai"><span class="dd-link__icon"><i data-lucide="brain-circuit"></i></span><div><strong>الذكاء الاصطناعي وأتمتة الأعمال</strong><span>مساعدات ذكية وسير عمل مؤتمت</span></div></a>
+          <a class="dd-link" href="#whatsapp"><span class="dd-link__icon"><svg width="18" height="18"><use href="#i-whatsapp"/></svg></span><div><strong>حلول وأتمتة واتساب</strong><span>محادثات أسرع وأذكى مع عملائك</span></div></a>
+          <a class="dd-link" href="#s-web"><span class="dd-link__icon"><i data-lucide="monitor-smartphone"></i></span><div><strong>تصميم وتطوير المواقع</strong><span>مواقع تركّز على التحويل والنمو</span></div></a>
+          <a class="dd-link" href="#s-apps"><span class="dd-link__icon"><i data-lucide="smartphone"></i></span><div><strong>تطوير التطبيقات</strong><span>تطبيقات ويب وجوال وأنظمة إدارة</span></div></a>
+          <a class="dd-link" href="#s-store"><span class="dd-link__icon"><i data-lucide="shopping-cart"></i></span><div><strong>المتاجر الإلكترونية</strong><span>زد، سلة وشوبيفاي</span></div></a>
+          <a class="dd-link" href="#s-marketing"><span class="dd-link__icon"><i data-lucide="megaphone"></i></span><div><strong>التسويق الرقمي والتصميم الإبداعي</strong><span>حملات ومحتوى وهوية بصرية</span></div></a>
+          <a class="dd-link" href="#s-integration"><span class="dd-link__icon"><i data-lucide="network"></i></span><div><strong>التحول الرقمي وتكامل الأنظمة</strong><span>تكاملات API وأنظمة CRM و ERP</span></div></a>
+          <a class="dd-link" href="#s-ux"><span class="dd-link__icon"><i data-lucide="pen-tool"></i></span><div><strong>تصميم تجربة وواجهة المستخدم</strong><span>أنظمة تصميم وتجارب علامة تجارية</span></div></a>
+        </div>
+      </div>
+
+      <div class="nav__item has-dd">
+        <button class="nav__link" aria-expanded="false">عملائنا <i data-lucide="chevron-down"></i></button>
+        <div class="dropdown">
+          <a class="dd-link" href="#industries"><span class="dd-link__icon"><i data-lucide="layers"></i></span><div><strong>القطاعات التي نخدمها</strong><span>تجزئة، صحة، تعليم، شركات، عقارات</span></div></a>
+          <a class="dd-link" href="#platforms"><span class="dd-link__icon"><i data-lucide="plug"></i></span><div><strong>المنصات والتقنيات</strong><span>المنصات التي نبني ونربط عليها</span></div></a>
+        </div>
+      </div>
+
+      <div class="nav__item"><a class="nav__link" href="#careers">التوظيف</a></div>
+      <div class="nav__item"><a class="nav__link" href="#contact">اتصل بنا</a></div>
+      <div class="nav__item"><a class="nav__link" href="#blog">المدونات</a></div>
+
+      <div class="nav__cta"><a class="btn btn-primary" href="#quote">الحصول على عرض سعر</a></div>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero__grid">
+      <div class="hero__text reveal">
+        <span class="eyebrow">DMS Tech — شريكك التقني</span>
+        <h1 class="hero__title">حلول الذكاء الاصطناعي والأتمتة و<span class="hl">النمو الرقمي</span></h1>
+        <p class="hero__sub">نبني منتجات ذكية، ونؤتمت العمليات، ونسرّع النمو الرقمي لأعمالك — من الفكرة حتى الإطلاق والتوسع.</p>
+        <div class="hero__actions">
+          <a class="btn btn-primary" href="#quote">احصل على عرض سعر مجاني</a>
+          <a class="btn btn-ghost" href="#services">استكشف خدماتنا <i data-lucide="arrow-left"></i></a>
+        </div>
+        <ul class="hero__checks">
+          <li><i data-lucide="circle-check"></i> حلول ذكاء اصطناعي</li>
+          <li><i data-lucide="circle-check"></i> أتمتة الأعمال</li>
+          <li><i data-lucide="circle-check"></i> تطوير التطبيقات</li>
+          <li><i data-lucide="circle-check"></i> التجارة والتسويق</li>
+        </ul>
+      </div>
+
+      <div class="mockup reveal" aria-hidden="true">
+        <div class="mockup__frame">
+          <div class="mockup__bar"><i></i><i></i><i></i><span>app.dms1t.com / nova-ai</span></div>
+          <div class="mockup__body">
+            <aside class="mockup__side">
+              <div class="brand"><b>N</b> NOVA AI</div>
+              <a class="on"><i data-lucide="layout-dashboard"></i> لوحة التحكم</a>
+              <a><i data-lucide="messages-square"></i> المحادثات</a>
+              <a><i data-lucide="workflow"></i> سير العمل</a>
+              <a><i data-lucide="users"></i> العملاء</a>
+              <a><i data-lucide="chart-no-axes-column"></i> التقارير</a>
+              <a><i data-lucide="settings"></i> الإعدادات</a>
+            </aside>
+            <div class="mockup__main">
+              <div class="mockup__head"><h4>نظرة عامة على الأداء</h4><small>آخر 30 يوماً</small></div>
+              <div class="kpis">
+                <div class="kpi"><span>المحادثات</span><strong>12,480</strong><em>▲ 36%</em></div>
+                <div class="kpi"><span>عملاء محتملون</span><strong>1,248</strong><em>▲ 28%</em></div>
+                <div class="kpi"><span>وقت الاستجابة</span><strong>4 ث</strong><em>▼ 72%</em></div>
+              </div>
+              <div class="chart">
+                <svg viewBox="0 0 400 120" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4a03a" stop-opacity=".35"/><stop offset="1" stop-color="#d4a03a" stop-opacity="0"/></linearGradient>
+                  </defs>
+                  <g stroke="#eef1f7" stroke-width="1"><line x1="0" y1="30" x2="400" y2="30"/><line x1="0" y1="60" x2="400" y2="60"/><line x1="0" y1="90" x2="400" y2="90"/></g>
+                  <path d="M0 98 C40 92 60 80 90 82 S150 60 180 64 S240 40 270 44 S330 20 360 22 L400 14 L400 120 L0 120Z" fill="url(#g1)"/>
+                  <path d="M0 98 C40 92 60 80 90 82 S150 60 180 64 S240 40 270 44 S330 20 360 22 L400 14" fill="none" stroke="#d4a03a" stroke-width="2.5"/>
+                  <path d="M0 108 C50 104 80 100 120 98 S200 90 240 86 S320 76 400 70" fill="none" stroke="#bfc7d9" stroke-width="2" stroke-dasharray="4 5"/>
+                  <circle cx="360" cy="22" r="5" fill="#fff" stroke="#d4a03a" stroke-width="2.5"/>
+                </svg>
+              </div>
+              <div class="flow">
+                <div><i data-lucide="message-circle"></i> رسالة جديدة</div>
+                <div><i data-lucide="sparkles"></i> تصنيف ذكي</div>
+                <div><i data-lucide="database"></i> مزامنة CRM</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="float-card float-card--auto">
+          <span class="badge"><i data-lucide="workflow"></i></span>
+          <div><strong>تمت الأتمتة</strong><span>متابعة تلقائية لـ 320 عميل</span></div>
+        </div>
+        <div class="float-card float-card--chat">
+          <span class="badge"><svg><use href="#i-whatsapp"/></svg></span>
+          <div><strong>DMS Tech</strong><span>أهلاً! شكراً لتواصلك معنا، كيف نقدر نساعدك اليوم؟</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Platforms strip -->
+  <section class="strip" id="platforms">
+    <div class="container">
+      <span class="eyebrow">منصات وتقنيات نبني ونربط عليها</span>
+      <div class="strip__row">
+        <span>Zid</span><span>Salla</span><span>Shopify</span><span>WhatsApp</span><span>Meta</span><span>Google</span><span>TikTok</span><span>LinkedIn</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services -->
+  <section class="section section--frost" id="services">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">خدماتنا</span>
+        <h2 class="h-display">كل ما تحتاجه لتنمو <span class="hl">رقمياً</span> في مكان واحد</h2>
+        <p class="lead">نساعد الشركات على بناء أنظمة أذكى، وإطلاق منتجات رقمية أقوى، والتوسع بثقة.</p>
+      </div>
+
+      <div class="cards">
+        <article class="card reveal" id="s-ai">
+          <div class="card__media"><img src="assets/img/ai.jpg" alt="حلول الذكاء الاصطناعي" loading="lazy" style="object-position:right top"><span class="badge"><i data-lucide="brain-circuit"></i></span></div>
+          <span class="eyebrow">AI & Automation</span>
+          <h3>الذكاء الاصطناعي وأتمتة الأعمال</h3>
+          <p>أنظمة ذكية تقلل العمل اليدوي، وتحسّن القرارات، وتبسّط عمليات أعمالك.</p>
+          <ul class="tags"><li>مساعدات ذكية</li><li>أتمتة سير العمل</li><li>البيانات والتقارير</li><li>تكامل الأنظمة</li></ul>
+          <a class="link-arrow" href="#quote">اطلب الخدمة <i data-lucide="arrow-left"></i></a>
+        </article>
+
+        <article class="card reveal" id="s-web">
+          <div class="card__media"><img src="assets/img/web.jpg" alt="تصميم وتطوير المواقع" loading="lazy"><span class="badge"><i data-lucide="monitor-smartphone"></i></span></div>
+          <span class="eyebrow">Websites</span>
+          <h3>تصميم وتطوير المواقع</h3>
+          <p>مواقع تركّز على التحويل، مصممة لتعزيز حضور علامتك التجارية ونمو أعمالك.</p>
+          <ul class="tags"><li>مواقع الشركات</li><li>صفحات الهبوط</li><li>UX / UI</li><li>الأداء ومحركات البحث</li></ul>
+          <a class="link-arrow" href="#quote">اطلب الخدمة <i data-lucide="arrow-left"></i></a>
+        </article>
+
+        <article class="card reveal" id="s-apps">
+          <div class="card__media"><img src="assets/img/apps.jpg" alt="تطوير التطبيقات" loading="lazy"><span class="badge"><i data-lucide="smartphone"></i></span></div>
+          <span class="eyebrow">App Development</span>
+          <h3>خدمات تطوير التطبيقات</h3>
+          <p>من الفكرة حتى الإطلاق، نبني منتجات رقمية قابلة للتوسع بأداء وأمان عاليين.</p>
+          <ul class="tags"><li>تطبيقات الويب</li><li>تطبيقات الجوال</li><li>أنظمة الإدارة</li><li>API والسحابة</li></ul>
+          <a class="link-arrow" href="#quote">اطلب الخدمة <i data-lucide="arrow-left"></i></a>
+        </article>
+
+        <article class="card reveal" id="s-store">
+          <div class="card__media"><img src="assets/img/ecommerce.jpg" alt="إعداد المتاجر الإلكترونية" loading="lazy"><span class="badge"><i data-lucide="shopping-cart"></i></span></div>
+          <span class="eyebrow">E-Commerce</span>
+          <h3>إطلاق المتاجر الإلكترونية</h3>
+          <p>نطلق وننمّي متجرك على زد وسلة وشوبيفاي — مصمم ليبيع أكثر بعوائق أقل.</p>
+          <ul class="tags"><li>إطلاق وإعداد المتجر</li><li>الثيم وتجربة المستخدم</li><li>الدفع والشحن</li><li>إدارة الكتالوج</li></ul>
+          <a class="link-arrow" href="#quote">اطلب الخدمة <i data-lucide="arrow-left"></i></a>
+        </article>
+
+        <article class="card reveal" id="s-marketing">
+          <div class="card__media"><img src="assets/img/marketing.jpg" alt="التسويق الرقمي والتصميم الإبداعي" loading="lazy"><span class="badge"><i data-lucide="megaphone"></i></span></div>
+          <span class="eyebrow">Marketing & Creative</span>
+          <h3>التسويق الرقمي والتصميم الإبداعي</h3>
+          <p>حملات ومحتوى وتصاميم تقوّي علامتك التجارية — تجذب الانتباه، تبني الثقة، وتحقق التحويل.</p>
+          <ul class="tags"><li>إدارة السوشيال ميديا</li><li>الإعلانات الممولة</li><li>الهوية البصرية</li><li>التصاميم الإبداعية</li></ul>
+          <a class="link-arrow" href="#quote">اطلب الخدمة <i data-lucide="arrow-left"></i></a>
+        </article>
+
+        <article class="card reveal" id="s-ux">
+          <div class="card__media"><img src="assets/img/uxui.jpg" alt="تصميم تجربة وواجهة المستخدم" loading="lazy"><span class="badge"><i data-lucide="pen-tool"></i></span></div>
+          <span class="eyebrow">UX / UI Design</span>
+          <h3>تصميم التجربة والواجهات</h3>
+          <p>من المخططات الأولية إلى الواجهات المصقولة، نصمم رحلات مستخدم وأنظمة تصميم ترتقي بعلامتك.</p>
+          <ul class="tags"><li>أبحاث UX</li><li>تصميم الواجهات</li><li>أنظمة التصميم</li><li>أصول العلامة</li></ul>
+          <a class="link-arrow" href="#quote">اطلب الخدمة <i data-lucide="arrow-left"></i></a>
+        </article>
+
+        <article class="card card--wide reveal" id="s-integration">
+          <div class="card__media"><img src="assets/img/integration.jpg" alt="التحول الرقمي وتكامل الأنظمة" loading="lazy"><span class="badge"><i data-lucide="network"></i></span></div>
+          <span class="eyebrow">Digital Transformation</span>
+          <h3>التحول الرقمي وتكامل الأنظمة</h3>
+          <p>نربط الفرق والأدوات والبيانات في سير عمل واحد عالي الأداء عبر تكاملات API والأنظمة السحابية ولوحات البيانات الذكية.</p>
+          <ul class="tags"><li>تكاملات API</li><li>مزامنة CRM و ERP</li><li>لوحات بيانات مخصصة</li><li>سير عمل سحابي</li></ul>
+          <a class="link-arrow" href="#quote">اطلب الخدمة <i data-lucide="arrow-left"></i></a>
+        </article>
+
+        <article class="card card--wide reveal">
+          <div class="card__media"><img src="assets/img/whatsapp.jpg" alt="حلول وأتمتة واتساب" loading="lazy"><span class="badge"><svg><use href="#i-whatsapp"/></svg></span></div>
+          <span class="eyebrow">WhatsApp Automation</span>
+          <h3>حلول وأتمتة واتساب</h3>
+          <p>حوّل المحادثات إلى تجربة عملاء أسرع وأذكى — تأهيل العملاء، متابعات تلقائية، ومسارات مبيعات ودعم متكاملة مع أنظمتك.</p>
+          <ul class="tags"><li>تأهيل العملاء</li><li>متابعات تلقائية</li><li>مسارات المبيعات والدعم</li><li>تكامل CRM</li></ul>
+          <a class="link-arrow" href="#whatsapp">اعرف المزيد <i data-lucide="arrow-left"></i></a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- NOVA AI spotlight -->
+  <section class="section" id="nova">
+    <div class="container split">
+      <div class="split__body reveal">
+        <span class="eyebrow">منصتنا — NOVA AI</span>
+        <h2 class="h-display">منصة ذكية <span class="hl">للأتمتة</span> والرؤى وتفاعل العملاء</h2>
+        <p class="lead">تساعد NOVA AI الشركات على توحيد المحادثات، وأتمتة سير العمل، واستخراج الرؤى، وتقديم تجارب رقمية أسرع.</p>
+        <ul class="feature-list">
+          <li><span class="icon"><i data-lucide="bot"></i></span><div><strong>مساعد ذكي</strong><span>يرد ويساعد عملاءك وفريقك على مدار الساعة.</span></div></li>
+          <li><span class="icon"><i data-lucide="file-search"></i></span><div><strong>البحث في المعرفة</strong><span>إجابات فورية من مستنداتك وقاعدة معرفتك.</span></div></li>
+          <li><span class="icon"><i data-lucide="workflow"></i></span><div><strong>محرك سير العمل</strong><span>أتمتة المهام والموافقات المتكررة.</span></div></li>
+          <li><span class="icon"><i data-lucide="chart-line"></i></span><div><strong>لوحة تحليلات وتكامل متعدد القنوات</strong><span>كل قنواتك وبياناتك في لوحة واحدة.</span></div></li>
+        </ul>
+        <ul class="pills">
+          <li><i data-lucide="lightbulb"></i> من تطوير DMS Tech</li>
+          <li><i data-lucide="server"></i> قابلة للتوسع</li>
+          <li><i data-lucide="shield-check"></i> آمنة</li>
+          <li><i data-lucide="target"></i> قابلة للتنفيذ</li>
+        </ul>
+      </div>
+      <div class="split__media reveal">
+        <img src="assets/img/nova.jpg" alt="منصة NOVA AI" loading="lazy">
+        <div class="float-card">
+          <span class="badge"><i data-lucide="sparkles"></i></span>
+          <div><strong>NOVA AI</strong><span>مركز واحد لمحادثاتك وسير عملك</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WhatsApp spotlight -->
+  <section class="section section--frost" id="whatsapp">
+    <div class="container split split--rev">
+      <div class="split__body reveal">
+        <span class="eyebrow">حلول وأتمتة واتساب</span>
+        <h2 class="h-display">حوّل المحادثات إلى تجربة عملاء <span class="hl">أسرع وأذكى</span></h2>
+        <p class="lead">نبني لك مسارات محادثة ذكية على واتساب تلتقط العملاء، وتتابعهم تلقائياً، وتربط كل تفاعل بأنظمة أعمالك.</p>
+        <ul class="feature-list">
+          <li><span class="icon"><i data-lucide="filter"></i></span><div><strong>تأهيل العملاء المحتملين</strong><span>التقاط الاستفسارات وتوجيهها تلقائياً.</span></div></li>
+          <li><span class="icon"><i data-lucide="calendar-clock"></i></span><div><strong>متابعات تلقائية</strong><span>تذكيرات وتحديثات ورسائل رعاية العملاء.</span></div></li>
+          <li><span class="icon"><i data-lucide="messages-square"></i></span><div><strong>مسارات المبيعات والدعم</strong><span>الرد والمساعدة والتحويل عبر محادثات ذكية.</span></div></li>
+          <li><span class="icon"><i data-lucide="database-zap"></i></span><div><strong>التكامل مع CRM</strong><span>مزامنة تفاعلات واتساب مع أنظمة أعمالك.</span></div></li>
+        </ul>
+        <ul class="pills">
+          <li><i data-lucide="zap"></i> استجابة أسرع</li>
+          <li><i data-lucide="trending-up"></i> تفاعل أعلى</li>
+          <li><i data-lucide="clock"></i> متاح 24/7</li>
+        </ul>
+      </div>
+      <div class="split__media reveal">
+        <img src="assets/img/whatsapp.jpg" alt="أتمتة واتساب من DMS Tech" loading="lazy">
+        <div class="float-card">
+          <span class="badge"><svg><use href="#i-whatsapp"/></svg></span>
+          <div><strong>اطلب عرض سعر</strong><span>معلومات المنتج · تحدث مع المبيعات</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why DMS Tech -->
+  <section class="section" id="why">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">لماذا DMS Tech</span>
+        <h2 class="h-display">شريك تقني للنمو والأتمتة و<span class="hl">التحول الرقمي</span></h2>
+        <p class="lead">نساعد الشركات على بناء أنظمة أذكى، وإطلاق منتجات رقمية أقوى، والتوسع بثقة.</p>
+      </div>
+      <div class="values">
+        <div class="value reveal"><span class="badge"><i data-lucide="lightbulb"></i></span><h3>تفكير استراتيجي</h3><p>نبدأ من أهداف عملك لنبني حلولاً تخدم نموك الحقيقي.</p></div>
+        <div class="value reveal"><span class="badge"><i data-lucide="settings"></i></span><h3>تنفيذ تقني متقن</h3><p>فريق يحوّل الأفكار إلى منتجات عالية الأداء والأمان.</p></div>
+        <div class="value reveal"><span class="badge"><i data-lucide="bot"></i></span><h3>عقلية الأتمتة</h3><p>نؤتمت كل ما يمكن أتمتته لتوفير الوقت وتقليل التكلفة.</p></div>
+        <div class="value reveal"><span class="badge"><i data-lucide="trending-up"></i></span><h3>تركيز على النمو</h3><p>نقيس النتائج ونحسّن باستمرار لتحقيق أثر ملموس.</p></div>
+      </div>
+      <div class="quote-band reveal">
+        <p>لنبنِ معاً <span class="hl">نجاحك الرقمي</span> القادم.</p>
+        <a class="btn btn-primary" href="#quote">ابدأ مشروعك <i data-lucide="arrow-left"></i></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Process -->
+  <section class="section section--frost" id="process">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">آلية العمل</span>
+        <h2 class="h-display">مسار واضح من الاستراتيجية حتى <span class="hl">الإطلاق</span> والتحسين</h2>
+        <p class="lead">نتبع منهجية مرنة ومنظمة لتقديم منتجات رقمية وأنظمة أتمتة عالية الأثر.</p>
+      </div>
+      <div class="process">
+        <div class="step reveal"><div class="step__icon"><i data-lucide="search"></i><b>01</b></div><h3>الاكتشاف</h3><p>الأهداف والمتطلبات ورسم خريطة الفرص.</p></div>
+        <div class="step reveal"><div class="step__icon"><i data-lucide="clipboard-list"></i><b>02</b></div><h3>التخطيط</h3><p>النطاق وخارطة الطريق وهندسة الحل.</p></div>
+        <div class="step reveal"><div class="step__icon"><i data-lucide="cog"></i><b>03</b></div><h3>البناء</h3><p>التصميم والتطوير وإعداد الأتمتة.</p></div>
+        <div class="step reveal"><div class="step__icon"><i data-lucide="rocket"></i><b>04</b></div><h3>الإطلاق</h3><p>الاختبار والنشر وتمكين الفريق.</p></div>
+        <div class="step reveal"><div class="step__icon"><i data-lucide="chart-no-axes-combined"></i><b>05</b></div><h3>التحسين</h3><p>التحليلات والتطوير المستمر ودعم النمو.</p></div>
+      </div>
+      <ul class="pills promise">
+        <li><i data-lucide="users"></i> تسليم مرن (Agile)</li>
+        <li><i data-lucide="message-square-more"></i> تواصل شفاف</li>
+        <li><i data-lucide="chart-column"></i> تنفيذ يركّز على النتائج</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Industries -->
+  <section class="section" id="industries">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">القطاعات التي نخدمها</span>
+        <h2 class="h-display">حلول رقمية مخصصة <span class="hl">للأعمال الطموحة</span></h2>
+        <p class="lead">ندعم مجموعة من القطاعات بحلول مخصصة في الذكاء الاصطناعي والأتمتة والتطبيقات والتجارة.</p>
+      </div>
+      <div class="industries">
+        <div class="industry reveal"><span class="badge"><i data-lucide="shopping-bag"></i></span><h3>التجزئة والتجارة الإلكترونية</h3><p>متاجر، أنظمة نمو، ورحلات عملاء.</p></div>
+        <div class="industry reveal"><span class="badge"><i data-lucide="stethoscope"></i></span><h3>الرعاية الصحية والعيادات</h3><p>مسارات الحجز، المواقع، والأتمتة.</p></div>
+        <div class="industry reveal"><span class="badge"><i data-lucide="graduation-cap"></i></span><h3>التعليم والتدريب</h3><p>بوابات ومنصات وتفاعل الطلاب.</p></div>
+        <div class="industry reveal"><span class="badge"><i data-lucide="building-2"></i></span><h3>خدمات الشركات</h3><p>العمليات، لوحات البيانات، وأتمتة سير العمل.</p></div>
+        <div class="industry reveal"><span class="badge"><i data-lucide="house"></i></span><h3>العقارات</h3><p>مسارات العملاء، المواقع، ومتابعة واتساب.</p></div>
+      </div>
+      <ul class="pills promise">
+        <li><i data-lucide="settings-2"></i> حلول مرنة</li>
+        <li><i data-lucide="crosshair"></i> تنفيذ يركّز على القطاع</li>
+        <li><i data-lucide="trending-up"></i> أثر قابل للقياس</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Blog -->
+  <section class="section section--frost" id="blog">
+    <div class="container">
+      <div class="section-head section-head--start reveal">
+        <span class="eyebrow">المدونات</span>
+        <h2 class="h-display">أفكار ونصائح <span class="hl">للنمو الرقمي</span></h2>
+      </div>
+      <div class="posts">
+        <article class="post reveal">
+          <img src="assets/img/whatsapp.jpg" alt="" loading="lazy">
+          <div class="post__body">
+            <span class="eyebrow">أتمتة</span>
+            <h3>كيف تحوّل واتساب إلى قناة مبيعات تعمل على مدار الساعة</h3>
+            <p>خطوات عملية لتأهيل العملاء ومتابعتهم تلقائياً دون أن تفقد أي فرصة.</p>
+            <a class="link-arrow" href="#blog">اقرأ المقال <i data-lucide="arrow-left"></i></a>
+          </div>
+        </article>
+        <article class="post reveal">
+          <img src="assets/img/ecommerce.jpg" alt="" loading="lazy">
+          <div class="post__body">
+            <span class="eyebrow">تجارة إلكترونية</span>
+            <h3>زد أم سلة أم شوبيفاي؟ دليلك لاختيار منصة متجرك</h3>
+            <p>مقارنة مبسطة تساعدك على اختيار المنصة الأنسب لحجم ونوع تجارتك.</p>
+            <a class="link-arrow" href="#blog">اقرأ المقال <i data-lucide="arrow-left"></i></a>
+          </div>
+        </article>
+        <article class="post reveal">
+          <img src="assets/img/ai.jpg" alt="" loading="lazy" style="object-position:right center">
+          <div class="post__body">
+            <span class="eyebrow">ذكاء اصطناعي</span>
+            <h3>5 عمليات في شركتك يمكن أتمتتها بالذكاء الاصطناعي اليوم</h3>
+            <p>من خدمة العملاء إلى التقارير — أين تبدأ رحلة الأتمتة لتحقيق أسرع عائد.</p>
+            <a class="link-arrow" href="#blog">اقرأ المقال <i data-lucide="arrow-left"></i></a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Careers -->
+  <section class="section" id="careers">
+    <div class="container">
+      <div class="careers reveal">
+        <div class="split__body">
+          <span class="eyebrow">التوظيف</span>
+          <h2 class="h-lg">انضم إلى فريق يبني <span class="hl">مستقبل الأعمال الرقمية</span></h2>
+          <p class="lead">نبحث دائماً عن مواهب شغوفة بالتقنية والإبداع والأتمتة. أرسل سيرتك الذاتية وسنتواصل معك.</p>
+          <div><a class="btn btn-primary" href="mailto:Info@dms1t.com?subject=%D8%B7%D9%84%D8%A8%20%D8%AA%D9%88%D8%B8%D9%8A%D9%81">أرسل سيرتك الذاتية</a></div>
+        </div>
+        <ul>
+          <li>مطوّر Full-Stack <span>تطوير التطبيقات</span></li>
+          <li>مهندس أتمتة وذكاء اصطناعي <span>AI & Automation</span></li>
+          <li>مصمم UX / UI <span>التصميم</span></li>
+          <li>أخصائي تسويق رقمي <span>التسويق</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section class="section section--frost" id="contact">
+    <div class="container contact">
+      <div class="contact__info reveal">
+        <span class="eyebrow">اتصل بنا</span>
+        <h2 class="h-display">لنتحدث عن <span class="hl">مشروعك</span></h2>
+        <p class="lead">أخبرنا بما تحتاجه وسيتواصل معك فريقنا بعرض مناسب لأهدافك.</p>
+        <a class="info-card" href="https://wa.me/966509095816" target="_blank" rel="noopener">
+          <span class="badge"><svg><use href="#i-whatsapp"/></svg></span>
+          <div><small>واتساب</small><strong>0509095816</strong></div>
+        </a>
+        <a class="info-card" href="mailto:Info@dms1t.com">
+          <span class="badge"><i data-lucide="mail"></i></span>
+          <div><small>البريد الإلكتروني</small><strong>Info@dms1t.com</strong></div>
+        </a>
+        <div class="info-card">
+          <span class="badge"><i data-lucide="at-sign"></i></span>
+          <div style="flex:1"><small>تابعنا على السوشيال ميديا</small><strong>DMS1T</strong></div>
+          <div class="socials">
+            <a href="https://instagram.com/dms1t" target="_blank" rel="noopener" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+            <a href="https://www.tiktok.com/@dms1t" target="_blank" rel="noopener" aria-label="TikTok"><svg><use href="#i-tiktok"/></svg></a>
+            <a href="https://www.youtube.com/@dms1t" target="_blank" rel="noopener" aria-label="YouTube"><i data-lucide="youtube"></i></a>
+            <a href="https://www.linkedin.com/company/dms1t" target="_blank" rel="noopener" aria-label="LinkedIn"><i data-lucide="linkedin"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <form class="form reveal" id="quote" novalidate>
+        <div class="field"><label for="f-name">الاسم</label><input class="input" id="f-name" name="name" placeholder="اسمك الكامل" required></div>
+        <div class="field"><label for="f-phone">رقم الجوال</label><input class="input" id="f-phone" name="phone" type="tel" placeholder="05xxxxxxxx" required dir="ltr" style="text-align:right"></div>
+        <div class="field"><label for="f-company">الشركة</label><input class="input" id="f-company" name="company" placeholder="اسم الشركة (اختياري)"></div>
+        <div class="field"><label for="f-service">الخدمة المطلوبة</label>
+          <select class="input" id="f-service" name="service">
+            <option>الذكاء الاصطناعي وأتمتة الأعمال</option>
+            <option>حلول وأتمتة واتساب</option>
+            <option>تصميم وتطوير المواقع</option>
+            <option>تطوير التطبيقات</option>
+            <option>متجر إلكتروني (زد / سلة / شوبيفاي)</option>
+            <option>التسويق الرقمي والتصميم الإبداعي</option>
+            <option>التحول الرقمي وتكامل الأنظمة</option>
+            <option>تصميم UX / UI</option>
+            <option>منصة NOVA AI</option>
+          </select>
+        </div>
+        <div class="field field--full"><label for="f-msg">تفاصيل المشروع</label><textarea class="input" id="f-msg" name="message" placeholder="اكتب نبذة عن مشروعك وأهدافك..."></textarea></div>
+        <button class="btn btn-primary" type="submit">أرسل الطلب عبر واتساب <i data-lucide="arrow-left"></i></button>
+        <p class="form__note" id="formNote">سيتم فتح واتساب برسالة جاهزة تحتوي على بياناتك.</p>
+      </form>
+    </div>
+  </section>
+
+  <!-- Dark CTA -->
+  <section class="cta">
+    <span class="shape shape--glow1"></span><span class="shape shape--glow2"></span>
+    <span class="shape shape--tri1"></span><span class="shape shape--tri2"></span>
+    <span class="shape shape--pill1"></span><span class="shape shape--pill2"></span><span class="shape shape--dot"></span>
+    <div class="container cta__inner reveal">
+      <span class="eyebrow" style="color:#aab6cc">ابدأ اليوم</span>
+      <h2>لنبنِ نجاحك الرقمي <span class="hl">القادم</span></h2>
+      <p>DMS Tech تساعد العلامات التجارية على الإطلاق والأتمتة والنمو بثقة.</p>
+      <form class="combo" id="ctaForm">
+        <input class="input" type="tel" name="phone" placeholder="أدخل رقم جوالك" aria-label="رقم الجوال" required>
+        <button class="btn btn-primary" type="submit">احصل على عرض سعر</button>
+      </form>
+      <ul class="cta__checks">
+        <li><i data-lucide="circle-check"></i> استشارة مجانية</li>
+        <li><i data-lucide="circle-check"></i> رد سريع عبر واتساب</li>
+        <li><i data-lucide="circle-check"></i> حلول مصممة لأعمالك</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer__grid">
+      <div class="footer__brand">
+        <img src="assets/img/logo.png" alt="DMS Tech">
+        <p>حلول الذكاء الاصطناعي والأتمتة والنمو الرقمي. نبني منتجات ذكية، ونؤتمت العمليات، ونسرّع نمو الأعمال.</p>
+        <div class="socials">
+          <a href="https://instagram.com/dms1t" target="_blank" rel="noopener" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+          <a href="https://www.tiktok.com/@dms1t" target="_blank" rel="noopener" aria-label="TikTok"><svg><use href="#i-tiktok"/></svg></a>
+          <a href="https://www.youtube.com/@dms1t" target="_blank" rel="noopener" aria-label="YouTube"><i data-lucide="youtube"></i></a>
+          <a href="https://www.linkedin.com/company/dms1t" target="_blank" rel="noopener" aria-label="LinkedIn"><i data-lucide="linkedin"></i></a>
+        </div>
+      </div>
+      <div>
+        <h4>خدماتنا</h4>
+        <ul>
+          <li><a href="#s-ai">الذكاء الاصطناعي والأتمتة</a></li>
+          <li><a href="#whatsapp">أتمتة واتساب</a></li>
+          <li><a href="#s-web">تصميم المواقع</a></li>
+          <li><a href="#s-apps">تطوير التطبيقات</a></li>
+          <li><a href="#s-store">المتاجر الإلكترونية</a></li>
+          <li><a href="#s-marketing">التسويق الرقمي</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>الشركة</h4>
+        <ul>
+          <li><a href="#why">من نحن</a></li>
+          <li><a href="#nova">NOVA AI</a></li>
+          <li><a href="#process">آلية العمل</a></li>
+          <li><a href="#industries">عملائنا</a></li>
+          <li><a href="#careers">التوظيف</a></li>
+          <li><a href="#blog">المدونات</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>تواصل معنا</h4>
+        <ul>
+          <li><a href="https://wa.me/966509095816" target="_blank" rel="noopener" dir="ltr">0509095816</a></li>
+          <li><a href="mailto:Info@dms1t.com">Info@dms1t.com</a></li>
+          <li><a href="#quote">الحصول على عرض سعر</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <span>© <span id="year">2026</span> DMS Tech. جميع الحقوق محفوظة.</span>
+      <span>شكراً لكونك جزءاً من رحلتنا.</span>
+    </div>
+  </div>
+</footer>
+
+<a class="wa-float" href="https://wa.me/966509095816" target="_blank" rel="noopener" aria-label="تواصل عبر واتساب"><svg><use href="#i-whatsapp"/></svg></a>
+
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

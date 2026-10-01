@@ -1,0 +1,276 @@
+@import "tailwindcss";
+
+/* =========================================================================
+   DMS Tech design tokens — Specify design system
+   Iris is the single brand accent; cobalt / fern only appear in the
+   industries carousel colour blocks.
+   ========================================================================= */
+@theme {
+  /* Brand */
+  --color-iris: #624de3;         /* accent text, icon strokes, focal links */
+  --color-iris-soft: #8d4af7;    /* gradient tail */
+  --color-iris-dark: #4f3bc9;    /* hover */
+  --color-iris-light: #a99bff;   /* accent on dark surfaces */
+  --color-cobalt: #1d58c0;
+  --color-fern: #009639;
+
+  /* Neutrals */
+  --color-obsidian: #151718;     /* dark hero / bands */
+  --color-ink: #1a1d1e;          /* Studio Slate — text, filled buttons */
+  --color-iron: #5f6162;         /* secondary text */
+  --color-graphite: #8d8e8f;     /* medium borders, labels on dark */
+  --color-line: #d9dbde;         /* control outlines */
+  --color-mist: #ebedef;         /* hairline card borders */
+  --color-cloud: #f6f7f9;        /* soft band */
+
+  /* Tinted card surfaces (carousel only) */
+  --color-lilac: #f1eefe;
+  --color-mint: #e5fbeb;
+  --color-apricot: #feeadd;
+
+  /* Business OS (dark-first) */
+  --color-os-bg: #0d0f10;
+  --color-os-panel: #111315;
+  --color-os-surface: #151719;
+  --color-os-raised: #191c1f;
+  --color-os-hover: #1f2326;
+  --color-os-line: #23272b;
+  --color-os-line-strong: #2e3338;
+  --color-os-text: #e6e8ea;
+  --color-os-muted: #8b9197;
+  --color-os-faint: #5c6268;
+  --color-gold: #c9a15f;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #3b82f6;
+
+  --font-sans: var(--font-inter), var(--font-plex-arabic), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-fira), "JetBrains Mono", "Source Code Pro", monospace;
+
+  --radius-icon: 6px;
+  --radius-input: 6px;
+  --radius-card: 16px;
+  --radius-pill: 40px;
+
+  /* Dual-layer shadows */
+  --shadow-btn: rgba(0, 0, 0, 0.2) 0px 1px 2px 0px, rgba(0, 0, 0, 0.08) 0px 6px 16px 0px;
+  --shadow-card: rgba(0, 0, 0, 0.08) 0px 1px 2px 0px, rgba(0, 0, 0, 0.06) 0px 4px 8px 0px;
+  --shadow-raised: rgba(255, 255, 255, 0.2) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.08) 0px 1px 2px 0px, rgba(0, 0, 0, 0.06) 0px 4px 8px 0px;
+  --shadow-sm2: rgba(0, 0, 0, 0.12) 0px 8px 8px -4px, rgba(0, 0, 0, 0.18) 0px 20px 24px -4px;
+  --shadow-lg: rgba(0, 0, 0, 0.08) 0px 12px 24px 0px, rgba(0, 0, 0, 0.06) 0px 2px 4px 0px;
+
+  --container-site: 1248px;
+
+  --animate-bob: bob 6s ease-in-out infinite;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-flow: flow 6s linear infinite;
+  --animate-pulse-glow: pulseGlow 3s ease-in-out infinite;
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes flow {
+    to { stroke-dashoffset: -400; }
+  }
+  @keyframes pulseGlow {
+    0%, 100% { opacity: .75; }
+    50% { opacity: 1; }
+  }
+  @keyframes dock {
+    from { opacity: 0; transform: translateX(-60px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes panelIn {
+    0% { opacity: 0; transform: translateY(36px); }
+    100% { opacity: 1; transform: none; }
+  }
+  @keyframes typeIn {
+    from { opacity: 0; clip-path: inset(0 100% 0 0); }
+    to { opacity: 1; clip-path: inset(0 0 0 0); }
+  }
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+  @keyframes progress {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+  @keyframes cursorMove {
+    0% { opacity: 0; transform: translate(160px, 140px); }
+    20% { opacity: 1; }
+    75% { transform: translate(0, 0); }
+    100% { opacity: 1; transform: translate(0, 0); }
+  }
+  @keyframes clickRing {
+    0%, 70% { opacity: 0; transform: scale(.4); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: scale(1.4); }
+  }
+  /* service-card automation loops */
+  @keyframes chatLoop {
+    0% { opacity: 0; transform: translateY(8px) scale(.96); }
+    10%, 86% { opacity: 1; transform: none; }
+    96%, 100% { opacity: 0; transform: translateY(-4px); }
+  }
+  @keyframes typingLoop {
+    0% { opacity: 0; }
+    4%, 13% { opacity: 1; }
+    16%, 100% { opacity: 0; }
+  }
+  @keyframes dotBounce {
+    0%, 100% { transform: translateY(0); opacity: .5; }
+    50% { transform: translateY(-3px); opacity: 1; }
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+  @keyframes ctaPress {
+    0%, 50%, 70%, 100% { transform: scale(1); background: #1a1d1e; }
+    58% { transform: scale(.9); background: #624de3; }
+    64% { background: #624de3; }
+  }
+  @keyframes cursorLoop {
+    0% { opacity: 0; inset-inline-start: 85%; top: 85%; }
+    15% { opacity: 1; }
+    52% { inset-inline-start: 46px; top: 68px; transform: scale(1); }
+    58% { transform: scale(.82); }
+    64% { transform: scale(1); }
+    90% { opacity: 1; inset-inline-start: 46px; top: 68px; }
+    100% { opacity: 0; inset-inline-start: 46px; top: 68px; }
+  }
+  @keyframes listScroll {
+    0%, 20% { transform: translateY(0); }
+    50%, 70% { transform: translateY(-44px); }
+    100% { transform: translateY(0); }
+  }
+  @keyframes pop {
+    0% { transform: scale(.6); opacity: .4; }
+    12% { transform: scale(1.18); opacity: 1; }
+    20%, 100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes stepFill {
+    0% { transform: scaleX(0); }
+    22%, 88% { transform: scaleX(1); }
+    100% { transform: scaleX(0); }
+  }
+  @keyframes barGrow {
+    0% { transform: scaleY(.35); }
+    30%, 90% { transform: scaleY(1); }
+    100% { transform: scaleY(.35); }
+  }
+  @keyframes snap {
+    0%, 15% { transform: translate(0, 0); }
+    40%, 65% { transform: translate(14px, 22px); }
+    90%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(var(--marquee-shift, -50%)); }
+  }
+}
+
+@layer base {
+  html { scroll-behavior: smooth; scroll-padding-top: 88px; -webkit-text-size-adjust: 100%; }
+  body { @apply bg-white text-ink font-sans antialiased overflow-x-clip; font-size: 16px; line-height: 1.5; }
+  /* Inter's metric fallback (Arial) carries Arabic glyphs, so Arabic pages lead with Plex */
+  html:lang(ar) body { font-family: var(--font-plex-arabic), var(--font-inter), system-ui, sans-serif; }
+  :focus-visible { outline: 2px solid var(--color-iris); outline-offset: 3px; border-radius: 6px; }
+  ::selection { background: var(--color-lilac); color: var(--color-ink); }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+}
+
+@layer components {
+  .container-site { @apply mx-auto w-full max-w-(--container-site) px-4 sm:px-6; }
+  .section { @apply py-20 md:py-28; }
+
+  /* Pill badge (status label) — replaces uppercase eyebrows */
+  .eyebrow { @apply inline-flex w-fit items-center gap-2 rounded-full border border-mist bg-white px-4 py-1.5 text-sm font-medium text-ink shadow-card; }
+
+  /* Headlines: Inter Bold, tight negative tracking */
+  .h-hero { @apply text-[40px] font-bold leading-[1.13] tracking-[-0.016em] sm:text-5xl lg:text-[64px]; }
+  .h-display { @apply text-[32px] font-bold leading-[1.17] tracking-[-0.021em] md:text-5xl; }
+  .h-lg { @apply text-2xl font-semibold leading-[1.25] tracking-[-0.74px] md:text-[32px] md:tracking-[-0.99px]; }
+  .lead { @apply text-base leading-[1.6] text-iron md:text-lg; }
+
+  /* Highlighted keyword: plain on light surfaces (Specify keeps light headlines ink),
+     lilac → violet gradient on dark bands */
+  .hl { color: inherit; }
+  .on-dark .hl {
+    background-image: linear-gradient(90deg, #f3dcff 0%, #d9b8ff 35%, #a88bff 70%, #8a6cf5 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    -webkit-box-decoration-break: clone; box-decoration-break: clone;
+  }
+
+  /* Buttons — 40px pill, 10×20, Inter SemiBold 14 */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-pill px-5 py-2.5 text-sm font-semibold leading-5 whitespace-nowrap
+      transition duration-200 disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary { @apply bg-ink text-white shadow-btn hover:bg-black; }
+  .on-dark .btn-primary { @apply bg-white text-ink hover:bg-cloud; }
+  .btn-dark { @apply bg-ink text-white shadow-btn hover:bg-black; }
+  .btn-outline { @apply border border-line bg-white text-ink shadow-card hover:border-graphite; }
+  .on-dark .btn-outline { @apply border-white bg-transparent text-white shadow-none hover:bg-white/10; }
+  .btn-ghost { @apply inline-flex items-center gap-2 rounded-pill px-3 py-2 text-sm font-semibold text-ink transition hover:bg-cloud; }
+  .on-dark .btn-ghost { @apply text-white hover:bg-white/10; }
+  .link-arrow { @apply inline-flex items-center gap-1.5 text-sm font-semibold text-iris transition hover:gap-2.5; }
+  .on-dark .link-arrow { @apply text-iris-light; }
+
+  /* Icon tiles — 6px radius, iris strokes */
+  .badge-icon { @apply grid size-10 shrink-0 place-items-center rounded-icon border border-mist bg-white text-iris shadow-card; }
+  .soft-icon { @apply grid size-10 shrink-0 place-items-center rounded-icon bg-lilac text-iris; }
+
+  .input {
+    @apply w-full rounded-input border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink shadow-card transition
+      placeholder:text-sm placeholder:text-graphite focus:border-iris focus:outline-none focus:ring-4 focus:ring-iris/15;
+  }
+
+  .card { @apply rounded-card border border-mist bg-white shadow-card; }
+  .card-hover { @apply transition duration-300 hover:-translate-y-1 hover:shadow-lg; }
+  .pill { @apply inline-flex items-center gap-2 rounded-full border border-mist bg-white px-4 py-1.5 text-sm font-medium text-ink; }
+  .chip { @apply rounded-full border border-mist bg-cloud px-3 py-1 text-xs font-medium text-iron; }
+  .code-chip { @apply inline-flex items-center gap-2 rounded-full border border-mist bg-white px-3.5 py-1.5 font-mono text-[13px] text-ink shadow-card; }
+
+  /* Dark bands */
+  .on-dark { @apply bg-obsidian text-white; }
+  .on-dark .eyebrow { @apply border-white/10 bg-white text-ink; }
+  .on-dark .lead { @apply text-graphite; }
+  .on-dark .pill { @apply border-white/10 bg-white/5 text-white; }
+  .on-dark .card { @apply border-white/10 bg-[#1e2122] shadow-none; }
+
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
+  /* ---------------- Business OS components ---------------- */
+  .os-card { @apply rounded-xl border border-os-line bg-os-surface; }
+  .os-input {
+    @apply w-full rounded-md border border-os-line-strong bg-os-panel px-3 py-2 text-sm text-os-text placeholder:text-os-faint
+      transition focus:border-iris focus:outline-none focus:ring-2 focus:ring-iris/25 disabled:opacity-50;
+  }
+  .os-label { @apply mb-1.5 block text-xs font-medium text-os-muted; }
+  .os-btn {
+    @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3.5 text-sm font-medium transition
+      disabled:pointer-events-none disabled:opacity-50;
+  }
+  .os-btn-primary { @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3.5 text-sm font-medium transition disabled:pointer-events-none disabled:opacity-50 bg-iris text-white hover:bg-iris-dark; }
+  .os-btn-secondary { @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3.5 text-sm font-medium transition disabled:pointer-events-none disabled:opacity-50 border border-os-line-strong bg-os-raised text-os-text hover:bg-os-hover; }
+  .os-btn-ghost { @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3.5 text-sm font-medium transition disabled:pointer-events-none disabled:opacity-50 text-os-muted hover:bg-os-hover hover:text-os-text; }
+  .os-btn-danger { @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3.5 text-sm font-medium transition disabled:pointer-events-none disabled:opacity-50 border border-danger/40 bg-danger/10 text-danger hover:bg-danger/20; }
+  .os-btn-success { @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3.5 text-sm font-medium transition disabled:pointer-events-none disabled:opacity-50 border border-success/40 bg-success/10 text-success hover:bg-success/20; }
+  .os-table { @apply w-full text-sm; }
+  .os-table th { @apply h-10 border-b border-os-line px-4 text-start text-xs font-medium text-os-muted; }
+  .os-table td { @apply border-b border-os-line px-4 py-3 align-middle; }
+  .os-table tbody tr { @apply transition hover:bg-os-raised; }
+  .os-table tbody tr:last-child td { @apply border-b-0; }
+  .tabular { font-variant-numeric: tabular-nums; }
+}
