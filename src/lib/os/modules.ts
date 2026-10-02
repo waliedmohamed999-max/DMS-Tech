@@ -15,6 +15,8 @@ export type ModuleDef = {
   /** One-line description used by planned pages / palette */
   about: { ar: string; en: string };
   permission?: Permission;
+  /** visible when the user holds ANY of these (used when different roles reach one module) */
+  anyOf?: Permission[];
   live: boolean;
   phase: number;
 };
@@ -33,6 +35,8 @@ export const NAV: NavGroup[] = [
     label: { ar: "مركز القيادة", en: "Command Center" },
     items: [
       m("overview", "/app", "LayoutDashboard", "نظرة عامة", "Overview", "ما يحدث في الشركة الآن", "What is happening right now", 1, true, "dashboard.view"),
+      m("my-hr", "/app/my-hr", "Users", "شؤوني الوظيفية", "My HR", "حضوري وإجازاتي وقسائم راتبي وأهدافي", "My attendance, leave, payslips and goals", 6, true, "hr.attendance.self"),
+      { ...m("my-team", "/app/my-team", "Network", "فريقي", "My Team", "حضور فريقك وإجازاته ومراجعاته", "Your team's attendance, leave and reviews", 6, true, "hr.leave.approve"), anyOf: ["hr.attendance.view", "hr.performance.manage"] },
       m("my-work", "/app/my-work", "ClipboardList", "مهامي", "My Work", "مهامك ومشاريعك: المتأخر واليوم والمتوقف", "Your tasks and projects: overdue, today, blocked", 4, true, "projects.tasks.view"),
       m("approvals", "/app/approvals", "BadgeCheck", "الموافقات", "Approvals", "صندوق الموافقات المركزي", "Central approval inbox", 1, true, "approvals.view"),
       m("notifications", "/app/notifications", "Inbox", "الإشعارات", "Notifications", "تنبيهاتك مرتبطة بسجلاتها", "Your alerts, deep-linked", 1, true),
@@ -60,8 +64,7 @@ export const NAV: NavGroup[] = [
     items: [
       m("projects", "/app/projects", "Layers", "المشاريع", "Projects", "المشاريع والمراحل والمهام ومؤشر صحة المشروع", "Projects, milestones, tasks and health", 4, true, "projects.view"),
       m("timesheets", "/app/timesheets", "Timer", "سجلات الوقت", "Timesheets", "تسجيل الوقت والاعتماد", "Time entries and approvals", 4, true, "projects.time.create"),
-      m("project-templates", "/app/projects/templates", "Blocks", "قوالب المشاريع", "Project templates", "مراحل ومهام افتراضية لكل خدمة", "Default milestones and tasks per service", 4, true, "projects.templates.manage"),
-      planned("tickets", "LifeBuoy", "تذاكر الدعم", "Support Tickets", "الدعم الفني مع مستويات الخدمة SLA", "Support with SLAs", 7, "support.tickets.view")
+      m("project-templates", "/app/projects/templates", "Blocks", "قوالب المشاريع", "Project templates", "مراحل ومهام افتراضية لكل خدمة", "Default milestones and tasks per service", 4, true, "projects.templates.manage")
     ]
   },
   {
@@ -69,7 +72,7 @@ export const NAV: NavGroup[] = [
     label: { ar: "الخدمات", en: "Services" },
     items: [
       m("catalog", "/app/sales/services", "Package", "كتالوج الخدمات", "Service Catalog", "الخدمات والباقات ونماذج التسعير", "Services, packages and pricing models", 3, true, "services.view"),
-      planned("subscriptions", "CalendarClock", "الاشتراكات", "Subscriptions", "الاشتراكات الشهرية والسنوية والفوترة المتكررة", "Monthly/annual subscriptions and recurring billing", 8, "finance.invoices.view"),
+      planned("subscriptions", "CalendarClock", "الاشتراكات", "Subscriptions", "الاشتراكات الشهرية والسنوية والفوترة المتكررة", "Monthly/annual subscriptions and recurring billing", 10, "finance.invoices.view"),
       // external DMS Tech product — the OS only links to it (docs/NOVA-INTEGRATION.md)
       m("nova", "/app/nova", "Sparkles", "NOVA AI", "NOVA AI", "منصة DMS Tech المستقلة للذكاء الاصطناعي — تُفتح كنظام خارجي متكامل", "DMS Tech's separate AI platform — opened as an integrated external system", 2, true, "nova.use")
     ]
@@ -86,26 +89,43 @@ export const NAV: NavGroup[] = [
       m("vendors", "/app/finance/vendors", "Handshake", "الموردون", "Vendors", "سجل الموردين", "Vendor directory", 5, true, "finance.vendors.view"),
       m("finance-reports", "/app/finance/reports", "TrendingUp", "التقارير المالية", "Financial Reports", "الفوترة والتحصيل والمصروفات وربحية المشاريع (تشغيلية)", "Billing, collection, spending and project profitability (operational)", 5, true, "finance.reports.view"),
       m("finance-setup", "/app/finance/setup", "SlidersHorizontal", "إعدادات المالية", "Finance setup", "تصنيفات المصروفات وتكلفة الساعة", "Expense categories and hourly cost rates", 5, true, "finance.vendors.manage"),
-      planned("payroll", "Briefcase", "الرواتب", "Payroll", "مسيرات الرواتب بصلاحيات مشددة", "Payroll runs with strict permissions", 6, "finance.payroll.view")
     ]
   },
   {
     key: "people",
     label: { ar: "الموظفون", en: "People" },
     items: [
-      planned("employees", "Users", "الموظفون", "Employees", "ملفات الموظفين والمستندات", "Employee profiles and documents", 6, "hr.employees.view"),
-      planned("leave", "Calendar", "الإجازات", "Leave", "طلبات الإجازة والموافقات", "Leave requests and approvals", 6, "hr.leave.request"),
-      planned("recruitment", "GraduationCap", "التوظيف", "Recruitment", "نظام تتبع المتقدمين والمقابلات", "Applicant tracking and interviews", 6, "hr.recruitment.manage")
+      m("hr", "/app/hr", "Users", "لوحة الموارد البشرية", "People overview", "الموظفون والحضور والإجازات والرواتب والتوظيف", "Employees, attendance, leave, payroll and hiring", 6, true, "hr.dashboard.view"),
+      m("employees", "/app/hr/employees", "Network", "الموظفون", "Employees", "ملفات الموظفين والهيكل الإداري", "Employee profiles and reporting lines", 6, true, "hr.employees.view"),
+      m("attendance", "/app/hr/attendance", "Clock", "الحضور", "Attendance", "الحضور اليومي والتصحيحات", "Daily attendance and corrections", 6, true, "hr.attendance.view"),
+      m("leave", "/app/hr/leave", "Calendar", "الإجازات", "Leave", "طلبات الإجازة والأرصدة", "Leave requests and balances", 6, true, "hr.leave.view"),
+      { ...m("payroll", "/app/hr/payroll", "Briefcase", "الرواتب", "Payroll", "مسيرات الرواتب بصلاحيات مشددة", "Payroll runs with strict permissions", 6, true, "hr.payroll.view"), anyOf: ["hr.payroll.prepare", "hr.payroll.approve", "hr.payroll.pay"] },
+      m("recruitment", "/app/hr/recruitment", "GraduationCap", "التوظيف", "Recruitment", "الوظائف والمرشحون والمقابلات والعروض", "Jobs, candidates, interviews and offers", 6, true, "hr.recruitment.view"),
+      m("performance", "/app/hr/performance", "Target", "الأداء", "Performance", "مراجعات الأداء والأهداف", "Performance reviews and goals", 6, true, "hr.performance.view"),
+      m("hr-settings", "/app/hr/settings", "SlidersHorizontal", "إعدادات الموارد البشرية", "HR settings", "سياسة الحضور والعطل وأنواع الإجازات ومكونات الرواتب", "Attendance policy, holidays, leave types, payroll components", 6, true, "hr.attendance.manage")
+    ]
+  },
+  {
+    key: "operations",
+    label: { ar: "العمليات", en: "Operations" },
+    items: [
+      m("operations", "/app/operations", "Gauge", "لوحة العمليات", "Operations overview", "المشتريات والأصول والدعم والمستندات والمعرفة", "Procurement, assets, support, documents and knowledge", 7, true, "operations.dashboard.view"),
+      { ...m("procurement", "/app/procurement", "ClipboardList", "طلبات الشراء", "Purchase requests", "طلبات الشراء ودورة الموافقة", "Purchase requests and approval", 7, true, "procurement.requests.view"), anyOf: ["procurement.requests.create", "procurement.requests.approve"] },
+      m("purchase-orders", "/app/procurement/orders", "ShoppingCart", "أوامر الشراء", "Purchase orders", "أوامر الشراء والاستلام", "Purchase orders and receipts", 7, true, "procurement.orders.view"),
+      m("ops-vendors", "/app/procurement/vendors", "Handshake", "أداء الموردين", "Vendor performance", "جهات اتصال الموردين ومؤشرات التوريد", "Vendor contacts and delivery metrics", 7, true, "procurement.orders.view"),
+      m("assets", "/app/assets", "Monitor", "الأصول", "Assets", "سجل الأصول والتسليم والصيانة", "Asset register, assignments and maintenance", 7, true, "assets.view"),
+      m("documents", "/app/documents", "FileSearch", "المستندات", "Documents", "مستندات آمنة بإصدارات وصلاحيات السجل المرتبط", "Secure versioned documents with linked-record permissions", 7, true, "documents.view"),
+      { ...m("support", "/app/support", "LifeBuoy", "الدعم الفني", "Support", "التذاكر ومستويات الخدمة SLA", "Tickets and SLAs", 7, true, "support.tickets.view"), anyOf: ["support.tickets.create", "support.tickets.manage"] },
+      m("knowledge", "/app/knowledge", "Lightbulb", "قاعدة المعرفة", "Knowledge base", "مقالات داخلية بالعربية والإنجليزية", "Internal articles in Arabic and English", 7, true, "knowledge.view"),
+      { ...m("ops-settings", "/app/operations/settings", "SlidersHorizontal", "إعدادات العمليات", "Operations settings", "قواعد اعتماد المشتريات وفئات الأصول ومستويات الخدمة", "Procurement approval rules, asset categories, SLA policies", 7, true, "operations.settings.manage"), anyOf: ["support.sla.manage"] }
     ]
   },
   {
     key: "growth",
     label: { ar: "التسويق والتشغيل", en: "Marketing & Ops" },
     items: [
-      planned("campaigns", "Megaphone", "الحملات", "Campaigns", "الحملات والعائد على الإنفاق", "Campaigns and ROI", 8, "marketing.campaigns.manage"),
-      planned("whatsapp", "MessagesSquare", "مركز واتساب", "WhatsApp Center", "واتساب للأعمال عبر الواجهة الرسمية", "Official WhatsApp Business Platform", 8, "marketing.whatsapp.send"),
-      planned("procurement", "Handshake", "المشتريات", "Procurement", "أوامر الشراء ودورة المشتريات (الموردون متاحون في المالية)", "Purchase orders and procurement (vendors live in Finance)", 7, "ops.procurement.manage"),
-      planned("documents", "FileSearch", "المستندات", "Documents", "مركز المستندات بالصلاحيات", "Permissioned document center", 7, "ops.documents.manage")
+      m("marketing", "/app/marketing", "Megaphone", "التسويق والحملات", "Marketing", "الحملات والجمهور والتسليم والإسناد", "Campaigns, audience, delivery and attribution", 8, true, "marketing.view"),
+      m("whatsapp", "/app/whatsapp", "MessagesSquare", "واتساب للأعمال", "WhatsApp", "المحادثات عبر واجهة WhatsApp Business الرسمية", "Conversations via the official WhatsApp Business Platform", 8, true, "whatsapp.view")
     ]
   },
   {
@@ -117,8 +137,10 @@ export const NAV: NavGroup[] = [
       m("departments", "/app/admin/departments", "Network", "الأقسام", "Departments", "الهيكل التنظيمي", "Organization structure", 1, true, "admin.departments.manage"),
       m("settings", "/app/admin/settings", "Settings", "إعدادات الشركة", "Company Settings", "بيانات الشركة والضريبة وحدود الموافقات", "Company data, VAT and approval limits", 1, true, "admin.settings.manage"),
       m("audit", "/app/admin/audit", "FileSearch", "سجل التدقيق", "Audit Log", "سجل غير قابل للتعديل لكل العمليات الحساسة", "Immutable record of sensitive actions", 1, true, "admin.audit.view"),
-      planned("integrations", "Plug", "التكاملات", "Integrations", "واتساب وجوجل ومنصات المتاجر والدفع", "WhatsApp, Google, store platforms, payments", 8, "admin.integrations.manage"),
-      planned("automation", "Workflow", "قواعد الأعمال", "Business Rules", "قواعد تشغيلية محددة (غير ذكاء اصطناعي): حدث ← شروط ← إجراء. سير العمل والأتمتة بالذكاء الاصطناعي في منصة NOVA", "Deterministic (non-AI) business rules: trigger → conditions → action. AI workflows/automation live in NOVA", 9, "admin.automation.manage")
+      m("integrations", "/app/integrations", "Plug", "التكاملات", "Integrations", "حالة الاتصال الحقيقية بالأنظمة الخارجية", "Real connection status of external systems", 8, true, "integrations.view"),
+      m("integration-logs", "/app/integrations/logs", "Server", "سجل التكاملات", "Integration logs", "التنفيذ والـ webhooks والمحاولات والطابور الميت", "Executions, webhooks, retries and dead letters", 8, true, "integrations.logs.view"),
+      m("automation", "/app/automation", "Workflow", "قواعد الأعمال", "Business Rules", "قواعد تشغيلية محددة (غير ذكاء اصطناعي): حدث ← شروط ← إجراء. سير العمل والأتمتة بالذكاء الاصطناعي في منصة NOVA", "Deterministic (non-AI) business rules: trigger → conditions → action. AI workflows/automation live in NOVA", 9, true, "automation.view"),
+      m("system-health", "/app/admin/system-health", "Gauge", "صحة النظام", "System Health", "قاعدة البيانات والمهام والأحداث والطابور والنسخ الاحتياطي", "Database, jobs, events, queues and backups", 9, true, "system.health.view")
     ]
   }
 ];
@@ -141,8 +163,16 @@ export const CREATE_ITEMS: { key: string; icon: IconName; label: { ar: string; e
   { key: "milestone", icon: "Target", label: { ar: "مرحلة", en: "Milestone" }, href: "/app/projects?new=milestone", module: "projects", permission: "projects.milestones.manage" },
   { key: "expense", icon: "ShoppingBag", label: { ar: "مصروف", en: "Expense" }, href: "/app/finance/expenses?new=1", module: "expenses", permission: "finance.expenses.create" },
   { key: "vendor", icon: "Handshake", label: { ar: "مورد", en: "Vendor" }, href: "/app/finance/vendors?new=1", module: "vendors", permission: "finance.vendors.manage" },
-  { key: "employee", icon: "Users", label: { ar: "موظف", en: "Employee" }, module: "employees" },
-  { key: "candidate", icon: "GraduationCap", label: { ar: "مرشح", en: "Candidate" }, module: "recruitment" },
+  { key: "employee", icon: "Users", label: { ar: "موظف", en: "Employee" }, href: "/app/hr/employees?new=1", module: "employees", permission: "hr.employees.create" },
+  { key: "candidate", icon: "GraduationCap", label: { ar: "مرشح", en: "Candidate" }, href: "/app/hr/recruitment?new=candidate", module: "recruitment", permission: "hr.recruitment.manage" },
+  { key: "leave-request", icon: "Calendar", label: { ar: "طلب إجازة", en: "Leave request" }, href: "/app/my-hr?tab=leave&new=1", module: "my-hr", permission: "hr.leave.request" },
+  { key: "procurement-request", icon: "ClipboardList", label: { ar: "طلب شراء", en: "Purchase request" }, href: "/app/procurement?new=1", module: "procurement", permission: "procurement.requests.create" },
+  { key: "purchase-order", icon: "ShoppingCart", label: { ar: "أمر شراء", en: "Purchase order" }, href: "/app/procurement/orders?new=1", module: "purchase-orders", permission: "procurement.orders.create" },
+  { key: "asset", icon: "Monitor", label: { ar: "أصل", en: "Asset" }, href: "/app/assets?new=1", module: "assets", permission: "assets.manage" },
+  { key: "ticket", icon: "LifeBuoy", label: { ar: "تذكرة دعم", en: "Support ticket" }, href: "/app/support?new=1", module: "support", permission: "support.tickets.create" },
+  { key: "document", icon: "FileSearch", label: { ar: "مستند", en: "Document" }, href: "/app/documents?new=1", module: "documents", permission: "documents.create" },
+  { key: "article", icon: "Lightbulb", label: { ar: "مقال معرفة", en: "Knowledge article" }, href: "/app/knowledge?new=1", module: "knowledge", permission: "knowledge.create" },
+  { key: "campaign", icon: "Megaphone", label: { ar: "حملة تسويقية", en: "Campaign" }, href: "/app/marketing?new=1", module: "marketing", permission: "marketing.manage" },
   { key: "user", icon: "Users", label: { ar: "مستخدم", en: "User" }, href: "/app/admin/users?new=1", module: "users", permission: "admin.users.manage" },
   { key: "department", icon: "Network", label: { ar: "قسم", en: "Department" }, href: "/app/admin/departments?new=1", module: "departments", permission: "admin.departments.manage" }
 ];

@@ -1,6 +1,9 @@
 import { prisma } from "../db";
 import { subscribe } from "./bus";
 import type { Permission } from "../rbac/permissions";
+import { registerIntegrationSubscribers } from "../integrations/subscribers";
+import { registerAutomationSubscriber } from "../automation/engine";
+import { registerSystemSubscribers } from "../system/alerts";
 
 /**
  * Built-in subscribers. Imported once by src/server/index.ts so they are registered
@@ -29,7 +32,7 @@ export function registerSubscribers() {
         meta: (e.payload ?? {}) as object
       }
     });
-  });
+  }, "activity-feed");
 
   // Approval requested → notify every eligible approver (except the requester)
   subscribe("approval.requested", async (e) => {
@@ -232,6 +235,99 @@ export function registerSubscribers() {
     });
   }
 
+  // People (Phase 6): private, so titles never contain salary figures; dedupe keys as in Phases 4–5.
+  type H = { to: (p: Record<string, string>) => (string | null | undefined)[]; ar: (p: Record<string, string>) => string; en: (p: Record<string, string>) => string; href: (p: Record<string, string>, id: string) => string; priority: "MEDIUM" | "HIGH"; key?: (p: Record<string, string>, id: string) => string };
+  const PEOPLE: Record<string, H> = {
+    "leave.approved": { to: (p) => [p.userId], ar: (p) => `تمت الموافقة على إجازتك (${p.start} → ${p.end})`, en: (p) => `Your leave was approved (${p.start} → ${p.end})`, href: () => "/app/my-hr?tab=leave", priority: "MEDIUM" },
+    "leave.rejected": { to: (p) => [p.userId], ar: (p) => `رُفض طلب إجازتك: ${p.reason ?? ""}`, en: (p) => `Your leave request was rejected: ${p.reason ?? ""}`, href: () => "/app/my-hr?tab=leave", priority: "HIGH" },
+    "leave.starting": { to: (p) => [p.userId, p.managerUserId], ar: (p) => `إجازة تبدأ ${p.start}: ${p.name}`, en: (p) => `Leave starts ${p.start}: ${p.name}`, href: () => "/app/my-team", priority: "MEDIUM", key: (_p, id) => `leave.starting:${id}` },
+    "attendance.missing": { to: (p) => [p.userId], ar: (p) => `لا يوجد تسجيل حضور ليوم ${p.date} — يحتاج تصحيحًا`, en: (p) => `No attendance recorded for ${p.date} — correction required`, href: () => "/app/my-hr?tab=attendance", priority: "MEDIUM", key: (p, id) => `attendance.missing:${id}:${p.date}` },
+    "payroll.approved": { to: (p) => [p.preparedById, p.submittedById], ar: (p) => `اعتُمد مسير الرواتب ${p.name}`, en: (p) => `Payroll ${p.name} approved`, href: (_p, id) => `/app/hr/payroll/${id}`, priority: "MEDIUM" },
+    "interview.scheduled": { to: (p) => (p.interviewers ?? "").split(","), ar: (p) => `مقابلة مجدولة: ${p.name} — ${p.job}`, en: (p) => `Interview scheduled: ${p.name} — ${p.job}`, href: (p) => `/app/my-hr?tab=interviews`, priority: "MEDIUM" },
+    "candidate.stage_changed": { to: (p) => [p.ownerId], ar: (p) => `انتقل المرشح ${p.name} إلى ${p.to}`, en: (p) => `Candidate ${p.name} moved to ${p.to}`, href: (p) => `/app/hr/recruitment/candidates/${p.candidateId}`, priority: "MEDIUM" },
+    "offer.accepted": { to: (p) => [p.ownerId], ar: (p) => `قبل ${p.name} العرض ${p.number} — حوّله إلى موظف`, en: (p) => `${p.name} accepted offer ${p.number} — convert to employee`, href: () => "/app/hr/recruitment", priority: "HIGH" },
+    "offer.expiring": { to: (p) => [p.ownerId], ar: (p) => `العرض ${p.number} ينتهي ${p.expiresAt}`, en: (p) => `Offer ${p.number} expires ${p.expiresAt}`, href: () => "/app/hr/recruitment", priority: "MEDIUM", key: (_p, id) => `offer.expiring:${id}` },
+    "performance.review_due": { to: (p) => [p.reviewerId], ar: (p) => `مراجعة أداء مستحقة ${p.due}: ${p.name}`, en: (p) => `Performance review due ${p.due}: ${p.name}`, href: (p) => `/app/hr/employees/${p.employeeId}?tab=performance`, priority: "MEDIUM", key: (_p, id) => `review.due:${id}` },
+    "performance.review_completed": { to: (p) => [p.userId], ar: (p) => `اكتملت مراجعة أدائك (${p.period})`, en: (p) => `Your performance review is complete (${p.period})`, href: () => "/app/my-hr?tab=performance", priority: "MEDIUM" }
+  };
+  for (const [type, h] of Object.entries(PEOPLE)) {
+    subscribe(type, async (e) => {
+      const p = (e.payload ?? {}) as Record<string, string>;
+      const ids = [...new Set(h.to(p).filter((x): x is string => Boolean(x) && x !== e.actorId))];
+      if (!ids.length) return;
+      const users = await prisma.user.findMany({ where: { id: { in: ids }, organizationId: e.organizationId, status: "ACTIVE" }, select: { id: true, locale: true } });
+      const id = e.entityId ?? "";
+      await prisma.notification.createMany({
+        data: users.map((u) => ({ organizationId: e.organizationId, userId: u.id, category: "HR" as const, priority: h.priority, title: u.locale === "en" ? h.en(p) : h.ar(p), href: h.href(p, id), entityType: e.entityType ?? null, entityId: id || null, dedupeKey: h.key ? h.key(p, id) : `${type}:${e.id}` })),
+        skipDuplicates: true
+      });
+    });
+  }
+  // payroll paid → "payslip available" to every employee of the period that has an account (one per entry)
+  subscribe("payroll.paid", async (e) => {
+    const entries = await prisma.payrollEntry.findMany({ where: { periodId: e.entityId ?? "" }, select: { id: true, employee: { select: { user: { select: { id: true, locale: true, status: true } } } } } });
+    const p = (e.payload ?? {}) as Record<string, string>;
+    const rows = entries.filter((x) => x.employee.user?.status === "ACTIVE").map((x) => ({ organizationId: e.organizationId, userId: x.employee.user!.id, category: "HR" as const, priority: "MEDIUM" as const, title: x.employee.user!.locale === "en" ? `Your payslip for ${p.name} is available` : `قسيمة راتبك لفترة ${p.name} متاحة`, href: "/app/my-hr?tab=payslips", entityType: "PayrollEntry", entityId: x.id, dedupeKey: `payslip:${x.id}` }));
+    if (rows.length) await prisma.notification.createMany({ data: rows, skipDuplicates: true });
+  });
+
+  // Operations (Phase 7): procurement, assets, support, knowledge, documents — recipients may be role holders (async)
+  type O = {
+    to: (p: Record<string, string>, orgId: string) => Promise<(string | null | undefined)[]> | (string | null | undefined)[];
+    ar: (p: Record<string, string>) => string;
+    en: (p: Record<string, string>) => string;
+    href: (p: Record<string, string>, id: string) => string;
+    category: "OPERATIONS" | "SUPPORT";
+    priority: (p: Record<string, string>) => "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+    key?: (p: Record<string, string>, id: string) => string;
+    when?: (p: Record<string, string>) => boolean;
+  };
+  const M = () => "MEDIUM" as const;
+  const OPS: Record<string, O> = {
+    "procurement.approved": { to: (p) => [p.requesterId], ar: (p) => `تم اعتماد طلب الشراء ${p.number}`, en: (p) => `Purchase request ${p.number} approved`, href: (_p, id) => `/app/procurement/${id}`, category: "OPERATIONS", priority: M },
+    "procurement.rejected": { to: (p) => [p.requesterId], ar: (p) => `رُفض طلب الشراء ${p.number}: ${p.reason}`, en: (p) => `Purchase request ${p.number} rejected: ${p.reason}`, href: (_p, id) => `/app/procurement/${id}`, category: "OPERATIONS", priority: () => "HIGH" },
+    "purchase_order.approved": { to: (p) => [p.createdById], ar: (p) => `تم اعتماد أمر الشراء ${p.number}`, en: (p) => `Purchase order ${p.number} approved`, href: (_p, id) => `/app/procurement/orders/${id}`, category: "OPERATIONS", priority: M },
+    "purchase_order.overdue": { to: async (p, org) => [p.createdById, ...(await usersWithAll(org, ["procurement.orders.receive"]))], ar: (p) => `تأخر توريد أمر الشراء ${p.number} (${p.vendor}) — المتوقع ${p.expected}`, en: (p) => `PO ${p.number} (${p.vendor}) is overdue — expected ${p.expected}`, href: (_p, id) => `/app/procurement/orders/${id}`, category: "OPERATIONS", priority: () => "HIGH", key: (_p, id) => `po.overdue:${id}` },
+    "asset.assigned": { to: (p) => [p.userId], ar: (p) => `تم تسليمك الأصل ${p.number} · ${p.name}`, en: (p) => `Asset assigned to you: ${p.number} · ${p.name}`, href: () => "/app/my-hr?tab=assets", category: "OPERATIONS", priority: M },
+    "asset.warranty_expiring": { to: (_p, org) => usersWithAll(org, ["assets.manage"]), ar: (p) => `ضمان الأصل ${p.number} ينتهي ${p.warrantyEnd}`, en: (p) => `Warranty of ${p.number} ends ${p.warrantyEnd}`, href: (_p, id) => `/app/assets/${id}`, category: "OPERATIONS", priority: M, key: (_p, id) => `asset.warranty:${id}` },
+    "asset.maintenance_due": { to: (_p, org) => usersWithAll(org, ["assets.maintenance"]), ar: (p) => `صيانة مستحقة للأصل ${p.number} (${p.scheduled})`, en: (p) => `Maintenance due for ${p.number} (${p.scheduled})`, href: (p) => `/app/assets/${p.assetId}`, category: "OPERATIONS", priority: M, key: (p) => `asset.maintenance:${p.maintenanceId}` },
+    "ticket.created": { to: (_p, org) => usersWithAll(org, ["support.tickets.manage"]), when: (p) => p.priority === "URGENT", ar: (p) => `تذكرة عاجلة ${p.number}: ${p.subject}`, en: (p) => `Urgent ticket ${p.number}: ${p.subject}`, href: (_p, id) => `/app/support/tickets/${id}`, category: "SUPPORT", priority: () => "URGENT", key: (_p, id) => `ticket.urgent:${id}` },
+    "ticket.assigned": { to: (p) => [p.assigneeId], ar: (p) => `أُسندت إليك التذكرة ${p.number}: ${p.subject}`, en: (p) => `Ticket ${p.number} assigned to you: ${p.subject}`, href: (_p, id) => `/app/support/tickets/${id}`, category: "SUPPORT", priority: (p) => (p.priority === "URGENT" ? "URGENT" : "MEDIUM") },
+    "ticket.sla_warning": { to: async (p, org) => (p.assigneeId ? [p.assigneeId] : await usersWithAll(org, ["support.tickets.manage"])), ar: (p) => `اقتراب تجاوز SLA (${p.kind === "response" ? "الاستجابة" : "الحل"}) للتذكرة ${p.number}`, en: (p) => `SLA ${p.kind} nearly due on ${p.number}`, href: (_p, id) => `/app/support/tickets/${id}`, category: "SUPPORT", priority: () => "HIGH", key: (p, id) => `sla.warn:${id}:${p.kind}` },
+    "ticket.sla_breached": { to: async (p, org) => [p.assigneeId, ...(await usersWithAll(org, ["support.tickets.manage"]))], ar: (p) => `تم تجاوز SLA (${p.kind === "response" ? "الاستجابة" : "الحل"}) للتذكرة ${p.number}`, en: (p) => `SLA ${p.kind} breached on ${p.number}`, href: (_p, id) => `/app/support/tickets/${id}`, category: "SUPPORT", priority: () => "URGENT", key: (p, id) => `sla.breach:${id}:${p.kind}` },
+    "ticket.resolved": { to: (p) => [p.createdById], ar: (p) => `تم حل التذكرة ${p.number}`, en: (p) => `Ticket ${p.number} resolved`, href: (_p, id) => `/app/support/tickets/${id}`, category: "SUPPORT", priority: M },
+    "knowledge.review_requested": { to: (_p, org) => usersWithAll(org, ["knowledge.review"]), ar: (p) => `مقال معرفة بانتظار المراجعة: ${p.number}`, en: (p) => `Knowledge article awaiting review: ${p.number}`, href: (_p, id) => `/app/knowledge/${id}`, category: "OPERATIONS", priority: () => "LOW" },
+    "knowledge.review_reminder": { to: (_p, org) => usersWithAll(org, ["knowledge.review"]), ar: (p) => `تذكير: المقال ${p.number} ينتظر المراجعة منذ أيام`, en: (p) => `Reminder: ${p.number} has been waiting for review`, href: (_p, id) => `/app/knowledge/${id}`, category: "OPERATIONS", priority: M, key: (_p, id) => `kb.reminder:${id}` },
+    "knowledge.published": { to: (p) => [p.authorId], ar: (p) => `نُشر المقال ${p.number} (الإصدار ${p.version})`, en: (p) => `Article ${p.number} published (v${p.version})`, href: (_p, id) => `/app/knowledge/${id}`, category: "OPERATIONS", priority: () => "LOW" },
+    "document.version_created": { to: (p) => [p.reviewerId], when: (p) => Boolean(p.reviewerId), ar: (p) => `مستند بانتظار مراجعتك: ${p.number} · ${p.title}`, en: (p) => `Document awaiting your review: ${p.number} · ${p.title}`, href: (_p, id) => `/app/documents/${id}`, category: "OPERATIONS", priority: M, key: (_p, id) => `doc.review:${id}` }
+  };
+  for (const [type, h] of Object.entries(OPS)) {
+    subscribe(type, async (e) => {
+      const p = Object.fromEntries(Object.entries((e.payload ?? {}) as Record<string, unknown>).map(([k, v]) => [k, v == null ? "" : String(v)]));
+      if (h.when && !h.when(p)) return;
+      const ids = [...new Set((await h.to(p, e.organizationId)).filter((x): x is string => Boolean(x) && x !== e.actorId))];
+      if (!ids.length) return;
+      const users = await prisma.user.findMany({ where: { id: { in: ids }, organizationId: e.organizationId, status: "ACTIVE" }, select: { id: true, locale: true } });
+      const id = e.entityId ?? "";
+      await prisma.notification.createMany({
+        data: users.map((u) => ({ organizationId: e.organizationId, userId: u.id, category: h.category, priority: h.priority(p), title: u.locale === "en" ? h.en(p) : h.ar(p), href: h.href(p, id), entityType: e.entityType ?? null, entityId: id || null, dedupeKey: h.key ? h.key(p, id) : `${type}:${e.id}` })),
+        skipDuplicates: true
+      });
+    });
+  }
+  // offboarding: a terminated employee who still holds assets → asset managers (never auto-returned)
+  subscribe("employee.terminated", async (e) => {
+    const held = await prisma.assetAssignment.findMany({ where: { employeeId: e.entityId ?? "", returnedAt: null }, select: { asset: { select: { number: true } } } });
+    if (!held.length) return;
+    const emp = await prisma.employee.findUnique({ where: { id: e.entityId ?? "" }, select: { displayName: true, number: true } });
+    const users = await prisma.user.findMany({ where: { id: { in: await usersWithAll(e.organizationId, ["assets.assign"]) } }, select: { id: true, locale: true } });
+    const list = held.map((h) => h.asset.number).join(", ");
+    await prisma.notification.createMany({
+      data: users.map((u) => ({ organizationId: e.organizationId, userId: u.id, category: "OPERATIONS" as const, priority: "HIGH" as const, title: u.locale === "en" ? `Asset return required: ${emp?.displayName} (${emp?.number}) holds ${list}` : `مطلوب استرجاع أصول: ${emp?.displayName} (${emp?.number}) لديه ${list}`, href: `/app/hr/employees/${e.entityId}?tab=assets`, entityType: "Employee", entityId: e.entityId ?? null, dedupeKey: `asset.return:${e.entityId}` })),
+      skipDuplicates: true
+    });
+  });
+
   // Role granted → tell the user
   subscribe("user.roles_changed", async (e) => {
     const p = e.payload as { userId: string; added: string[] };
@@ -248,6 +344,13 @@ export function registerSubscribers() {
       }
     });
   });
+
+  // Phase 8: outbound webhooks + integration / marketing notifications
+  registerIntegrationSubscribers();
+
+  // Phase 9: deterministic business rules (named "automation" handler) + system alert notifications
+  registerAutomationSubscriber();
+  registerSystemSubscribers();
 }
 
 /** Active users in the org whose roles grant all given permissions. */

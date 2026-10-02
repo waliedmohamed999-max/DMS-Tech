@@ -16,11 +16,11 @@ async function bump(tx: Tx, organizationId: string, key: string): Promise<number
 const pad = (n: number) => String(n).padStart(6, "0");
 
 /** LEAD-000001 / OPP-000001 / CLI-000001 / SRV-000001 / PKG-000001 / TASK-000001 */
-export async function nextNumber(tx: Tx, organizationId: string, key: "LEAD" | "OPP" | "CLI" | "SRV" | "PKG" | "TASK" | "VEN"): Promise<string> {
+export async function nextNumber(tx: Tx, organizationId: string, key: "LEAD" | "OPP" | "CLI" | "SRV" | "PKG" | "TASK" | "VEN" | "EMP" | "JOB" | "CAN" | "OFR" | "AST" | "DOC" | "TCK" | "KB" | "CMP"): Promise<string> {
   return `${key}-${pad(await bump(tx, organizationId, key))}`;
 }
 
 /** Yearly series: Q-2026-000001 (quotations), CTR-2026-000001 (contracts), PRJ-2026-000001 (projects), INV- / PAY- / EXP- (finance). Counter restarts each year. */
-export async function nextYearlyNumber(tx: Tx, organizationId: string, prefix: "Q" | "CTR" | "PRJ" | "INV" | "PAY" | "EXP", year: number): Promise<string> {
+export async function nextYearlyNumber(tx: Tx, organizationId: string, prefix: "Q" | "CTR" | "PRJ" | "INV" | "PAY" | "EXP" | "PR" | "PO", year: number): Promise<string> {
   return `${prefix}-${year}-${pad(await bump(tx, organizationId, `${prefix}-${year}`))}`;
 }

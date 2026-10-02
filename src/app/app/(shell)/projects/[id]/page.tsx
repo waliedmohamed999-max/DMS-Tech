@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { TicketsCard } from "@/components/ops/SupportTabs";
+import { DocumentsPanel } from "@/components/ops/DocumentsPanel";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { pageCtx } from "@/lib/os/dal";
@@ -37,10 +39,11 @@ import {
   TimeEntryForm
 } from "@/components/projects/Widgets";
 import { healthTone, projectStatusTone, taskStatusTone } from "@/components/projects/tones";
+import { ProjectFinanceTab } from "@/components/finance/ProjectFinanceTab";
 
 export const metadata = { title: "Project" };
 
-const TABS = ["overview", "tasks", "milestones", "timeline", "team", "time", "deliverables", "activity", "commercial"] as const;
+const TABS = ["overview", "tasks", "milestones", "timeline", "team", "time", "deliverables", "activity", "commercial", "finance", "support", "documents"] as const;
 type Reason = { code: string; severity: string; cause: string; params: Record<string, string | number> };
 
 export default async function ProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
@@ -49,6 +52,8 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const tab = (TABS as readonly string[]).includes(sp.tab ?? "") ? sp.tab! : "overview";
   const { ctx, allowed } = await pageCtx("projects.view");
   if (!allowed) return <PermissionDenied permission="projects.view" />;
+  // finance visibility is separate from delivery: members never get billing / cost / margin from membership
+  const canFinance = can(ctx, "finance.invoices.view") || can(ctx, "finance.profitability.view") || (can(ctx, "finance.expenses.view") && can(ctx, "finance.records.all"));
   await sweepProjectsIfDue(ctx.organizationId);
   const locale = await getLocale();
   const t = await getTranslations("os.projects");
@@ -146,7 +151,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       </div>
 
       <nav className="no-scrollbar flex gap-1 overflow-x-auto border-b border-os-line">
-        {TABS.filter((k) => k !== "time" || can(ctx, "projects.time.view")).map((k) => (
+        {TABS.filter((k) => (k !== "time" || can(ctx, "projects.time.view")) && (k !== "finance" || canFinance) && (k !== "support" || can(ctx, "support.tickets.view") || can(ctx, "support.tickets.manage"))).map((k) => (
           <Link key={k} href={`?tab=${k}`} scroll={false} className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm ${tab === k ? "border-iris text-os-text" : "border-transparent text-os-muted hover:text-os-text"}`}>
             {t(`tabs.${k}` as "tabs.overview")}
           </Link>
@@ -162,6 +167,9 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       {tab === "deliverables" && <Deliverables />}
       {tab === "activity" && <Activity />}
       {tab === "commercial" && <Commercial />}
+      {tab === "finance" && canFinance && <ProjectFinanceTab ctx={ctx} projectId={id} />}
+      {tab === "support" && <TicketsCard ctx={ctx} project={id} />}
+      {tab === "documents" && <DocumentsPanel ctx={ctx} entity={{ type: "PROJECT", id }} />}
     </div>
   );
 

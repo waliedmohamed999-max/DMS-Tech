@@ -10,7 +10,7 @@ import { can, requirePermission, type Ctx } from "./context";
 export const NOTIF_PAGE_SIZE = 25;
 const notifSchema = z.object({
   filter: z.enum(["all", "unread"]).default("all"),
-  category: z.enum(["APPROVAL", "TASK", "INVOICE", "PROJECT", "CONTRACT", "HR", "SALES", "SYSTEM"]).optional(),
+  category: z.enum(["APPROVAL", "TASK", "INVOICE", "PROJECT", "CONTRACT", "HR", "SALES", "OPERATIONS", "SUPPORT", "INTEGRATIONS", "MARKETING", "AUTOMATION", "SYSTEM"]).optional(),
   page: z.coerce.number().int().min(1).default(1)
 });
 

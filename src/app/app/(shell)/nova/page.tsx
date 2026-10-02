@@ -25,7 +25,7 @@ export default async function NovaPage() {
   if (!allowed) return <PermissionDenied permission="nova.use" />;
   const t = await getTranslations("os.nova");
   const s = novaStatus();
-  const admin = can(ctx, "admin.integrations.manage");
+  const admin = can(ctx, "integrations.view");
 
   return (
     <div className="grid gap-6">

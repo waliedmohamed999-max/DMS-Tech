@@ -34,7 +34,7 @@ describe("server-side permission enforcement", () => {
   it("unauthorized users cannot view payroll or approve quotations", async () => {
     const emp = await ctxFor((await makeUser(orgId, "emp2@x.test", ["employee"])).id);
     const rep = await ctxFor((await makeUser(orgId, "rep@x.test", ["sales_rep"])).id);
-    expect(() => requirePermission(emp, "finance.payroll.view")).toThrow(/finance.payroll.view/);
+    expect(() => requirePermission(emp, "hr.payroll.view")).toThrow(/hr.payroll.view/);
     expect(() => requirePermission(rep, "sales.quotations.approve")).toThrow(/sales.quotations.approve/);
     expect(() => requirePermission(emp, "finance.invoices.view")).toThrow();
   });
@@ -69,7 +69,7 @@ describe("privileged role approval workflow", () => {
     // not granted yet
     const before = await ctxFor(id);
     expect(before.roleKeys).toEqual(["employee"]);
-    expect(before.permissions.has("finance.payroll.view")).toBe(false);
+    expect(before.permissions.has("hr.payroll.pay")).toBe(false);
 
     // super admin sees it in "mine" and gets a notification; requester does not see it in "mine"
     const mine = await listApprovals(admin, { view: "mine" });
@@ -84,7 +84,7 @@ describe("privileged role approval workflow", () => {
     await decideApproval(admin, { approvalId: mine.items[0].id, decision: "APPROVED" });
     const after = await ctxFor(id);
     expect(after.roleKeys.sort()).toEqual(["employee", "finance_manager"]);
-    expect(after.permissions.has("finance.payroll.view")).toBe(true);
+    expect(after.permissions.has("hr.payroll.pay")).toBe(true);
 
     expect(await prisma.auditLog.count({ where: { action: "approval.approved" } })).toBe(1);
     expect(await prisma.auditLog.count({ where: { action: "user.role_granted_via_approval" } })).toBe(1);

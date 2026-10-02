@@ -13,6 +13,13 @@ import { sweepProjectsIfDue } from "../projects/sweep";
 import { financeAttention, financeKpis } from "../finance/insights";
 import { financeSearch } from "../finance/search";
 import { sweepFinanceIfDue } from "../finance/sweep";
+import { hrAttention, hrDashboard } from "../hr/insights";
+import { hrSearch } from "../hr/search";
+import { sweepHrIfDue } from "../hr/sweep";
+import { opsAttention, opsDashboard } from "../ops/insights";
+import { opsSearch } from "../ops/search";
+import { integrationsAttention, integrationsSearch } from "../integrations/insights";
+import { sweepOpsIfDue } from "../ops/sweep";
 
 /**
  * Command Center data. KPIs are provider functions: a provider either returns real
@@ -147,6 +154,30 @@ const PROVIDERS: Provider[] = [
     }
   },
   {
+    key: "activeEmployees",
+    permission: "hr.dashboard.view",
+    async run(ctx) {
+      const d = await hrDashboard(ctx);
+      return { key: "activeEmployees", state: "live", value: d.active, format: "number", href: "/app/hr/employees", hint: d.onLeave ? String(d.onLeave) : undefined };
+    }
+  },
+  {
+    key: "openTickets",
+    permission: "support.tickets.view",
+    async run(ctx) {
+      const d = await opsDashboard(ctx);
+      return { key: "openTickets", state: "live", value: d.openTickets ?? 0, format: "number", href: "/app/support?view=open", hint: d.slaBreaches ? String(d.slaBreaches) : undefined };
+    }
+  },
+  {
+    key: "pendingProcurement",
+    permission: "operations.dashboard.view",
+    async run(ctx) {
+      const d = await opsDashboard(ctx);
+      return { key: "pendingProcurement", state: "live", value: (d.pendingRequests ?? 0) + (d.posAwaiting ?? 0), format: "number", href: "/app/operations" };
+    }
+  },
+  {
     key: "team",
     permission: "admin.users.view",
     async run(ctx, r) {
@@ -242,6 +273,21 @@ export async function getAttention(ctx: Ctx): Promise<AttentionItem[]> {
       items.push({ id: c.id, priority: c.priority, category: c.category, title: c.title, owner: c.owner ?? null, dueAt: c.dueAt ?? null, entity: { type: "Finance", id: c.id }, href: c.href, actions: ["open"] });
   }
 
+  {
+    await sweepHrIfDue(ctx.organizationId); // missing attendance, leave starting, reviews due, offers expiring (throttled, leased)
+    for (const c of await hrAttention(ctx))
+      items.push({ id: c.id, priority: c.priority, category: c.category, title: c.title, owner: null, dueAt: c.dueAt ?? null, entity: { type: "HR", id: c.id }, href: c.href, actions: ["open"] });
+  }
+
+  {
+    await sweepOpsIfDue(ctx.organizationId); // PO overdue, warranty, maintenance due, SLA warning / breach, KB reminders (throttled, leased)
+    for (const c of await opsAttention(ctx))
+      items.push({ id: c.id, priority: c.priority, category: c.category, title: c.title, owner: null, dueAt: c.dueAt ?? null, entity: { type: "Operations", id: c.id }, href: c.href, actions: ["open"] });
+  }
+
+  for (const c of await integrationsAttention(ctx))
+    items.push({ id: c.id, priority: c.priority, category: c.category, title: c.title, owner: null, dueAt: c.dueAt ?? null, entity: { type: "Integrations", id: c.id }, href: c.href, actions: ["open"] });
+
   for (const c of await crmAttention(ctx))
     items.push({ id: c.id, priority: c.priority, category: c.category, title: c.title, owner: c.owner ?? null, dueAt: c.dueAt ?? null, entity: { type: "CRM", id: c.id }, href: c.href, actions: ["open"] });
 
@@ -279,6 +325,6 @@ export async function globalSearch(ctx: Ctx, q: string) {
     select: { id: true, name: true, code: true }
   });
   results.push(...depts.map((d) => ({ type: "department", id: d.id, title: d.name, subtitle: d.code, href: "/app/admin/departments" })));
-  results.unshift(...(await crmSearch(ctx, term)), ...(await commercialSearch(ctx, term)), ...(await projectSearch(ctx, term)), ...(await financeSearch(ctx, term)));
+  results.unshift(...(await crmSearch(ctx, term)), ...(await commercialSearch(ctx, term)), ...(await projectSearch(ctx, term)), ...(await financeSearch(ctx, term)), ...(await hrSearch(ctx, term)), ...(await opsSearch(ctx, term)), ...(await integrationsSearch(ctx, term)));
   return results;
 }

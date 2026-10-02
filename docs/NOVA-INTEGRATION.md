@@ -46,6 +46,19 @@ Preferred, in order — only the last two need nothing from NOVA:
 
 Rules: NOVA passwords are never stored or proxied; no browser automation to log users into NOVA. Upgrading the access model changes only `launchNova()` — the UI and route stay the same.
 
+## Phase 8: place in the integration registry
+
+- NOVA appears in `/app/integrations` as an **external platform**, with its status computed from `NOVA_URL` alone:
+  - **NOT_CONFIGURED** when it is missing;
+  - **CONFIGURED** when it is a valid URL;
+  - **ERROR** when it is invalid;
+  - **DISABLED** when an admin disables it.
+- It is **never CONNECTED**: there is no NOVA API to verify against, and `nova.health()` reports `URL_ONLY`.
+- NOVA cannot be configured in the registry (`PROVIDER_NOT_CONFIGURABLE`). `NOVA_URL` remains the only setting.
+- `/app/nova`, `launchNova()` and `nova.use` are unchanged.
+- `NovaApiAdapter` (in `integrations/nova.ts` and `integrations/adapters.ts`) is still an interface only.
+- The signed-webhook and outbox infrastructure built in Phase 8 is what a future NOVA exchange would reuse. Nothing NOVA-specific is wired.
+
 ## Future data exchange (not implemented)
 
 Implemented only when NOVA provides an actual API/webhook specification (auth scheme, payload schema, signing, retries):

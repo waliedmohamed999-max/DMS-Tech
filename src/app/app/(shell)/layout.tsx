@@ -19,7 +19,7 @@ export default async function ShellLayout({ children }: { children: React.ReactN
     key: g.key,
     label: g.label[locale],
     items: g.items
-      .filter((it) => allowed(it.permission))
+      .filter((it) => allowed(it.permission) || Boolean(it.anyOf?.some((p) => perms.has(p))))
       .map((it) => ({ key: it.key, href: it.href, icon: it.icon, label: it.label[locale], about: it.about[locale], live: it.live, phase: it.phase }))
   })).filter((g) => g.items.length);
 

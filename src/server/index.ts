@@ -4,10 +4,7 @@ import "server-only";
  * event subscribers and approval handlers exactly once per process.
  */
 import { registerSubscribers } from "./events/subscribers";
-import "./admin/users"; // registers the ROLE_GRANT approval handler
-import "./commercial/quotations"; // registers the QUOTATION approval handler
-import "./projects/time"; // registers the TIMESHEET approval handler
-import "./finance/expenses"; // registers the EXPENSE approval handler
+import "./handlers"; // approval + outbox handlers (shared with the worker scripts)
 
 registerSubscribers();
 

@@ -138,6 +138,6 @@ KPIs: active projects, projects at risk, my urgent tasks (live). A Projects pane
 - Sweep reminders run lazily + via `projects:sweep`; without a scheduler they fire on the next project page view.
 - Template editing replaces the template structure (templates are not versioned; projects keep their snapshot).
 
-## Phase 5 boundary
+## Finance hand-off (Phase 5)
 
-Not built: invoices, payments, expenses, billing of time or milestones, revenue/profitability, payroll. Phase 5 may subscribe to `project.completed`, contract-milestone eligibility and approved billable `TimeEntry` rows; it must not change project or contract state retroactively.
+Finance reads `project.completed`, contract-milestone eligibility and approved billable `TimeEntry` rows ([FINANCE.md](FINANCE.md)); it never changes project or contract state. The workspace has a **Finance** tab (billing status / sources / expenses / margin — each gated by its own finance permission; membership grants nothing). An approved time entry that is on a live invoice cannot be reopened for correction (`TIME_ENTRY_BILLED`) until the invoice is cancelled or voided.

@@ -3,6 +3,7 @@ import { prisma } from "../db";
 import type { Ctx } from "../context";
 import { AppError, invalid, notFound } from "../errors";
 import { hit } from "../rate-limit";
+import { enforceLimit } from "../security/limits";
 import { isPermission, type Permission } from "../rbac/permissions";
 import { hashPassword, passwordProblems, verifyPassword } from "./password";
 import { unitOfWork } from "../events/bus";
@@ -151,6 +152,8 @@ export async function revokeMySession(ctx: Ctx, sessionId: string) {
 
 /** Changes the password and revokes every other session of the user. */
 export async function changeMyPassword(ctx: Ctx, current: string, next: string, keepSessionId?: string) {
+  // Phase 9: guessing the current password from a hijacked session is rate limited
+  await enforceLimit("passwordChange", ctx.userId);
   const user = await prisma.user.findUniqueOrThrow({ where: { id: ctx.userId } });
   if (!(await verifyPassword(user.passwordHash, current))) throw invalid("WRONG_PASSWORD");
   const problem = passwordProblems(next);

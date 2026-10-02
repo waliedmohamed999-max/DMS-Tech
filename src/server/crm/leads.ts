@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { recordFirstTouch, touchFromCapture, type TouchInput } from "../marketing/attribution";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma, type Tx } from "../db";
 import { can, requirePermission, type Ctx } from "../context";
@@ -63,7 +64,7 @@ async function assertAssignable(tx: Tx | typeof prisma, ctx: Ctx, ownerId: strin
 // ---------------------------------------------------------------------------
 
 /** Persist a lead inside an existing unit of work. Permission checks are the caller's job. */
-export async function createLeadTx(tx: Tx, uow: Uow, ctx: Ctx, input: z.output<typeof leadCreateSchema>, extra: { captureMeta?: unknown; duplicateOfId?: string | null; locale?: "ar" | "en" | null } = {}) {
+export async function createLeadTx(tx: Tx, uow: Uow, ctx: Ctx, input: z.output<typeof leadCreateSchema>, extra: { captureMeta?: unknown; duplicateOfId?: string | null; locale?: "ar" | "en" | null; touch?: Partial<TouchInput> } = {}) {
   const number = await nextNumber(tx, ctx.organizationId, "LEAD");
   const lead = await tx.lead.create({
     data: {
@@ -98,6 +99,8 @@ export async function createLeadTx(tx: Tx, uow: Uow, ctx: Ctx, input: z.output<t
     }
   });
   await systemActivity(tx, ctx, { entityType: "LEAD", entityId: lead.id, title: "lead.created", metadata: { source: lead.source } });
+  // Phase 8: the original acquisition source becomes the immutable FIRST attribution touch
+  await recordFirstTouch(tx, uow, ctx.organizationId, lead.id, { ...touchFromCapture(lead.source, extra.captureMeta), ...(extra.touch ?? {}) });
   await uow.audit({ action: "lead.created", entityType: "Lead", entityId: lead.id, after: lead });
   uow.emit({ type: "lead.created", entityType: "Lead", entityId: lead.id, payload: { source: lead.source, ownerId: lead.ownerId, number }, activity: activityFor(lead) });
   if (lead.ownerId && lead.ownerId !== ctx.userId) uow.emit({ type: "lead.assigned", entityType: "Lead", entityId: lead.id, payload: { ownerId: lead.ownerId, number, name: lead.name } });

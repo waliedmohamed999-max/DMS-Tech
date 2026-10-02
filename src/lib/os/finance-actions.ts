@@ -21,7 +21,7 @@ export const cancelInvoiceAction = async (id: string, reason: string) => runActi
 export const voidInvoiceAction = async (id: string, reason: string, replace: boolean) => runAction(async (ctx) => ({ replacementId: (await voidInvoice(ctx, id, { reason, replace })).replacementId }));
 export const collectionNoteAction = async (id: string, input: R) => runAction(async (ctx) => void (await addCollectionNote(ctx, id, input)));
 export const openInvoicesAction = async (clientId: string) =>
-  runAction(async (ctx) => (await openInvoicesForClient(ctx, clientId)).map((i) => ({ id: i.id, number: i.number, dueDate: i.dueDate.toISOString().slice(0, 10), total: i.total.toFixed(2), balance: i.balanceDue.toFixed(2), currency: i.currency, status: i.status })));
+  runAction(async (ctx) => (await openInvoicesForClient(ctx, clientId)).map((i) => ({ id: i.id, number: i.number, dueDate: i.dueDate.toISOString().slice(0, 10), total: i.total.toFixed(2), balance: i.balanceDue.toFixed(2), currency: i.currency, status: i.status })), { revalidate: false });
 
 // Payments
 export const recordPaymentAction = async (input: R) => runAction(async (ctx) => ({ id: (await recordPayment(ctx, input)).id }));

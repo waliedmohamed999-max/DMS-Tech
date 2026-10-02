@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DocumentsPanel } from "@/components/ops/DocumentsPanel";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { pageCtx } from "@/lib/os/dal";
@@ -195,6 +196,7 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
           </dl>
         </SectionCard>
       </div>
+      <DocumentsPanel ctx={ctx} entity={{ type: "CONTRACT", id }} />
     </div>
   );
 }

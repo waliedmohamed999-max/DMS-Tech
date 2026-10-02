@@ -47,7 +47,12 @@ enum Priority {
 }
 
 enum NotificationCategory {
+  AUTOMATION
   APPROVAL
+  INTEGRATIONS
+  MARKETING
+  OPERATIONS
+  SUPPORT
   TASK
   INVOICE
   PROJECT
@@ -59,8 +64,13 @@ enum NotificationCategory {
 
 enum EventStatus {
   PENDING
+  /// claimed by the recovery job (re-dispatch in progress)
+  PROCESSING
   PROCESSED
   FAILED
+  /// failed too many times — needs an operator (retry / dismiss)
+  DEAD_LETTER
+  DISMISSED
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +140,8 @@ model Organization {
   largeOutstandingThreshold  Decimal        @default(50000) @db.Decimal(14, 2)
   /// Phase 5: suggested hourly rate for billing approved time (editable on the draft); null = enter manually
   defaultHourlyBillingRate   Decimal?       @db.Decimal(14, 2)
+  /// Phase 8: WhatsApp campaigns with more recipients than this need approval (Approval CAMPAIGN)
+  campaignApprovalThreshold  Int            @default(50)
 }
 
 // ---------------------------------------------------------------------------
@@ -201,6 +213,8 @@ model User {
   expensesSubmitted Expense[]               @relation("ExpenseSubmitter")
   costRates         UserCostRate[]          @relation("CostRateUser")
   invoiceNotes      InvoiceCollectionNote[] @relation("InvoiceNoteAuthor")
+
+  employee Employee? @relation("EmployeeUser")
 
   @@unique([organizationId, email])
   @@index([organizationId, status])
@@ -285,6 +299,15 @@ model Department {
   projects     Project[]
 
   expenses Expense[]
+
+  employees   Employee[]
+  jobOpenings JobOpening[]
+  /// Phase 6: departments can be deactivated without deleting history
+  active      Boolean      @default(true)
+
+  procurementRequests ProcurementRequest[]
+  purchaseOrders      PurchaseOrder[]
+  knowledgeArticles   KnowledgeArticle[]
 
   @@unique([organizationId, code])
 }
@@ -407,11 +430,24 @@ model DomainEvent {
   error          String?
   createdAt      DateTime    @default(now())
   processedAt    DateTime?
+  /// Phase 9 reliability: dispatch attempts, handlers that already succeeded (skipped on retry), operator dismissal
+  attempts       Int         @default(0)
+  lastAttemptAt  DateTime?
+  handlersDone   Json?
+  dismissedAt    DateTime?
+  dismissedById  String?
+  dismissReason  String?
+  /// Phase 9 tracing: the whole causal chain shares correlationId; causationId = the event that caused this one; depth = automation hops
+  correlationId  String?
+  causationId    String?
+  depth          Int         @default(0)
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@index([organizationId, type, createdAt])
   @@index([status])
+  @@index([status, createdAt])
+  @@index([correlationId])
 }
 
 // ===========================================================================
@@ -542,6 +578,8 @@ model Client {
   invoices Invoice[]
   payments Payment[]
 
+  supportTickets SupportTicket[]
+
   @@unique([organizationId, number])
   @@index([organizationId, status])
   @@index([organizationId, ownerId])
@@ -577,6 +615,8 @@ model Contact {
   contracts     Contract[]
 
   invoices Invoice[]
+
+  supportTickets SupportTicket[]
 
   @@index([organizationId, clientId])
   @@index([organizationId, emailNormalized])
@@ -635,6 +675,8 @@ model Lead {
   duplicates      Lead[]       @relation("LeadDuplicates")
   opportunity     Opportunity? @relation("OpportunitySourceLead")
   service         Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  attributionTouches AttributionTouch[]
 
   @@unique([organizationId, number])
   @@index([organizationId, status, createdAt])
@@ -924,6 +966,8 @@ model Service {
   templates      ProjectTemplate[]
 
   invoiceItems InvoiceItem[]
+
+  supportTickets SupportTicket[]
 
   @@unique([organizationId, code])
   @@unique([organizationId, key])
@@ -1407,6 +1451,10 @@ model Project {
 
   invoices Invoice[]
   expenses Expense[]
+
+  procurementRequests ProcurementRequest[]
+  purchaseOrders      PurchaseOrder[]
+  supportTickets      SupportTicket[]
 
   @@unique([organizationId, number])
   @@index([organizationId, status])
@@ -1996,6 +2044,18 @@ model Vendor {
   archivedAt     DateTime?
   expenses       Expense[]
 
+  /// Phase 7: operational procurement profile
+  procurementCategory String?
+  preferred           Boolean              @default(false)
+  rating              Int?
+  leadTimeDays        Int?
+  contractReference   String?
+  contacts            VendorContact[]
+  procurementRequests ProcurementRequest[]
+  purchaseOrders      PurchaseOrder[]
+  assets              Asset[]
+  maintenance         AssetMaintenance[]
+
   @@unique([organizationId, number])
   @@index([organizationId, status])
 }
@@ -2045,6 +2105,10 @@ model Expense {
   user        User?           @relation("ExpenseUser", fields: [userId], references: [id], onDelete: SetNull)
   submittedBy User            @relation("ExpenseSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
 
+  /// Phase 7: optional link to the purchase order it pays for (set at creation; history never rewritten)
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+
   @@unique([organizationId, number])
   @@index([organizationId, status])
   @@index([projectId])
@@ -2067,4 +2131,2086 @@ model UserCostRate {
   user User @relation("CostRateUser", fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([organizationId, userId, effectiveFrom])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 6 — People operations: employees, compensation, bank, attendance, leave,
+// payroll, recruitment, performance. Sensitive data lives in separate tables.
+// ---------------------------------------------------------------------------
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  CONTRACTOR
+  INTERN
+  TEMPORARY
+}
+
+enum EmploymentStatus {
+  ACTIVE
+  PROBATION
+  ON_LEAVE
+  SUSPENDED
+  TERMINATED
+  ARCHIVED
+}
+
+/// HR person / employment record. Separate from authentication (User); a User link is optional.
+model Employee {
+  id                    String           @id @default(cuid())
+  organizationId        String
+  /// EMP-000001
+  number                String
+  userId                String?          @unique
+  firstName             String
+  lastName              String
+  nameAr                String?
+  displayName           String
+  workEmail             String?
+  personalEmail         String?
+  workPhone             String?
+  personalPhone         String?
+  jobTitle              String?
+  departmentId          String?
+  managerId             String?
+  employmentType        EmploymentType   @default(FULL_TIME)
+  status                EmploymentStatus @default(PROBATION)
+  joinDate              DateTime         @db.Date
+  probationEndDate      DateTime?        @db.Date
+  terminationDate       DateTime?        @db.Date
+  terminationReason     String?
+  workLocation          String?
+  country               String           @default("SA")
+  city                  String?
+  nationality           String?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  createdById           String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  archivedAt            DateTime?
+
+  user               User?                  @relation("EmployeeUser", fields: [userId], references: [id], onDelete: SetNull)
+  department         Department?            @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  manager            Employee?              @relation("EmployeeManager", fields: [managerId], references: [id], onDelete: Restrict)
+  reports            Employee[]             @relation("EmployeeManager")
+  compensations      EmployeeCompensation[]
+  bankAccounts       EmployeeBankAccount[]
+  attendance         AttendanceRecord[]
+  leaveRequests      LeaveRequest[]
+  leaveLedger        LeaveLedgerEntry[]
+  payrollEntries     PayrollEntry[]
+  payrollAdjustments PayrollAdjustment[]
+  reviews            PerformanceReview[]
+  goals              PerformanceGoal[]
+  hiredFrom          Application[]          @relation("HiredEmployee")
+  offers             Offer[]                @relation("OfferEmployee")
+
+  assetAssignments AssetAssignment[]
+  assignedAssets   Asset[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([organizationId, departmentId])
+  @@index([managerId])
+}
+
+/// Protected salary history (hr.compensation.*). Rows are never edited: a new row closes the open one.
+model EmployeeCompensation {
+  id                  String    @id @default(cuid())
+  organizationId      String
+  employeeId          String
+  baseSalary          Decimal   @db.Decimal(14, 2)
+  housingAllowance    Decimal   @default(0) @db.Decimal(14, 2)
+  transportAllowance  Decimal   @default(0) @db.Decimal(14, 2)
+  otherFixedAllowance Decimal   @default(0) @db.Decimal(14, 2)
+  currency            String    @default("SAR")
+  effectiveFrom       DateTime  @db.Date
+  effectiveTo         DateTime? @db.Date
+  notes               String?
+  createdById         String?
+  createdAt           DateTime  @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId, effectiveFrom])
+}
+
+/// Highly restricted bank details (hr.bank.*). History-only, masked unless revealed by an authorised user (audited).
+model EmployeeBankAccount {
+  id             String    @id @default(cuid())
+  organizationId String
+  employeeId     String
+  bankName       String
+  iban           String
+  accountName    String
+  effectiveFrom  DateTime  @db.Date
+  effectiveTo    DateTime? @db.Date
+  createdById    String?
+  createdAt      DateTime  @default(now())
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId, effectiveFrom])
+}
+
+/// One per organization; every value is configuration (nothing statutory is hard-coded).
+model AttendancePolicy {
+  id                       String   @id @default(cuid())
+  organizationId           String   @unique
+  workdayStart             String   @default("09:00")
+  workdayEnd               String   @default("17:00")
+  graceMinutes             Int      @default(15)
+  /// 0 = Sunday … 6 = Saturday
+  workingDays              Int[]    @default([0, 1, 2, 3, 4])
+  dailyExpectedMinutes     Int      @default(480)
+  /// approved leave marks attendance ON_LEAVE (future / open days only)
+  leaveMarksAttendance     Boolean  @default(true)
+  /// leave needs a second HR approval after the manager
+  leaveRequiresHrApproval  Boolean  @default(false)
+  /// payroll deducts approved UNPAID leave days (off by default — explicit policy)
+  payrollDeductUnpaidLeave Boolean  @default(false)
+  /// payroll prorates salary for joiners / leavers by calendar days
+  payrollProrate           Boolean  @default(true)
+  updatedAt                DateTime @updatedAt
+}
+
+model CompanyHoliday {
+  id             String   @id @default(cuid())
+  organizationId String
+  date           DateTime @db.Date
+  name           String
+  nameAr         String?
+  location       String?
+  createdAt      DateTime @default(now())
+
+  @@unique([organizationId, date])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  HALF_DAY
+  REMOTE
+  ON_LEAVE
+  HOLIDAY
+  MISSING
+}
+
+enum AttendanceSource {
+  MANUAL
+  SELF
+  LEAVE
+  SYSTEM
+}
+
+model AttendanceRecord {
+  id             String           @id @default(cuid())
+  organizationId String
+  employeeId     String
+  date           DateTime         @db.Date
+  checkIn        DateTime?
+  checkOut       DateTime?
+  status         AttendanceStatus
+  workMinutes    Int?
+  source         AttendanceSource @default(MANUAL)
+  notes          String?
+  correctedAt    DateTime?
+  correctedById  String?
+  createdById    String?
+  notifiedAt     DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@unique([employeeId, date])
+  @@index([organizationId, date])
+}
+
+model LeaveType {
+  id                 String   @id @default(cuid())
+  organizationId     String
+  key                String
+  nameAr             String
+  nameEn             String
+  paid               Boolean  @default(true)
+  requiresAttachment Boolean  @default(false)
+  requiresApproval   Boolean  @default(true)
+  /// yearly balance granted when configured (null = no balance tracking)
+  defaultBalanceDays Decimal? @db.Decimal(6, 2)
+  active             Boolean  @default(true)
+  sortOrder          Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  requests LeaveRequest[]
+  ledger   LeaveLedgerEntry[]
+
+  @@unique([organizationId, key])
+}
+
+enum LeaveLedgerKind {
+  OPENING
+  ACCRUAL
+  USAGE
+  ADJUSTMENT
+  REVERSAL
+}
+
+/// Append-only leave balance ledger. Balance = Σ days (usage is negative).
+model LeaveLedgerEntry {
+  id             String          @id @default(cuid())
+  organizationId String
+  employeeId     String
+  leaveTypeId    String
+  year           Int
+  kind           LeaveLedgerKind
+  days           Decimal         @db.Decimal(6, 2)
+  leaveRequestId String?
+  reason         String?
+  createdById    String?
+  createdAt      DateTime        @default(now())
+
+  employee     Employee      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  leaveType    LeaveType     @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+  leaveRequest LeaveRequest? @relation(fields: [leaveRequestId], references: [id], onDelete: Restrict)
+
+  @@index([employeeId, leaveTypeId, year])
+}
+
+enum LeaveStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model LeaveRequest {
+  id              String      @id @default(cuid())
+  organizationId  String
+  employeeId      String
+  leaveTypeId     String
+  startDate       DateTime    @db.Date
+  endDate         DateTime    @db.Date
+  days            Decimal     @db.Decimal(6, 2)
+  reason          String?
+  status          LeaveStatus @default(DRAFT)
+  /// approval stage: MANAGER → (optional) HR
+  stage           String?
+  approvalId      String?
+  submittedAt     DateTime?
+  approvedAt      DateTime?
+  approvedById    String?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  cancelledAt     DateTime?
+  cancelReason    String?
+  startNotifiedAt DateTime?
+  createdById     String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  employee  Employee           @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  leaveType LeaveType          @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+  ledger    LeaveLedgerEntry[]
+
+  @@index([organizationId, status])
+  @@index([employeeId, startDate])
+}
+
+enum PayrollComponentKind {
+  EARNING
+  DEDUCTION
+}
+
+model PayrollComponent {
+  id             String               @id @default(cuid())
+  organizationId String
+  key            String
+  nameAr         String
+  nameEn         String
+  kind           PayrollComponentKind
+  /// system components map to compensation fields and cannot be renamed by key
+  system         Boolean              @default(false)
+  active         Boolean              @default(true)
+  sortOrder      Int                  @default(0)
+  createdAt      DateTime             @default(now())
+
+  adjustments PayrollAdjustment[]
+
+  @@unique([organizationId, key])
+}
+
+enum PayrollStatus {
+  DRAFT
+  CALCULATING
+  REVIEW
+  APPROVED
+  PAID
+  CLOSED
+}
+
+model PayrollPeriod {
+  id               String        @id @default(cuid())
+  organizationId   String
+  name             String
+  periodStart      DateTime      @db.Date
+  periodEnd        DateTime      @db.Date
+  payDate          DateTime      @db.Date
+  status           PayrollStatus @default(DRAFT)
+  currency         String        @default("SAR")
+  employeeCount    Int           @default(0)
+  grossTotal       Decimal       @default(0) @db.Decimal(16, 2)
+  deductionTotal   Decimal       @default(0) @db.Decimal(16, 2)
+  netTotal         Decimal       @default(0) @db.Decimal(16, 2)
+  preparedById     String?
+  calculatedAt     DateTime?
+  calculatedById   String?
+  approvalId       String?
+  submittedById    String?
+  approvedAt       DateTime?
+  approvedById     String?
+  rejectionComment String?
+  paidAt           DateTime?
+  paidById         String?
+  paymentReference String?
+  closedAt         DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  entries     PayrollEntry[]
+  adjustments PayrollAdjustment[]
+
+  @@unique([organizationId, periodStart, periodEnd])
+  @@index([organizationId, status])
+}
+
+/// Per-employee payroll snapshot. Never recalculated after approval (DB-frozen).
+model PayrollEntry {
+  id                  String   @id @default(cuid())
+  organizationId      String
+  periodId            String
+  employeeId          String
+  employeeNumber      String
+  employeeName        String
+  employeeNameAr      String?
+  jobTitle            String?
+  departmentName      String?
+  departmentNameAr    String?
+  compensationId      String?
+  currency            String   @default("SAR")
+  baseSalary          Decimal  @db.Decimal(14, 2)
+  housingAllowance    Decimal  @default(0) @db.Decimal(14, 2)
+  transportAllowance  Decimal  @default(0) @db.Decimal(14, 2)
+  otherFixedAllowance Decimal  @default(0) @db.Decimal(14, 2)
+  bonuses             Decimal  @default(0) @db.Decimal(14, 2)
+  otherEarnings       Decimal  @default(0) @db.Decimal(14, 2)
+  deductions          Decimal  @default(0) @db.Decimal(14, 2)
+  grossPay            Decimal  @db.Decimal(14, 2)
+  totalDeductions     Decimal  @db.Decimal(14, 2)
+  netPay              Decimal  @db.Decimal(14, 2)
+  /// component lines [{key, nameAr, nameEn, kind, amount, reason?}]
+  lines               Json
+  /// proration, unpaid leave, policy flags used
+  calculationMeta     Json
+  createdAt           DateTime @default(now())
+
+  period   PayrollPeriod @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  employee Employee      @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@unique([periodId, employeeId])
+  @@index([employeeId])
+}
+
+model PayrollAdjustment {
+  id             String   @id @default(cuid())
+  organizationId String
+  periodId       String
+  employeeId     String
+  componentId    String
+  amount         Decimal  @db.Decimal(14, 2)
+  reason         String
+  source         String?
+  approvedById   String?
+  createdById    String?
+  createdAt      DateTime @default(now())
+
+  period    PayrollPeriod    @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  employee  Employee         @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  component PayrollComponent @relation(fields: [componentId], references: [id], onDelete: Restrict)
+
+  @@index([periodId, employeeId])
+}
+
+enum JobStatus {
+  DRAFT
+  OPEN
+  ON_HOLD
+  CLOSED
+  CANCELLED
+}
+
+model JobOpening {
+  id             String         @id @default(cuid())
+  organizationId String
+  /// JOB-000001
+  number         String
+  title          String
+  departmentId   String?
+  location       String?
+  employmentType EmploymentType @default(FULL_TIME)
+  headcount      Int            @default(1)
+  description    String?
+  requirements   String?
+  status         JobStatus      @default(DRAFT)
+  ownerId        String?
+  openedAt       DateTime?
+  closedAt       DateTime?
+  createdById    String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  department   Department?   @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  applications Application[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+}
+
+enum CandidateSource {
+  WEBSITE
+  REFERRAL
+  LINKEDIN
+  JOB_BOARD
+  AGENCY
+  OTHER
+}
+
+model Candidate {
+  id              String          @id @default(cuid())
+  organizationId  String
+  /// CAN-000001
+  number          String
+  firstName       String
+  lastName        String
+  email           String?
+  emailNormalized String?
+  phone           String?
+  linkedinUrl     String?
+  source          CandidateSource @default(OTHER)
+  notes           String?
+  createdById     String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  archivedAt      DateTime?
+
+  applications Application[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, emailNormalized])
+}
+
+enum ApplicationStage {
+  APPLIED
+  SCREENING
+  INTERVIEW
+  TECHNICAL
+  FINAL_INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
+enum ApplicationStatus {
+  ACTIVE
+  HIRED
+  REJECTED
+  WITHDRAWN
+}
+
+model Application {
+  id                String            @id @default(cuid())
+  organizationId    String
+  candidateId       String
+  jobId             String
+  stage             ApplicationStage  @default(APPLIED)
+  status            ApplicationStatus @default(ACTIVE)
+  ownerId           String?
+  appliedAt         DateTime          @default(now())
+  stageChangedAt    DateTime          @default(now())
+  salaryExpectation Decimal?          @db.Decimal(14, 2)
+  currency          String            @default("SAR")
+  noticePeriodDays  Int?
+  notes             String?
+  rejectionReason   String?
+  hiredEmployeeId   String?           @unique
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  candidate     Candidate             @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  job           JobOpening            @relation(fields: [jobId], references: [id], onDelete: Restrict)
+  hiredEmployee Employee?             @relation("HiredEmployee", fields: [hiredEmployeeId], references: [id], onDelete: Restrict)
+  interviews    Interview[]
+  evaluations   CandidateEvaluation[]
+  offers        Offer[]
+
+  @@unique([candidateId, jobId])
+  @@index([organizationId, jobId, stage])
+}
+
+enum InterviewType {
+  PHONE
+  VIDEO
+  ONSITE
+  TECHNICAL
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Interview {
+  id              String          @id @default(cuid())
+  organizationId  String
+  applicationId   String
+  scheduledAt     DateTime
+  durationMinutes Int             @default(60)
+  type            InterviewType   @default(VIDEO)
+  interviewerIds  String[]
+  location        String?
+  status          InterviewStatus @default(SCHEDULED)
+  notes           String?
+  createdById     String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  application Application           @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  evaluations CandidateEvaluation[]
+
+  @@index([applicationId, scheduledAt])
+}
+
+enum Recommendation {
+  STRONG_YES
+  YES
+  NO
+  STRONG_NO
+}
+
+model CandidateEvaluation {
+  id             String          @id @default(cuid())
+  organizationId String
+  applicationId  String
+  interviewId    String?
+  reviewerId     String
+  criteria       String?
+  rating         Int
+  recommendation Recommendation?
+  notes          String?
+  createdAt      DateTime        @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  interview   Interview?  @relation(fields: [interviewId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId])
+}
+
+enum OfferStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SENT
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+model Offer {
+  id                  String      @id @default(cuid())
+  organizationId      String
+  /// OFR-000001
+  number              String
+  applicationId       String
+  jobTitle            String
+  salary              Decimal     @db.Decimal(14, 2)
+  housingAllowance    Decimal     @default(0) @db.Decimal(14, 2)
+  transportAllowance  Decimal     @default(0) @db.Decimal(14, 2)
+  currency            String      @default("SAR")
+  startDate           DateTime    @db.Date
+  expiresAt           DateTime?   @db.Date
+  status              OfferStatus @default(DRAFT)
+  approvalId          String?
+  approvedAt          DateTime?
+  approvedById        String?
+  sentAt              DateTime?
+  acceptedAt          DateTime?
+  rejectedAt          DateTime?
+  rejectionReason     String?
+  withdrawnAt         DateTime?
+  convertedEmployeeId String?     @unique
+  convertedAt         DateTime?
+  expiryNotifiedAt    DateTime?
+  createdById         String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  application       Application @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  convertedEmployee Employee?   @relation("OfferEmployee", fields: [convertedEmployeeId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, number])
+  @@index([applicationId])
+}
+
+enum ReviewStatus {
+  DRAFT
+  IN_REVIEW
+  COMPLETED
+  ACKNOWLEDGED
+}
+
+model PerformanceReview {
+  id             String       @id @default(cuid())
+  organizationId String
+  employeeId     String
+  reviewerId     String
+  periodLabel    String
+  periodStart    DateTime     @db.Date
+  periodEnd      DateTime     @db.Date
+  dueDate        DateTime?    @db.Date
+  status         ReviewStatus @default(DRAFT)
+  summary        String?
+  /// 1–5, set when completed
+  rating         Int?
+  completedAt    DateTime?
+  acknowledgedAt DateTime?
+  dueNotifiedAt  DateTime?
+  createdById    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  employee Employee          @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  goals    PerformanceGoal[]
+
+  @@index([organizationId, status])
+  @@index([employeeId])
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  ACHIEVED
+  MISSED
+  CANCELLED
+}
+
+model PerformanceGoal {
+  id          String     @id @default(cuid())
+  employeeId  String
+  reviewId    String?
+  title       String
+  description String?
+  status      GoalStatus @default(NOT_STARTED)
+  weight      Int        @default(0)
+  result      String?
+  dueDate     DateTime?  @db.Date
+  createdById String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  employee Employee           @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  review   PerformanceReview? @relation(fields: [reviewId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 7 — Operations: procurement, purchase orders, receipts, assets,
+// documents (secure storage + versions), support tickets + SLA, knowledge base.
+// Procurement is not accounting: a PO never creates a payment or a liability.
+// ---------------------------------------------------------------------------
+
+enum ProcurementStatus {
+  DRAFT
+  SUBMITTED
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  ORDERING
+  ORDERED
+  RECEIVED
+  CANCELLED
+}
+
+enum ProcurementApprover {
+  /// the requester's line manager (Employee.manager → user), falls back to procurement approvers
+  LINE_MANAGER
+  /// the project manager of the request's project, falls back to procurement approvers
+  PROJECT_MANAGER
+  /// any holder of procurement.requests.approve
+  PROCUREMENT
+  /// any holder of procurement.requests.approve_executive
+  EXECUTIVE
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  ISSUED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CANCELLED
+  CLOSED
+}
+
+enum ReceiptCondition {
+  GOOD
+  DAMAGED
+  INCORRECT
+}
+
+enum AssetStatus {
+  IN_STOCK
+  ASSIGNED
+  IN_USE
+  MAINTENANCE
+  LOST
+  DAMAGED
+  RETIRED
+  DISPOSED
+}
+
+enum MaintenanceType {
+  PREVENTIVE
+  REPAIR
+  INSPECTION
+  UPGRADE
+  OTHER
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum DocumentCategory {
+  COMPANY
+  CLIENT
+  CONTRACT
+  PROJECT
+  FINANCE
+  HR
+  VENDOR
+  PROCUREMENT
+  ASSET
+  LEGAL
+  OTHER
+}
+
+enum DocumentClassification {
+  PUBLIC_INTERNAL
+  INTERNAL
+  CONFIDENTIAL
+  RESTRICTED
+}
+
+enum DocumentStatus {
+  ACTIVE
+  IN_REVIEW
+  ARCHIVED
+}
+
+enum DocumentEntityType {
+  CLIENT
+  QUOTATION
+  CONTRACT
+  PROJECT
+  INVOICE
+  EXPENSE
+  EMPLOYEE
+  VENDOR
+  PROCUREMENT_REQUEST
+  PURCHASE_ORDER
+  ASSET
+  TICKET
+}
+
+enum TicketStatus {
+  NEW
+  OPEN
+  IN_PROGRESS
+  WAITING_CLIENT
+  WAITING_INTERNAL
+  RESOLVED
+  CLOSED
+  CANCELLED
+}
+
+enum TicketSource {
+  INTERNAL
+  CLIENT_RECORDED
+  EMAIL_FUTURE
+  WHATSAPP_FUTURE
+  WEBSITE_FUTURE
+  PHONE
+  OTHER
+}
+
+enum TicketCategory {
+  TECHNICAL
+  BUG
+  ACCESS
+  CHANGE_REQUEST
+  BILLING
+  QUESTION
+  OTHER
+}
+
+enum TicketCommentVisibility {
+  INTERNAL
+  /// marked for a future client portal — never sent anywhere today
+  CLIENT_FACING
+}
+
+enum KnowledgeStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum KnowledgeVisibility {
+  ALL_EMPLOYEES
+  DEPARTMENT
+  ROLE_RESTRICTED
+  SUPPORT_ONLY
+}
+
+model VendorContact {
+  id             String   @id @default(cuid())
+  organizationId String
+  vendorId       String
+  name           String
+  role           String?
+  email          String?
+  phone          String?
+  isPrimary      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+}
+
+/// Configurable procurement approval routing (first matching active rule by sortOrder).
+model ProcurementApprovalRule {
+  id             String              @id @default(cuid())
+  organizationId String
+  name           String
+  sortOrder      Int                 @default(0)
+  minAmount      Decimal             @default(0) @db.Decimal(14, 2)
+  /// exclusive upper bound; null = no limit
+  maxAmount      Decimal?            @db.Decimal(14, 2)
+  departmentId   String?
+  /// null = any; true = only project requests; false = only non-project requests
+  forProject     Boolean?
+  category       String?
+  approver       ProcurementApprover
+  active         Boolean             @default(true)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([organizationId, active, sortOrder])
+}
+
+model ProcurementRequest {
+  id                    String               @id @default(cuid())
+  organizationId        String
+  /// PR-YYYY-NNNNNN
+  number                String
+  requesterId           String
+  departmentId          String?
+  projectId             String?
+  title                 String
+  description           String?
+  businessJustification String
+  category              String?
+  requestedDate         DateTime             @db.Date
+  neededByDate          DateTime?            @db.Date
+  /// server-calculated from the items
+  estimatedAmount       Decimal              @default(0) @db.Decimal(14, 2)
+  currency              String               @default("SAR")
+  priority              Priority             @default(MEDIUM)
+  status                ProcurementStatus    @default(DRAFT)
+  preferredVendorId     String?
+  approvalId            String?
+  approvalRuleName      String?
+  approver              ProcurementApprover?
+  submittedAt           DateTime?
+  approvedAt            DateTime?
+  approvedById          String?
+  rejectedAt            DateTime?
+  rejectionReason       String?
+  cancelledAt           DateTime?
+  cancelReason          String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
+  department      Department?              @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  project         Project?                 @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  preferredVendor Vendor?                  @relation(fields: [preferredVendorId], references: [id], onDelete: Restrict)
+  items           ProcurementRequestItem[]
+  purchaseOrders  PurchaseOrder[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([requesterId])
+  @@index([projectId])
+}
+
+model ProcurementRequestItem {
+  id                 String  @id @default(cuid())
+  requestId          String
+  description        String
+  quantity           Decimal @db.Decimal(12, 3)
+  estimatedUnitPrice Decimal @db.Decimal(14, 2)
+  estimatedTotal     Decimal @db.Decimal(14, 2)
+  category           String?
+  preferredVendorId  String?
+  assetExpected      Boolean @default(false)
+  projectId          String?
+  departmentId       String?
+  sortOrder          Int     @default(0)
+
+  request ProcurementRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+}
+
+model PurchaseOrder {
+  id                   String              @id @default(cuid())
+  organizationId       String
+  /// PO-YYYY-NNNNNN
+  number               String
+  vendorId             String
+  procurementRequestId String?
+  departmentId         String?
+  projectId            String?
+  currency             String              @default("SAR")
+  status               PurchaseOrderStatus @default(DRAFT)
+  issueDate            DateTime?           @db.Date
+  expectedDeliveryDate DateTime?           @db.Date
+  subtotal             Decimal             @default(0) @db.Decimal(14, 2)
+  discountTotal        Decimal             @default(0) @db.Decimal(14, 2)
+  taxTotal             Decimal             @default(0) @db.Decimal(14, 2)
+  total                Decimal             @default(0) @db.Decimal(14, 2)
+  terms                String?
+  notes                String?
+  createdById          String
+  approvalId           String?
+  approvedById         String?
+  approvedAt           DateTime?
+  /// approval waived: PO covered by its approved procurement request
+  approvalWaivedReason String?
+  issuedAt             DateTime?
+  issuedById           String?
+  receivedAt           DateTime?
+  cancelledAt          DateTime?
+  cancelReason         String?
+  closedAt             DateTime?
+  closeReason          String?
+  /// cancel-and-replace: the PO this one replaces
+  revisionOfId         String?             @unique
+  overdueNotifiedAt    DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  vendor             Vendor              @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  procurementRequest ProcurementRequest? @relation(fields: [procurementRequestId], references: [id], onDelete: Restrict)
+  department         Department?         @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  project            Project?            @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  revisionOf         PurchaseOrder?      @relation("PoRevision", fields: [revisionOfId], references: [id], onDelete: Restrict)
+  revisedBy          PurchaseOrder?      @relation("PoRevision")
+  items              PurchaseOrderItem[]
+  receipts           PurchaseReceipt[]
+  assets             Asset[]
+  expenses           Expense[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([vendorId])
+  @@index([procurementRequestId])
+  @@index([projectId])
+}
+
+model PurchaseOrderItem {
+  id               String  @id @default(cuid())
+  purchaseOrderId  String
+  description      String
+  quantity         Decimal @db.Decimal(12, 3)
+  unitPrice        Decimal @db.Decimal(14, 2)
+  discountAmount   Decimal @default(0) @db.Decimal(14, 2)
+  taxRate          Decimal @default(15) @db.Decimal(5, 2)
+  subtotal         Decimal @db.Decimal(14, 2)
+  taxAmount        Decimal @db.Decimal(14, 2)
+  total            Decimal @db.Decimal(14, 2)
+  receivedQuantity Decimal @default(0) @db.Decimal(12, 3)
+  assetExpected    Boolean @default(false)
+  category         String?
+  serviceId        String?
+  projectId        String?
+  sortOrder        Int     @default(0)
+
+  purchaseOrder PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  receiptItems  PurchaseReceiptItem[]
+  assets        Asset[]
+
+  @@index([purchaseOrderId])
+}
+
+model PurchaseReceipt {
+  id              String   @id @default(cuid())
+  organizationId  String
+  purchaseOrderId String
+  receivedById    String
+  receivedAt      DateTime @db.Date
+  notes           String?
+  createdAt       DateTime @default(now())
+
+  purchaseOrder PurchaseOrder         @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  items         PurchaseReceiptItem[]
+
+  @@index([purchaseOrderId])
+}
+
+model PurchaseReceiptItem {
+  id               String           @id @default(cuid())
+  receiptId        String
+  poItemId         String
+  quantityReceived Decimal          @db.Decimal(12, 3)
+  condition        ReceiptCondition @default(GOOD)
+  notes            String?
+
+  receipt PurchaseReceipt   @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  poItem  PurchaseOrderItem @relation(fields: [poItemId], references: [id], onDelete: Restrict)
+
+  @@index([poItemId])
+}
+
+model AssetCategory {
+  id                String   @id @default(cuid())
+  organizationId    String
+  key               String
+  nameAr            String
+  nameEn            String
+  /// days before warranty end that raise "warranty expiring"
+  warrantyAlertDays Int      @default(30)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  assets            Asset[]
+
+  @@unique([organizationId, key])
+}
+
+model Asset {
+  id                  String      @id @default(cuid())
+  organizationId      String
+  /// AST-000001
+  number              String
+  name                String
+  categoryId          String
+  serialNumber        String?
+  manufacturer        String?
+  model               String?
+  purchaseOrderId     String?
+  purchaseOrderItemId String?
+  vendorId            String?
+  purchaseDate        DateTime?   @db.Date
+  purchaseCost        Decimal?    @db.Decimal(14, 2)
+  currency            String?
+  warrantyEndDate     DateTime?   @db.Date
+  status              AssetStatus @default(IN_STOCK)
+  location            String?
+  assignedEmployeeId  String?
+  notes               String?
+  warrantyNotifiedAt  DateTime?
+  createdById         String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  archivedAt          DateTime?
+
+  category          AssetCategory      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  purchaseOrder     PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  purchaseOrderItem PurchaseOrderItem? @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Restrict)
+  vendor            Vendor?            @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  assignedEmployee  Employee?          @relation(fields: [assignedEmployeeId], references: [id], onDelete: Restrict)
+  assignments       AssetAssignment[]
+  maintenance       AssetMaintenance[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([assignedEmployeeId])
+  @@index([purchaseOrderItemId])
+}
+
+/// Append-only history: a row is closed once (returnedAt) and never deleted.
+model AssetAssignment {
+  id                    String    @id @default(cuid())
+  organizationId        String
+  assetId               String
+  employeeId            String
+  assignedAt            DateTime  @default(now())
+  assignedById          String
+  conditionAtAssignment String
+  notes                 String?
+  returnedAt            DateTime?
+  returnedById          String?
+  conditionAtReturn     String?
+  returnNotes           String?
+
+  asset    Asset    @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+
+  @@index([assetId])
+  @@index([employeeId])
+}
+
+model AssetMaintenance {
+  id                String            @id @default(cuid())
+  organizationId    String
+  assetId           String
+  type              MaintenanceType   @default(REPAIR)
+  description       String
+  vendorId          String?
+  scheduledDate     DateTime?         @db.Date
+  startedAt         DateTime?
+  completedDate     DateTime?         @db.Date
+  cost              Decimal?          @db.Decimal(14, 2)
+  currency          String            @default("SAR")
+  status            MaintenanceStatus @default(SCHEDULED)
+  /// asset status to restore when the maintenance ends
+  assetStatusBefore AssetStatus?
+  /// optional later link to the expense that paid for it (never auto-created)
+  expenseId         String?
+  dueNotifiedAt     DateTime?
+  createdById       String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  asset  Asset   @relation(fields: [assetId], references: [id], onDelete: Restrict)
+  vendor Vendor? @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+
+  @@index([assetId])
+  @@index([organizationId, status])
+}
+
+model Document {
+  id                String                 @id @default(cuid())
+  organizationId    String
+  /// DOC-000001
+  number            String
+  title             String
+  description       String?
+  category          DocumentCategory
+  entityType        DocumentEntityType?
+  entityId          String?
+  ownerId           String
+  classification    DocumentClassification @default(INTERNAL)
+  status            DocumentStatus         @default(ACTIVE)
+  tags              String[]
+  currentVersion    Int                    @default(0)
+  reviewerId        String?
+  reviewRequestedAt DateTime?
+  reviewNotifiedAt  DateTime?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  archivedAt        DateTime?
+
+  versions DocumentVersion[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, entityType, entityId])
+  @@index([organizationId, status])
+}
+
+/// Immutable: a new upload is a new row; storageKey is never exposed to clients.
+model DocumentVersion {
+  id             String   @id @default(cuid())
+  organizationId String
+  documentId     String
+  versionNumber  Int
+  storageKey     String   @unique
+  sha256         String
+  mime           String
+  size           Int
+  originalName   String
+  /// NOT_SCANNED unless a real scanner is configured (DocumentScanner)
+  scanStatus     String   @default("NOT_SCANNED")
+  note           String?
+  uploadedById   String
+  createdAt      DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  /// Phase 8: storage driver that holds this version (local / s3) — old versions keep their driver
+  storageDriver String @default("local")
+
+  @@unique([documentId, versionNumber])
+}
+
+model SlaPolicy {
+  id                   String   @id @default(cuid())
+  organizationId       String
+  name                 String
+  priority             Priority
+  firstResponseMinutes Int
+  resolutionMinutes    Int
+  /// warning when this share of the window has elapsed
+  warnAtPercent        Int      @default(80)
+  /// pause the resolution clock while WAITING_CLIENT (elapsed time only — no business-hours engine)
+  pauseOnWaitingClient Boolean  @default(false)
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tickets SupportTicket[]
+
+  @@index([organizationId, priority, active])
+}
+
+model SupportTicket {
+  id                 String         @id @default(cuid())
+  organizationId     String
+  /// TCK-000001
+  number             String
+  clientId           String?
+  contactId          String?
+  projectId          String?
+  serviceId          String?
+  subject            String
+  description        String
+  category           TicketCategory @default(TECHNICAL)
+  priority           Priority       @default(MEDIUM)
+  status             TicketStatus   @default(NEW)
+  assignedToId       String?
+  createdById        String
+  source             TicketSource   @default(INTERNAL)
+  slaPolicyId        String?
+  firstResponseDueAt DateTime?
+  resolutionDueAt    DateTime?
+  firstResponseAt    DateTime?
+  resolvedAt         DateTime?
+  closedAt           DateTime?
+  cancelledAt        DateTime?
+  pausedAt           DateTime?
+  pausedMinutes      Int            @default(0)
+  responseWarnedAt   DateTime?
+  responseBreachedAt DateTime?
+  slaWarnedAt        DateTime?
+  slaBreachedAt      DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  client    Client?               @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  contact   Contact?              @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  project   Project?              @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  service   Service?              @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  slaPolicy SlaPolicy?            @relation(fields: [slaPolicyId], references: [id], onDelete: Restrict)
+  comments  TicketComment[]
+  history   TicketStatusHistory[]
+  tags      TicketTag[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([assignedToId])
+  @@index([clientId])
+  @@index([projectId])
+}
+
+model TicketComment {
+  id             String                  @id @default(cuid())
+  organizationId String
+  ticketId       String
+  authorId       String
+  body           String
+  visibility     TicketCommentVisibility @default(INTERNAL)
+  createdAt      DateTime                @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+model TicketStatusHistory {
+  id          String        @id @default(cuid())
+  ticketId    String
+  fromStatus  TicketStatus?
+  toStatus    TicketStatus
+  changedById String?
+  reason      String?
+  createdAt   DateTime      @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+}
+
+model TicketTag {
+  id       String @id @default(cuid())
+  ticketId String
+  tag      String
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@unique([ticketId, tag])
+  @@index([tag])
+}
+
+model KnowledgeCategory {
+  id             String             @id @default(cuid())
+  organizationId String
+  key            String
+  nameAr         String
+  nameEn         String
+  sortOrder      Int                @default(0)
+  active         Boolean            @default(true)
+  articles       KnowledgeArticle[]
+
+  @@unique([organizationId, key])
+}
+
+/// Working copy + pointer to the live (published) version. Readers only ever see a published version.
+model KnowledgeArticle {
+  id                 String              @id @default(cuid())
+  organizationId     String
+  /// KB-000001
+  number             String
+  titleAr            String
+  titleEn            String
+  bodyAr             String
+  bodyEn             String
+  categoryId         String
+  status             KnowledgeStatus     @default(DRAFT)
+  visibility         KnowledgeVisibility @default(ALL_EMPLOYEES)
+  departmentId       String?
+  roleKeys           String[]
+  tags               String[]
+  authorId           String
+  reviewComment      String?
+  reviewRequestedAt  DateTime?
+  reviewNotifiedAt   DateTime?
+  publishedAt        DateTime?
+  publishedById      String?
+  publishedVersionId String?             @unique
+  currentVersion     Int                 @default(0)
+  archivedAt         DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  category         KnowledgeCategory         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  department       Department?               @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  publishedVersion KnowledgeArticleVersion?  @relation("LiveVersion", fields: [publishedVersionId], references: [id], onDelete: Restrict)
+  versions         KnowledgeArticleVersion[] @relation("ArticleVersions")
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+}
+
+/// Immutable snapshot written on every publish.
+model KnowledgeArticleVersion {
+  id            String   @id @default(cuid())
+  articleId     String
+  version       Int
+  titleAr       String
+  titleEn       String
+  bodyAr        String
+  bodyEn        String
+  publishedById String
+  createdAt     DateTime @default(now())
+
+  article KnowledgeArticle  @relation("ArticleVersions", fields: [articleId], references: [id], onDelete: Restrict)
+  liveFor KnowledgeArticle? @relation("LiveVersion")
+
+  @@unique([articleId, version])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 8 — Integrations, webhooks, outbox, WhatsApp Business Platform,
+// marketing campaigns, consent and attribution. Nothing here fakes a provider:
+// a connection is CONNECTED only after a real health check succeeded.
+// ---------------------------------------------------------------------------
+
+enum IntegrationProvider {
+  WHATSAPP
+  GOOGLE
+  GMAIL
+  GOOGLE_CALENDAR
+  GOOGLE_DRIVE
+  META
+  GOOGLE_ADS
+  ZID
+  SALLA
+  SHOPIFY
+  NOVA
+  WEBHOOK
+  CUSTOM
+  S3
+}
+
+enum IntegrationStatus {
+  NOT_CONFIGURED
+  CONFIGURED
+  CONNECTED
+  DEGRADED
+  ERROR
+  DISABLED
+}
+
+enum IntegrationEnvironment {
+  PRODUCTION
+  SANDBOX
+}
+
+enum IntegrationDirection {
+  INBOUND
+  OUTBOUND
+  INTERNAL
+}
+
+enum ExecutionStatus {
+  SUCCEEDED
+  FAILED
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  DEAD_LETTER
+  DISMISSED
+}
+
+enum WebhookStatus {
+  PROCESSED
+  REJECTED
+  FAILED
+  IGNORED
+}
+
+enum WaDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum WaMessageStatus {
+  RECEIVED
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum WaMatchState {
+  MATCHED
+  AMBIGUOUS
+  UNMATCHED
+}
+
+enum WaTemplateStatus {
+  APPROVED
+  PENDING
+  REJECTED
+  PAUSED
+  DISABLED
+  UNKNOWN
+}
+
+enum CampaignChannel {
+  WHATSAPP
+  META
+  GOOGLE
+  LINKEDIN
+  TIKTOK
+  EMAIL
+  OTHER
+}
+
+enum CampaignStatus {
+  DRAFT
+  READY
+  SCHEDULED
+  RUNNING
+  PAUSED
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+enum RecipientStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  READ
+  REPLIED
+  FAILED
+  SKIPPED
+}
+
+enum ConsentChannel {
+  WHATSAPP
+  EMAIL
+  SMS
+  PHONE
+}
+
+enum ConsentStatus {
+  OPTED_IN
+  OPTED_OUT
+  BLOCKED
+  UNKNOWN
+}
+
+enum SpendSource {
+  MANUAL
+  PROVIDER_SYNCED
+}
+
+enum TouchType {
+  FIRST
+  TOUCH
+}
+
+/// One configured connection to an external provider. Secrets are never stored here (see IntegrationSecret).
+model IntegrationConnection {
+  id                   String                 @id @default(cuid())
+  organizationId       String
+  provider             IntegrationProvider
+  name                 String
+  status               IntegrationStatus      @default(NOT_CONFIGURED)
+  environment          IntegrationEnvironment @default(PRODUCTION)
+  /// non-secret settings only (ids, URLs, subscribed events)
+  config               Json                   @default("{}")
+  /// secret name → reference ("env:VAR" or "enc:<IntegrationSecret.id>") — never the value
+  secretRefs           Json                   @default("{}")
+  lastHealthCheckAt    DateTime?
+  lastHealthResult     String?
+  lastSuccessfulSyncAt DateTime?
+  lastFailureAt        DateTime?
+  lastErrorCode        String?
+  lastErrorMessage     String?
+  credentialsExpireAt  DateTime?
+  disabledAt           DateTime?
+  createdById          String?
+  updatedById          String?
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+
+  secrets       IntegrationSecret[]
+  executions    IntegrationExecution[]
+  webhookEvents WebhookEvent[]
+
+  @@unique([organizationId, provider, name])
+  @@index([organizationId, status])
+}
+
+/// AES-256-GCM encrypted secret (master key from INTEGRATION_MASTER_KEY). Plaintext never leaves the server.
+model IntegrationSecret {
+  id             String    @id @default(cuid())
+  organizationId String
+  connectionId   String
+  name           String
+  ciphertext     String
+  iv             String
+  authTag        String
+  keyVersion     Int       @default(1)
+  createdAt      DateTime  @default(now())
+  rotatedAt      DateTime?
+
+  connection IntegrationConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, name])
+}
+
+/// One attempt of an integration action (health check, send, sync, webhook processing). Sanitized only.
+model IntegrationExecution {
+  id                String               @id @default(cuid())
+  organizationId    String
+  connectionId      String?
+  provider          IntegrationProvider
+  direction         IntegrationDirection
+  action            String
+  externalReference String?
+  status            ExecutionStatus
+  attempts          Int                  @default(1)
+  startedAt         DateTime             @default(now())
+  completedAt       DateTime?
+  errorCode         String?
+  sanitizedError    String?
+  metadata          Json?
+  outboxId          String?
+
+  connection IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, startedAt])
+  @@index([organizationId, status])
+}
+
+/// Inbound webhook delivery. (organizationId, provider, externalEventId) is unique → business logic runs once.
+model WebhookEvent {
+  id              String              @id @default(cuid())
+  organizationId  String
+  connectionId    String?
+  provider        IntegrationProvider
+  externalEventId String
+  eventType       String
+  receivedAt      DateTime            @default(now())
+  processedAt     DateTime?
+  status          WebhookStatus
+  payloadHash     String
+  signatureValid  Boolean
+  error           String?
+  /// sanitized metadata (counts, ids) — never the raw payload or headers
+  metadata        Json?
+  duplicateCount  Int                 @default(0)
+
+  connection IntegrationConnection? @relation(fields: [connectionId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, provider, externalEventId])
+  @@index([organizationId, status, receivedAt])
+}
+
+/// Transactional outbox: written in the business transaction, delivered by the worker after commit.
+model IntegrationOutbox {
+  id             String              @id @default(cuid())
+  organizationId String
+  provider       IntegrationProvider
+  connectionId   String?
+  eventType      String
+  entityType     String?
+  entityId       String?
+  payload        Json
+  /// business idempotency key — the same work is never queued twice
+  idempotencyKey String
+  status         OutboxStatus        @default(PENDING)
+  attempts       Int                 @default(0)
+  maxAttempts    Int                 @default(6)
+  nextAttemptAt  DateTime            @default(now())
+  lockedAt       DateTime?
+  lockedBy       String?
+  lastErrorCode  String?
+  lastError      String?
+  completedAt    DateTime?
+  deadAt         DateTime?
+  dismissedAt    DateTime?
+  dismissedById  String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([organizationId, idempotencyKey])
+  @@index([status, nextAttemptAt])
+  @@index([organizationId, status])
+}
+
+model WhatsAppConversation {
+  id             String       @id @default(cuid())
+  organizationId String
+  connectionId   String?
+  /// WhatsApp id = normalized phone (digits, country code)
+  waId           String
+  profileName    String?
+  matchState     WaMatchState @default(UNMATCHED)
+  /// ambiguous candidates [{type,id,label}] — shown to the operator, never auto-merged
+  candidates     Json?
+  leadId         String?
+  contactId      String?
+  clientId       String?
+  ticketId       String?
+  lastMessageAt  DateTime?
+  lastInboundAt  DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  messages WhatsAppMessage[]
+
+  @@unique([organizationId, waId])
+  @@index([organizationId, lastMessageAt])
+}
+
+model WhatsAppMessage {
+  id                  String          @id @default(cuid())
+  organizationId      String
+  conversationId      String
+  direction           WaDirection
+  providerMessageId   String?
+  messageType         String
+  body                String?
+  /// sanitized metadata (template name, media id / mime — media itself is never stored publicly)
+  metadata            Json?
+  status              WaMessageStatus
+  sentAt              DateTime?
+  deliveredAt         DateTime?
+  readAt              DateTime?
+  failedAt            DateTime?
+  errorCode           String?
+  campaignRecipientId String?
+  createdById         String?
+  createdAt           DateTime        @default(now())
+
+  conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, providerMessageId])
+  @@index([conversationId, createdAt])
+}
+
+/// Local mirror of provider templates. Status always comes from the provider (sync / webhook).
+model WhatsAppTemplate {
+  id                 String           @id @default(cuid())
+  organizationId     String
+  connectionId       String?
+  providerTemplateId String?
+  name               String
+  language           String
+  category           String?
+  status             WaTemplateStatus @default(UNKNOWN)
+  components         Json?
+  syncedAt           DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  campaigns MarketingCampaign[]
+
+  @@unique([organizationId, name, language])
+}
+
+/// Append-only consent history per address and channel; the latest row is the current state.
+model ContactConsent {
+  id             String         @id @default(cuid())
+  organizationId String
+  channel        ConsentChannel
+  /// normalized phone / lower-case email
+  address        String
+  status         ConsentStatus
+  source         String
+  note           String?
+  leadId         String?
+  contactId      String?
+  recordedById   String?
+  recordedAt     DateTime       @default(now())
+
+  @@index([organizationId, channel, address, recordedAt])
+}
+
+model MarketingCampaign {
+  id                 String          @id @default(cuid())
+  organizationId     String
+  /// CMP-000001
+  number             String
+  name               String
+  channel            CampaignChannel
+  objective          String?
+  budget             Decimal?        @db.Decimal(14, 2)
+  currency           String          @default("SAR")
+  startDate          DateTime?       @db.Date
+  endDate            DateTime?       @db.Date
+  ownerId            String
+  status             CampaignStatus  @default(DRAFT)
+  externalCampaignId String?
+  utmSource          String?
+  utmMedium          String?
+  utmCampaign        String?
+  utmContent         String?
+  utmTerm            String?
+  /// WhatsApp: the approved template (required for business-initiated messages)
+  templateId         String?
+  templateParams     Json?
+  /// every content / audience change bumps the version; approvals are bound to it
+  version            Int             @default(1)
+  requireOptIn       Boolean         @default(true)
+  sendRatePerMinute  Int             @default(30)
+  approvalId         String?
+  approvedVersion    Int?
+  approvedSnapshot   Json?
+  recipientCount     Int             @default(0)
+  scheduledAt        DateTime?
+  startedAt          DateTime?
+  pausedAt           DateTime?
+  completedAt        DateTime?
+  cancelledAt        DateTime?
+  failedAt           DateTime?
+  failureReason      String?
+  createdById        String
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  template   WhatsAppTemplate?   @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  audience   CampaignAudience?
+  recipients CampaignRecipient[]
+  messages   CampaignMessage[]
+  spend      CampaignSpend[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([organizationId, utmCampaign])
+}
+
+/// Audience definition (CRM filters). Recipients are snapshotted from it when the campaign starts.
+model CampaignAudience {
+  id             String    @id @default(cuid())
+  campaignId     String    @unique
+  filter         Json
+  estimatedCount Int       @default(0)
+  eligibleCount  Int       @default(0)
+  computedAt     DateTime?
+
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model CampaignRecipient {
+  id                String          @id @default(cuid())
+  campaignId        String
+  phone             String
+  name              String?
+  leadId            String?
+  contactId         String?
+  clientId          String?
+  status            RecipientStatus @default(PENDING)
+  skipReason        String?
+  providerMessageId String?
+  queuedAt          DateTime?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  readAt            DateTime?
+  repliedAt         DateTime?
+  failedAt          DateTime?
+  errorCode         String?
+  createdAt         DateTime        @default(now())
+
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  messages CampaignMessage[]
+
+  @@unique([campaignId, phone])
+  @@index([campaignId, status])
+  @@index([providerMessageId])
+}
+
+/// One send of one campaign version to one recipient — the unique key makes a duplicate send impossible.
+model CampaignMessage {
+  id             String   @id @default(cuid())
+  campaignId     String
+  recipientId    String
+  messageVersion Int
+  outboxId       String?
+  waMessageId    String?
+  createdAt      DateTime @default(now())
+
+  campaign  MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  recipient CampaignRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, recipientId, messageVersion])
+}
+
+model CampaignSpend {
+  id           String      @id @default(cuid())
+  campaignId   String
+  date         DateTime    @db.Date
+  amount       Decimal     @db.Decimal(14, 2)
+  currency     String      @default("SAR")
+  source       SpendSource @default(MANUAL)
+  note         String?
+  recordedById String?
+  createdAt    DateTime    @default(now())
+
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+}
+
+/// Append-only acquisition history of a lead. The FIRST touch is never overwritten; later touches are added.
+model AttributionTouch {
+  id             String    @id @default(cuid())
+  organizationId String
+  leadId         String
+  touchType      TouchType
+  source         String
+  medium         String?
+  utmCampaign    String?
+  utmContent     String?
+  utmTerm        String?
+  referrer       String?
+  landingPage    String?
+  campaignId     String?
+  occurredAt     DateTime  @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, campaignId])
+  @@index([leadId, occurredAt])
+}
+
+// ---------------------------------------------------------------------------------------------
+// Phase 9 — deterministic business rules, job registry, backups
+// ---------------------------------------------------------------------------------------------
+
+enum AutomationExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  SKIPPED
+  DEAD_LETTER
+  DISMISSED
+}
+
+/// A deterministic rule: trigger (existing domain event) → conditions (validated JSON tree) → actions (allow-listed).
+model AutomationRule {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  enabled        Boolean  @default(false)
+  triggerEvent   String
+  /// { all|any: [ {field, op, value} | nested group ] } — validated against the trigger's field catalog
+  conditions     Json
+  /// [ {type, ...params} ] — allow-listed action types only
+  actions        Json
+  /// ORGANIZATION (only scope in this build)
+  scope          String   @default("ORGANIZATION")
+  /// lower runs first; ties broken by createdAt then id (deterministic order)
+  priority       Int      @default(100)
+  /// current version; every content change creates a new immutable AutomationRuleVersion
+  version        Int      @default(1)
+  /// template key when created from a built-in template
+  templateKey    String?
+  /// actions run with this user's CURRENT permissions (minus high-risk ones)
+  runAsUserId    String
+  createdById    String
+  updatedById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  versions   AutomationRuleVersion[]
+  executions AutomationExecution[]
+
+  @@index([organizationId, triggerEvent, enabled])
+}
+
+/// Immutable snapshot of a rule version — executions reference it so history keeps its meaning.
+model AutomationRuleVersion {
+  id           String   @id @default(cuid())
+  ruleId       String
+  version      Int
+  triggerEvent String
+  conditions   Json
+  actions      Json
+  runAsUserId  String
+  createdById  String
+  createdAt    DateTime @default(now())
+
+  rule       AutomationRule        @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  executions AutomationExecution[]
+
+  @@unique([ruleId, version])
+}
+
+model AutomationExecution {
+  id              String                    @id @default(cuid())
+  organizationId  String
+  ruleId          String
+  ruleVersionId   String
+  domainEventId   String
+  eventType       String
+  entityType      String?
+  entityId        String?
+  correlationId   String?
+  depth           Int                       @default(0)
+  status          AutomationExecutionStatus @default(PENDING)
+  attempts        Int                       @default(0)
+  maxAttempts     Int                       @default(5)
+  nextAttemptAt   DateTime                  @default(now())
+  /// entity values the conditions were evaluated against (sanitized, allow-listed fields only)
+  input           Json?
+  conditionResult Boolean?
+  /// per action: {type, status, ref?, error?} — completed actions are not repeated on retry
+  actionResults   Json?
+  skipReason      String?
+  error           String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  dismissedAt     DateTime?
+  dismissedById   String?
+  dismissReason   String?
+  createdAt       DateTime                  @default(now())
+
+  rule        AutomationRule        @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  ruleVersion AutomationRuleVersion @relation(fields: [ruleVersionId], references: [id], onDelete: Restrict)
+
+  /// idempotency: one domain event never executes the same rule twice
+  @@unique([ruleId, domainEventId])
+  @@index([organizationId, status, createdAt])
+  @@index([status, nextAttemptAt])
+  @@index([ruleId, correlationId])
+}
+
+enum JobRunStatus {
+  IDLE
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+/// Operational job registry (one row per lease key): last run, duration, heartbeat. Visibility only — leases stay in JobLease.
+model SystemJob {
+  key             String       @id
+  name            String
+  status          JobRunStatus @default(IDLE)
+  holder          String?
+  lastStartedAt   DateTime?
+  lastCompletedAt DateTime?
+  lastSucceededAt DateTime?
+  lastFailedAt    DateTime?
+  lastDurationMs  Int?
+  lastError       String?
+  heartbeatAt     DateTime?
+  runCount        Int          @default(0)
+  failCount       Int          @default(0)
+  /// consecutive failures (reset on success) — drives alerts
+  failStreak      Int          @default(0)
+  updatedAt       DateTime     @updatedAt
+}
+
+enum BackupStatus {
+  STARTED
+  COMPLETED
+  FAILED
+  VERIFIED
+  VERIFY_FAILED
+}
+
+/// Backup runs written by `npm run db:backup` / `db:verify-backup` (metadata only — never credentials).
+model BackupRecord {
+  id           String       @id @default(cuid())
+  kind         String       @default("database")
+  status       BackupStatus
+  fileName     String?
+  sizeBytes    BigInt?
+  sha256       String?
+  /// database name, server version, migrations, row counts (no host / user / password)
+  metadata     Json?
+  error        String?
+  startedAt    DateTime     @default(now())
+  completedAt  DateTime?
+  verifiedAt   DateTime?
+  verifyDetail Json?
+
+  @@index([kind, startedAt])
 }

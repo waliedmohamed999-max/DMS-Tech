@@ -51,6 +51,37 @@ See `prisma/schema.prisma` and `prisma/migrations/*`.
 
 `Project` · `ProjectMember` · `ProjectMilestone` · `Task` · `Comment` · `TimeEntry` · `TimesheetSubmission` · `ProjectDeliverable` · `ProjectDependency` · `ProjectTemplate` (+ milestones, tasks) · `JobLease`; `Notification.dedupeKey`; 4 organization settings. Additive migration `20261001090000_phase4_projects` with CHECKs, partial unique indexes (one live project per contract / accepted version) and time-entry freeze triggers. Details: [PROJECTS.md](PROJECTS.md).
 
+## Data model (Phase 5, implemented)
+
+`Invoice` · `InvoiceItem` · `InvoiceTimeEntry` · `InvoiceCollectionNote` · `Payment` · `PaymentAllocation` · `Expense` · `ExpenseCategory` · `Vendor` · `UserCostRate`; `CommercialDocument.invoiceId` (`INVOICE_PDF`); 6 organization settings. Additive migration `20261002090000_phase5_finance` with balance/lifecycle CHECKs, partial unique indexes for billing deduplication, and freeze / append-only triggers on invoices, lines, payments, allocations and expenses. Details: [FINANCE.md](FINANCE.md).
+
+## Data model (Phase 6, implemented)
+
+`Employee` · `EmployeeCompensation` · `EmployeeBankAccount` · `AttendancePolicy` · `CompanyHoliday` · `AttendanceRecord` · `LeaveType` · `LeaveLedgerEntry` · `LeaveRequest` · `PayrollComponent` · `PayrollPeriod` · `PayrollEntry` · `PayrollAdjustment` · `JobOpening` · `Candidate` · `Application` · `Interview` · `CandidateEvaluation` · `Offer` · `PerformanceReview` · `PerformanceGoal`; `Department.active`. Additive migration `20261003090000_phase6_people` with CHECKs, partial unique indexes (one open compensation / bank row, one candidate per email, one live offer per application), a manager-cycle trigger, effective-history guards, an append-only leave ledger and payroll freeze triggers. Sensitive data is protected by separate tables + server-side permission checks and masking (not by a single `EmployeeSensitive` table as first proposed). Details: [HR.md](HR.md).
+
+## Data model (Phase 7, implemented)
+
+`ProcurementApprovalRule` · `ProcurementRequest` (+ items) · `PurchaseOrder` (+ items) · `PurchaseReceipt` (+ items) · `VendorContact` (+ Phase 5 `Vendor` ops columns) · `AssetCategory` · `Asset` · `AssetAssignment` · `AssetMaintenance` · `Document` · `DocumentVersion` · `SlaPolicy` · `SupportTicket` · `TicketComment` · `TicketStatusHistory` · `TicketTag` · `KnowledgeCategory` · `KnowledgeArticle` · `KnowledgeArticleVersion`; `Expense.purchaseOrderId`; notification categories OPERATIONS / SUPPORT. Additive migration `20261005090000_phase7_operations` with CHECKs (PO arithmetic, received ≤ ordered, lifecycle timestamps, classification rules), partial unique indexes (one active asset assignment, one active SLA policy per priority, serial per org), PO freeze triggers and append-only guards (receipts, versions, comments, history, assignments). Files live behind `DocumentStorageAdapter` (local private directory; S3 not configured). Details: [OPERATIONS.md](OPERATIONS.md).
+
+## Data model (Phase 8, implemented)
+
+`IntegrationConnection` (+ `IntegrationSecret` AES-GCM, `IntegrationExecution`) · `WebhookEvent` (unique per provider event id) · `IntegrationOutbox` (unique idempotency key, retry / dead letter) · `WhatsAppConversation` · `WhatsAppMessage` (unique provider message id) · `WhatsAppTemplate` · `ContactConsent` (append-only) · `MarketingCampaign` · `CampaignAudience` · `CampaignRecipient` (frozen snapshot) · `CampaignMessage` (one per recipient × version) · `CampaignSpend` (MANUAL / PROVIDER_SYNCED) · `AttributionTouch` (one immutable FIRST per lead); `Organization.campaignApprovalThreshold`; `DocumentVersion.storageDriver`; notification categories INTEGRATIONS / MARKETING.
+
+Migrations `20261006090000_phase8_integrations` and `20261006091000_phase8_recipient_snapshot` are additive. They add:
+- CHECKs;
+- the partial unique index `AttributionTouch_one_first`;
+- append-only triggers for attribution and consent;
+- `campaign_freeze` and `campaign_recipient_guard`;
+- a back-fill of FIRST touches from Phase 2 capture metadata.
+
+## Data model (Phase 9, implemented)
+
+`AutomationRule` · `AutomationRuleVersion` (immutable, trigger `RULE_VERSION_IMMUTABLE`) · `AutomationExecution`
+(unique `(ruleId, domainEventId)`) · `SystemJob` (job registry + heartbeats) · `BackupRecord`; `DomainEvent` gains
+attempts / handlersDone / dismissal / `correlationId`, `causationId`, `depth` and the statuses PROCESSING, DEAD_LETTER,
+DISMISSED; notification category AUTOMATION. Migration `20261007090000_phase9_reliability` (additive, CHECKs).
+Details: [AUTOMATION.md](AUTOMATION.md), [OBSERVABILITY.md](OBSERVABILITY.md).
+
 ## Target schema (later phases — proposed)
 
 All tables below carry `organizationId`, `createdAt`, `updatedAt`; soft delete (`deletedAt`) where history references them. Money is `Decimal(14,2)` + `currency`.
@@ -60,11 +91,11 @@ All tables below carry `organizationId`, `createdAt`, `updatedAt`; soft delete (
 | 2 CRM | **Implemented** (see above). `Attachment` deferred to Phase 7 documents; lead source is an enum, not a table | Lead → (convert) Opportunity + Client/Contact; Opportunity → Client, Stage, owner User; public `/api/leads` writes `Lead` |
 | 3 Sales | **Implemented** (see above) | Quotation → Client, Opportunity, items → Service; approvals via `Approval(type=QUOTATION)` using org thresholds; Contract → Quotation |
 | 4 Delivery | **Implemented** (see above). Task-to-task dependencies and file attachments deferred | Project → Client, Contract/Quotation version, Service (snapshot); health engine = deterministic rules over milestones/tasks/dependencies/time/activity |
-| 5 Finance | `Invoice`, `InvoiceItem`, `Payment`, `Expense`, `ExpenseCategory`, `Subscription` | Invoice → Client, Project, Contract, Quotation; Payment → Invoice; Expense → Vendor, Project, Department, Employee; approvals for expenses |
-| 6 People | `Employee` (1–1 optional `User`), `EmployeeSensitive` (salary/bank — separate table, `hr.employees.sensitive`), `LeaveType`, `LeaveRequest`, `PayrollRun`, `PayrollItem`, `JobOpening`, `Candidate`, `Interview`, `Evaluation` | sensitive data isolated by table, never selected without the permission |
-| 7 Ops | `Vendor`, `PurchaseOrder`, `PurchaseOrderItem`, `SupportTicket`, `Document`, `DocumentVersion`, `DocumentLink` | Document links polymorphically (entityType/entityId) with permission per category |
-| 8 Growth | `Campaign`, `CampaignMetric`, `WhatsAppContact`, `WhatsAppConversation`, `WhatsAppTemplate`, `WhatsAppCampaign`, `Integration` (encrypted credentials) | WhatsApp via official Business Platform only |
-| 9 Rules & NOVA data | `AutomationRule`, `AutomationExecution` for deterministic, non-AI business rules only. NOVA data sync tables (e.g. external references, sync cursors) **only** once NOVA publishes an API/webhook spec | rules subscribe to `DomainEvent` types. **No** `AIConversation`/`AIAction`/agent/LLM models — NOVA AI is an external system (see [NOVA-INTEGRATION.md](NOVA-INTEGRATION.md)) |
+| 5 Finance | **Implemented** (see above). `Subscription` / recurring billing, credit notes and receipts deferred | Invoice → Client, Contract (+ milestone), Quotation version, Project, time entries; Payment → allocations → Invoices; Expense → Category, Vendor, Project, Department, User; approvals via `Approval(type=EXPENSE)` |
+| 6 People | **Implemented** (see above). Document uploads, statutory payroll files and calendar sync deferred | Employee → User (optional 1–1), Department, manager Employee; payroll entries snapshot compensation; offers via `Approval(type=OFFER)`, leave via `LEAVE`, payroll via `PAYROLL` |
+| 7 Ops | **Implemented** (see above). Supplier payables / GL, client portal, channel integrations, OCR and antivirus deferred | Document → (entityType, entityId) with access resolved from the linked record + classification; tickets → Client / Contact / Project / Service; PO → Vendor, Request, Project; Asset → PO line, Vendor, Employee |
+| 8 Growth | **Implemented** (see above). Ads API spend sync, email campaigns, media storage and commerce adapters deferred | WhatsApp via official Business Platform only; outbox + signed webhooks for all external I/O |
+| 9 Rules & NOVA data | **Rules implemented** (see above). `AutomationRule`, `AutomationExecution` for deterministic, non-AI business rules only. NOVA data sync tables (e.g. external references, sync cursors) **only** once NOVA publishes an API/webhook spec | rules subscribe to `DomainEvent` types. **No** `AIConversation`/`AIAction`/agent/LLM models — NOVA AI is an external system (see [NOVA-INTEGRATION.md](NOVA-INTEGRATION.md)) |
 
 ## Multi-tenancy decision
 
@@ -91,5 +122,6 @@ Event type naming: `<entity>.<past-tense verb>` — e.g. `user.created`, `approv
 - Public `/api/leads`: 16 KB body cap, 5 requests / 10 min per IP, whitelisted fields only, honeypot + timing + link/markup spam checks, no internal IDs in responses.
 - List pages ignore malformed URL params (fall back to defaults) instead of erroring.
 - Commercial integrity is enforced twice: services check state/permission/scope; the database freezes sent/accepted quotation content and active contract terms (triggers), and partial unique indexes make double acceptance / double contracts impossible under concurrency. Totals are computed server-side with decimal arithmetic; browser totals are ignored.
+- Finance: finance visibility never follows from CRM or project access (`finance.records.all` or explicit client/project scope with `finance.invoices.view`); cost, margin and cost rates need their own permissions. Issued invoices, payments and allocations are immutable in the database; balances are recomputed under row locks; billing sources are deduplicated by partial unique indexes; payment forms carry an idempotency key. Upstream quotation / contract / project records are only read.
 - Delivery: project visibility (ALL/TEAM/OWN + membership) is AND-wrapped into every project/task/milestone/time query; commercial fields are stripped without `sales.contracts.view`/`sales.quotations.view`. Kanban moves are optimistic (`from` status → `TASK_STALE`); daily time limits and timesheet submit use Postgres advisory locks; submitted/approved time is frozen by trigger. Scheduled sweeps take a `JobLease` (one instance at a time) and notifications carry a unique `dedupeKey`.
 - PDFs are generated in-process (pdfkit + bundled OFL fonts + bidi layout), no headless browser; sent PDFs are stored append-only with their sha256.

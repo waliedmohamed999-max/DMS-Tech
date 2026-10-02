@@ -11,7 +11,7 @@ import { latestNotifications, markNotificationsRead, unreadCount } from "@/serve
 import { globalSearch } from "@/server/dashboard/service";
 import { prisma } from "@/server/db";
 import { OS_LOCALE_COOKIE } from "@/i18n/request";
-import { SESSION_COOKIE } from "./constants";
+import { SESSION_COOKIE, sessionCookieOptions } from "./constants";
 import { formToObject, runAction, type ActionResult } from "./action";
 import { getSession } from "./dal";
 
@@ -32,7 +32,7 @@ export async function loginAction(_: unknown, fd: FormData): Promise<{ error?: s
   // return the email so the form can keep it (React resets form fields after an action)
   if (!r.ok) return { error: r.reason, email: String(fd.get("email") ?? "").slice(0, 160) };
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, r.token, { httpOnly: true, secure, sameSite: "lax", path: "/", expires: r.expiresAt });
+  jar.set(SESSION_COOKIE, r.token, sessionCookieOptions(r.expiresAt));
   const next = String(fd.get("next") ?? "");
   // only allow internal OS redirects (no open redirect)
   redirect(next.startsWith("/app") && !next.startsWith("//") ? next : "/app");

@@ -32,6 +32,21 @@ import { addProjectMember, changeProjectStatus, createProject } from "../src/ser
 import { assignTask, changeTaskStatus } from "../src/server/projects/work";
 import { createTimeEntry, submitTimesheet } from "../src/server/projects/time";
 import { createDeliverable, createDependency } from "../src/server/projects/delivery";
+import { billingCandidates, createInvoiceFromSource } from "../src/server/finance/eligibility";
+import { issueInvoice, markInvoiceSent } from "../src/server/finance/invoices";
+import { recordPayment } from "../src/server/finance/payments";
+import { createExpense, createVendor, submitExpense } from "../src/server/finance/expenses";
+import { setCostRate } from "../src/server/finance/costing";
+import { decideApproval } from "../src/server/approvals/service";
+import { createEmployee } from "../src/server/hr/employees";
+import { addCompensation, setBankAccount } from "../src/server/hr/compensation";
+import { grantOpeningBalances, saveLeaveType } from "../src/server/hr/leave";
+import { createRequest } from "../src/server/ops/procurement";
+import { createOrderFromRequest, issueOrder, receiveOrder, submitOrder } from "../src/server/ops/orders";
+import { updateVendorOps, addVendorContact } from "../src/server/ops/vendors";
+import { assignAsset, createAssetFromPoItem } from "../src/server/ops/assets";
+import { addTicketComment, createTicket } from "../src/server/ops/support";
+import { createArticle, publishArticle, submitArticleForReview } from "../src/server/ops/knowledge";
 
 if (process.env.NODE_ENV === "production" || process.env.ALLOW_DEMO_SEED !== "1") {
   console.error("✖ Demo seed refused: set ALLOW_DEMO_SEED=1 on a non-production machine.");
@@ -91,7 +106,9 @@ async function main() {
     ["marketing@dms.test", "Faisal Alzahrani", "فيصل الزهراني", "Marketing Specialist", "MKT", "marketing"],
     ["accountant@dms.test", "Mona Saleh", "منى صالح", "Accountant", "FIN", "accountant"],
     ["hr@dms.test", "Reem Aldosari", "ريم الدوسري", "HR Manager", "HR", "hr_manager"],
-    ["employee@dms.test", "Yousef Ali", "يوسف علي", "Support Specialist", "DELIV", "employee"]
+    ["employee@dms.test", "Yousef Ali", "يوسف علي", "Support Specialist", "DELIV", "employee"],
+    ["ops@dms.test", "Tamer Fouad", "تامر فؤاد", "Operations Manager", "MGMT", "operations_manager"],
+    ["support@dms.test", "Huda Salem", "هدى سالم", "Support Engineer", "DELIV", "support_agent"]
   ];
   const pwHash = await hashPassword(DEMO_PASSWORD);
   for (const [email, name, nameAr, jobTitle, dept, role] of people) {
@@ -131,6 +148,9 @@ async function main() {
   await seedCrm(org.id);
   await seedCommercial(org.id);
   await seedProjects(org.id);
+  await seedFinance(org.id);
+  await seedHr(org.id);
+  await seedOps(org.id);
 
   console.log("✔ demo data ready");
   console.log(`  sign in at /app/login with admin@dms.test (or any *@dms.test user) / ${DEMO_PASSWORD}`);
@@ -369,6 +389,132 @@ async function seedProjects(orgId: string) {
   const ms = await prisma.projectMilestone.findMany({ where: { projectId }, orderBy: { sortOrder: "asc" } });
   await createDeliverable(pm, projectId, { name: "تصاميم الواجهات (Figma)", milestoneId: ms[1]?.id ?? null, ownerId: designId, dueDate: d(28), clientApprovalRequired: true });
   console.log("✔ project demo data created");
+}
+
+/**
+ * Phase 5 demo finance — through the real services: the Lumen contract's first milestone (due) is
+ * invoiced, issued and half paid; a hosting vendor + an approved project expense; a cost rate for
+ * the developer. Nothing is created automatically in the product — this only exercises the flows.
+ */
+async function seedFinance(orgId: string) {
+  if (await prisma.invoice.count({ where: { organizationId: orgId } })) {
+    console.log("• finance demo data already present — skipped");
+    return;
+  }
+  const uid = async (email: string) => (await prisma.user.findFirstOrThrow({ where: { organizationId: orgId, email } })).id;
+  const acc = await ctxFor(await uid("accountant@dms.test"));
+  const dev = await ctxFor(await uid("dev@dms.test"));
+  // placeholder IBAN for the demo — real bank details are entered in Company Settings
+  await prisma.organization.update({ where: { id: orgId }, data: { invoicePaymentInstructions: ["بنك الرياض — آيبان SA00 0000 0000 0000 0000 0000 — المستفيد: DMS Tech", "Riyad Bank — IBAN SA00 0000 0000 0000 0000 0000 — Beneficiary: DMS Tech"].join("\n") } });
+  const milestone = (await billingCandidates(prisma, acc)).find((c) => c.type === "CONTRACT_MILESTONE" && c.eligible);
+  if (milestone) {
+    const { id } = await createInvoiceFromSource(acc, { type: "CONTRACT_MILESTONE", id: milestone.id });
+    await issueInvoice(acc, id);
+    await markInvoiceSent(acc, id, { method: "EMAIL_MANUAL", note: "Sent to finance@lumen.test", confirm: true });
+    const inv = await prisma.invoice.findUniqueOrThrow({ where: { id } });
+    const half = inv.total.div(2).toFixed(2);
+    await recordPayment(acc, { clientId: inv.clientId, amount: half, paymentDate: new Date().toISOString().slice(0, 10), method: "BANK_TRANSFER", reference: "TRX-48213", idempotencyKey: "seed-payment-0001", allocations: [{ invoiceId: id, amount: half }] });
+  }
+  const vendor = await createVendor(acc, { name: "Amazon Web Services", category: "Cloud", email: "billing@aws.test", paymentTerms: "Monthly card charge" });
+  const project = await prisma.project.findFirst({ where: { organizationId: orgId }, orderBy: { createdAt: "asc" } });
+  const cloud = await prisma.expenseCategory.findFirstOrThrow({ where: { organizationId: orgId, key: "cloud" } });
+  const e = await createExpense(dev, { categoryId: cloud.id, vendorId: vendor.id, projectId: project?.id ?? null, date: new Date().toISOString().slice(0, 10), amount: "420", taxAmount: "63", description: "Staging server — Lumen website" });
+  const s = await submitExpense(dev, e.id);
+  await decideApproval(acc, { approvalId: s.approvalId, decision: "APPROVED" });
+  const finance = await prisma.user.findFirst({ where: { organizationId: orgId, email: "ceo@dms.test" } });
+  if (finance) await setCostRate(await ctxFor(finance.id), { userId: dev.userId, hourlyCost: "95", effectiveFrom: "2026-01-01" });
+  console.log("✔ finance demo data created");
+}
+
+/**
+ * Phase 6 demo people data through the real HR services: one employee record per demo user (linked to
+ * the account), a reporting line, effective-dated compensation and a demo annual-leave balance.
+ * Salaries are illustrative demo numbers. Skipped once any employee exists.
+ */
+async function seedHr(orgId: string) {
+  if (await prisma.employee.count({ where: { organizationId: orgId } })) {
+    console.log("• HR demo data already present — skipped");
+    return;
+  }
+  const user = async (email: string) => prisma.user.findFirstOrThrow({ where: { organizationId: orgId, email } });
+  const hr = await ctxFor((await user("hr@dms.test")).id);
+  const ceo = await ctxFor((await user("ceo@dms.test")).id);
+  // email, manager email, join date, base, housing, transport
+  const plan: [string, string | null, string, number, number, number][] = [
+    ["ceo@dms.test", null, "2023-01-01", 40000, 10000, 2000],
+    ["gm@dms.test", "ceo@dms.test", "2023-03-01", 30000, 7500, 1500],
+    ["finance@dms.test", "gm@dms.test", "2024-02-01", 22000, 5500, 1000],
+    ["hr@dms.test", "gm@dms.test", "2024-01-15", 18000, 4500, 1000],
+    ["sales.manager@dms.test", "gm@dms.test", "2023-06-01", 20000, 5000, 1000],
+    ["pm@dms.test", "gm@dms.test", "2023-09-01", 19000, 4750, 1000],
+    ["sales@dms.test", "sales.manager@dms.test", "2024-05-01", 11000, 2750, 800],
+    ["dev@dms.test", "pm@dms.test", "2024-03-01", 15000, 3750, 800],
+    ["design@dms.test", "pm@dms.test", "2024-08-01", 12000, 3000, 800],
+    ["employee@dms.test", "pm@dms.test", "2025-01-05", 8000, 2000, 600],
+    ["marketing@dms.test", "gm@dms.test", "2024-10-01", 10000, 2500, 600],
+    ["accountant@dms.test", "finance@dms.test", "2024-04-01", 10500, 2625, 600]
+  ];
+  const ids: Record<string, string> = {};
+  for (const [email, mgr, joinDate, base, housing, transport] of plan) {
+    const u = await user(email);
+    const [firstName, ...rest] = u.name.split(" ");
+    const { id } = await createEmployee(hr, { userId: u.id, firstName, lastName: rest.join(" ") || "-", nameAr: u.nameAr, jobTitle: u.jobTitle, departmentId: u.departmentId, managerId: mgr ? ids[mgr] : null, joinDate, workEmail: u.email, city: "Riyadh" });
+    ids[email] = id;
+    // HR never records its own salary — the CEO does
+    await addCompensation(email === "hr@dms.test" ? ceo : hr, id, { baseSalary: base, housingAllowance: housing, transportAllowance: transport, currency: "SAR", effectiveFrom: joinDate, notes: "Demo data" });
+  }
+  // documented example IBAN (not a real account)
+  await setBankAccount(hr, ids["employee@dms.test"], { bankName: "Demo Bank", accountName: "Yousef Ali", iban: "SA0380000000608010167519", effectiveFrom: "2025-01-05" });
+  // annual leave balance is a company setting — 21 days here is demo configuration, not a legal rule
+  const annual = await prisma.leaveType.findFirst({ where: { organizationId: orgId, key: "annual" } });
+  if (annual) await saveLeaveType(hr, { id: annual.id, nameAr: annual.nameAr, nameEn: annual.nameEn, paid: true, requiresApproval: true, requiresAttachment: false, defaultBalanceDays: 21, active: true });
+  await grantOpeningBalances(hr, new Date().getUTCFullYear());
+  console.log("✔ HR demo data created");
+}
+
+/**
+ * Phase 7 demo operations data through the real services: an IT purchase request → approval → PO (approved by
+ * finance) → issued → received → two registered laptops (one assigned), a client support ticket and a published
+ * support article. Amounts are illustrative. Skipped once any procurement request exists.
+ */
+async function seedOps(orgId: string) {
+  if (await prisma.procurementRequest.count({ where: { organizationId: orgId } })) {
+    console.log("• operations demo data already present — skipped");
+    return;
+  }
+  const c = async (email: string) => ctxFor((await prisma.user.findFirstOrThrow({ where: { organizationId: orgId, email } })).id);
+  const [ops, acc, fin, dev, support] = await Promise.all([c("ops@dms.test"), c("accountant@dms.test"), c("finance@dms.test"), c("dev@dms.test"), c("support@dms.test")]);
+  const vendor = await createVendor(acc, { name: "Jarir Business Solutions", category: "IT hardware", email: "b2b@jarir.test", paymentTerms: "30 days" });
+  await updateVendorOps(acc, vendor.id, { procurementCategory: "IT hardware", preferred: true, rating: 4, leadTimeDays: 5 });
+  await addVendorContact(acc, vendor.id, { name: "Fahad Al-Qahtani", role: "Account manager", email: "fahad@jarir.test", phone: "+966500000201", isPrimary: true });
+  const req = await createRequest(dev, { title: "Laptops for two new developers", businessJustification: "Two developers join the delivery team next month.", category: "IT", items: [{ description: "Lenovo ThinkPad T14 Gen 5", quantity: "2", estimatedUnitPrice: "5200", assetExpected: true }], submit: true });
+  const r = await prisma.procurementRequest.findUniqueOrThrow({ where: { id: req.id } });
+  await decideApproval(ops, { approvalId: r.approvalId!, decision: "APPROVED", comment: "Approved for Q4 onboarding" });
+  const po = await createOrderFromRequest(ops, req.id, { vendorId: vendor.id, expectedDeliveryDate: new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10) });
+  const sub = await submitOrder(ops, po.id);
+  if (sub.status === "PENDING_APPROVAL") await decideApproval(fin, { approvalId: (await prisma.purchaseOrder.findUniqueOrThrow({ where: { id: po.id } })).approvalId!, decision: "APPROVED" });
+  await issueOrder(ops, po.id);
+  const item = await prisma.purchaseOrderItem.findFirstOrThrow({ where: { purchaseOrderId: po.id } });
+  await receiveOrder(ops, po.id, { lines: [{ poItemId: item.id, quantity: "2" }], notes: "Delivered to the Riyadh office" });
+  const laptop = await prisma.assetCategory.findFirstOrThrow({ where: { organizationId: orgId, key: "laptop" } });
+  const warranty = new Date(Date.now() + 3 * 365 * 86_400_000).toISOString().slice(0, 10);
+  const a1 = await createAssetFromPoItem(ops, item.id, { categoryId: laptop.id, serialNumber: "PF-4T14-0001", manufacturer: "Lenovo", model: "T14 Gen 5", warrantyEndDate: warranty, location: "Riyadh HQ" });
+  await createAssetFromPoItem(ops, item.id, { categoryId: laptop.id, serialNumber: "PF-4T14-0002", manufacturer: "Lenovo", model: "T14 Gen 5", warrantyEndDate: warranty, location: "Riyadh HQ" });
+  const devEmp = await prisma.employee.findFirst({ where: { organizationId: orgId, userId: dev.userId } });
+  if (devEmp) await assignAsset(ops, a1.id, { employeeId: devEmp.id, condition: "New, sealed box" });
+  const client = await prisma.client.findFirst({ where: { organizationId: orgId }, orderBy: { createdAt: "asc" } });
+  const t = await createTicket(support, { subject: "Booking form returns an error", description: "The clinic reports that the online booking form shows an error after choosing a time slot.", category: "BUG", priority: "HIGH", source: "PHONE", clientId: client?.id ?? null, tags: "booking,website" });
+  await addTicketComment(support, t.id, { body: "We are reproducing the issue on staging.", visibility: "CLIENT_FACING" });
+  const kbCat = await prisma.knowledgeCategory.findFirstOrThrow({ where: { organizationId: orgId, key: "support" } });
+  const art = await createArticle(support, {
+    titleAr: "التعامل مع أخطاء نموذج الحجز", titleEn: "Handling booking form errors",
+    bodyAr: "1. اطلب من العميل لقطة شاشة ووقت حدوث الخطأ.\n2. تحقق من سجلات الخادم للفترة نفسها.\n3. أعد إنتاج المشكلة على بيئة الاختبار قبل أي تعديل.",
+    bodyEn: "1. Ask the client for a screenshot and the time of the error.\n2. Check the server logs for that time window.\n3. Reproduce on staging before changing anything.",
+    categoryId: kbCat.id, visibility: "SUPPORT_ONLY", tags: "bug,booking,website"
+  });
+  await submitArticleForReview(support, art.id);
+  await publishArticle(ops, art.id);
+  console.log("✔ operations demo data created");
 }
 
 main()

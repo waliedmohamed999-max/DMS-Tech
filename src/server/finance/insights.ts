@@ -5,6 +5,7 @@ import { addDays, todayIn } from "../commercial/dates";
 import { Decimal } from "@/lib/commercial/calc";
 import { and, BILLED_INVOICE, financeAll, invoiceWhere, OPEN_INVOICE } from "./access";
 import { billingCandidates } from "./eligibility";
+import { payrollPaidSummary } from "../hr/payroll";
 
 /**
  * Finance dashboard, AR aging, attention and operational reports.
@@ -54,6 +55,8 @@ export async function financeKpis(ctx: Ctx, p: Period) {
   // collection rate (period): collected on invoices issued in the period ÷ their total
   const cohort = await prisma.invoice.aggregate({ where: and<Prisma.InvoiceWhereInput>(iw, { AND: [{ status: BILLED_INVOICE, issueDate: inPeriod }] }), _sum: { total: true, paidAmount: true } });
   const cohortTotal = D(cohort._sum.total);
+  // payroll is HR-owned: finance sees only the paid period totals, never employee-level lines
+  const payroll = can(ctx, "finance.records.all") ? await payrollPaidSummary(ctx, p.from, p.to) : null;
   return {
     currency: org.currency,
     otherCurrencyInvoices: otherCurrency,
@@ -67,7 +70,8 @@ export async function financeKpis(ctx: Ctx, p: Period) {
     expenses: expenses ? s2(expenses._sum.total) : null,
     expensesNet: expenses ? s2(expenses._sum.amount) : null,
     directCost: directCost ? s2(directCost._sum.amount) : null,
-    collectionRate: cohortTotal.gt(0) ? Number(D(cohort._sum.paidAmount).div(cohortTotal).mul(100).toFixed(1)) : null
+    collectionRate: cohortTotal.gt(0) ? Number(D(cohort._sum.paidAmount).div(cohortTotal).mul(100).toFixed(1)) : null,
+    payrollPaid: payroll ? payroll.net : null
   };
 }
 

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { recordTouch, touchFromCapture } from "../marketing/attribution";
 import { prisma } from "../db";
 import { systemCtx, type Ctx } from "../context";
 import { unitOfWork } from "../events/bus";
@@ -109,6 +110,8 @@ export async function captureWebsiteLead(raw: unknown, meta: { ip?: string | nul
         metadata: { name: d.name, company: d.company, email: d.email, phone: d.phone, whatsapp: d.whatsapp, service, ...captureMeta }
       });
       await tx.lead.update({ where: { id: open.id }, data: { lastActivityAt: new Date(), nextFollowUpAt: open.nextFollowUpAt ?? new Date() } });
+      // later contact → a new TOUCH (last touch); the first touch is never overwritten
+      await recordTouch(tx, uow, ctx.organizationId, open.id, touchFromCapture("website", captureMeta));
       await uow.audit({ action: "website.lead_appended", entityType: "Lead", entityId: open.id, after: { reason: "open_duplicate" } });
       uow.emit({ type: "website.lead_received", entityType: "Lead", entityId: open.id, payload: { leadId: open.id, number: open.number, name: open.name, ownerId: open.ownerId, duplicate: true } });
       return { outcome: "appended" as const, leadNumber: open.number };

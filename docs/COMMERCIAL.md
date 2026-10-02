@@ -154,4 +154,4 @@ KPIs: quotes awaiting client response (with value) and accepted quotes without a
 
 ## Project hand-off (Phase 4)
 
-An ACTIVE / EXPIRING contract is the standard source of a project; an accepted quotation only when `projectFromQuotationAllowed` is on and no contract exists. Delivery never changes quotation or contract state: contract milestones only show "Delivered — eligible" when their linked project milestones are completed. The commercial sweep now runs under the shared `JobLease`. Not built: invoices, payments, expenses, payroll (Phase 5), NOVA AI internals (external).
+An ACTIVE / EXPIRING contract is the standard source of a project; an accepted quotation only when `projectFromQuotationAllowed` is on and no contract exists. Delivery never changes quotation or contract state: contract milestones only show "Delivered — eligible" when their linked project milestones are completed. The commercial sweep now runs under the shared `JobLease`. Billing (Phase 5) reads the accepted version, the contract and its milestones and never modifies them — see [FINANCE.md](FINANCE.md). Not built: payroll (Phase 6), NOVA AI internals (external).

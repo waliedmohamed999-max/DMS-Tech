@@ -8,7 +8,7 @@ import { ActionButton } from "@/components/os/client";
 
 export const metadata = { title: "Notifications" };
 
-const CATS = ["APPROVAL", "TASK", "INVOICE", "PROJECT", "CONTRACT", "HR", "SALES", "SYSTEM"] as const;
+const CATS = ["APPROVAL", "TASK", "INVOICE", "PROJECT", "CONTRACT", "HR", "SALES", "OPERATIONS", "SUPPORT", "INTEGRATIONS", "MARKETING", "AUTOMATION", "SYSTEM"] as const;
 
 export default async function NotificationsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { ctx } = await pageCtx();

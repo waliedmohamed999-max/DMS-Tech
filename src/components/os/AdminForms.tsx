@@ -242,6 +242,7 @@ type Settings = {
   address: string | null; city: string | null; currency: string; vatRate: number; quoteApprovalThreshold: number; discountApprovalPercent: number; defaultLocale: string;
   quoteExecutiveApprovalThreshold: number | null; quoteCustomPricingRequiresApproval: boolean; quoteValidityDays: number; quoteExpiryWarningDays: number; contractExpiryWarningDays: number;
   projectFromQuotationAllowed: boolean; internalProjectsAllowed: boolean; timesheetMaxDailyMinutes: number; projectInactivityDays: number;
+  invoiceDueDays: number; invoiceDueSoonDays: number; invoicePaymentInstructions: string | null; expenseApprovalThreshold: number; largeOutstandingThreshold: number; defaultHourlyBillingRate: number | null;
 };
 
 export function SettingsForm({ s, editable }: { s: Settings; editable: boolean }) {
@@ -302,6 +303,19 @@ export function SettingsForm({ s, editable }: { s: Settings; editable: boolean }
           </label>
         ))}
         <p className="text-xs text-os-faint sm:col-span-2">{t("settings.deliveryNote")}</p>
+      </fieldset>
+      <fieldset className="os-card grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
+        <legend className="px-1 text-sm font-semibold">{t("settings.finance")}</legend>
+        <Field label={t("settings.invoiceDueDays")} error={fe("invoiceDueDays")}>{input("invoiceDueDays", { dir: "ltr", type: "number", step: "1" })}</Field>
+        <Field label={t("settings.invoiceDueSoonDays")} error={fe("invoiceDueSoonDays")}>{input("invoiceDueSoonDays", { dir: "ltr", type: "number", step: "1" })}</Field>
+        <Field label={t("settings.defaultHourlyBillingRate")} hint={t("settings.hourlyHint")} error={fe("defaultHourlyBillingRate")}>{input("defaultHourlyBillingRate", { dir: "ltr", type: "number", step: "0.01" })}</Field>
+        <Field label={t("settings.expenseApprovalThreshold")} hint={t("settings.expenseThresholdHint")} error={fe("expenseApprovalThreshold")}>{input("expenseApprovalThreshold", { dir: "ltr", type: "number", step: "1" })}</Field>
+        <Field label={t("settings.largeOutstandingThreshold")} error={fe("largeOutstandingThreshold")}>{input("largeOutstandingThreshold", { dir: "ltr", type: "number", step: "1" })}</Field>
+        <div className="sm:col-span-2 lg:col-span-3">
+          <Field label={t("settings.invoicePaymentInstructions")} hint={t("settings.paymentInstructionsHint")}>
+            <textarea name="invoicePaymentInstructions" defaultValue={s.invoicePaymentInstructions ?? ""} disabled={!editable} rows={3} className="os-input" dir="auto" />
+          </Field>
+        </div>
       </fieldset>
       {editable && (
         <div className="flex items-center justify-end gap-3">

@@ -15,7 +15,7 @@ describe("permission catalog", () => {
   });
   it("employees cannot see payroll, sensitive HR data, finance or admin", () => {
     const p = role("employee");
-    for (const x of ["finance.payroll.view", "hr.employees.sensitive", "finance.invoices.view", "admin.users.manage", "sales.quotations.approve"] as const) expect(p).not.toContain(x);
+    for (const x of ["hr.payroll.view", "hr.employees.sensitive", "finance.invoices.view", "admin.users.manage", "sales.quotations.approve"] as const) expect(p).not.toContain(x);
   });
   it("sales reps cannot approve quotations; sales managers can", () => {
     expect(role("sales_rep")).not.toContain("sales.quotations.approve");
@@ -23,6 +23,7 @@ describe("permission catalog", () => {
   });
   it("general manager cannot see payroll bank/salary details or manage admin", () => {
     expect(role("general_manager")).not.toContain("hr.employees.sensitive");
+    expect(role("general_manager")).not.toContain("hr.bank.view");
     expect(role("general_manager")).not.toContain("admin.users.manage");
   });
   it("only super admin can grant privileged roles directly", () => {

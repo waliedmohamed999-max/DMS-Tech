@@ -169,7 +169,9 @@ const expenseSchema = z.object({
   currency: z.string().trim().length(3).toUpperCase().default("SAR"),
   paymentMethod: z.enum(["BANK_TRANSFER", "CASH", "CARD", "PAYMENT_GATEWAY", "OTHER"]).nullable().optional(),
   description: reqText(3, 1000),
-  reference: optText(120)
+  reference: optText(120),
+  /** Phase 7: the purchase order this spend belongs to (vendor must match; PO must have been issued) */
+  purchaseOrderId: optId
 });
 
 async function validateRefs(tx: Tx, ctx: Ctx, input: z.output<typeof expenseSchema>, current?: { vendorId: string | null; categoryId: string }) {
@@ -191,6 +193,13 @@ async function validateRefs(tx: Tx, ctx: Ctx, input: z.output<typeof expenseSche
     if (!p) throw invalid("UNKNOWN_PROJECT");
   }
   if (input.userId && input.userId !== ctx.userId && !financeAll(ctx)) throw forbidden("finance.records.all (expense for another person)");
+  if (input.purchaseOrderId) {
+    const po = await tx.purchaseOrder.findFirst({ where: { id: input.purchaseOrderId, organizationId: ctx.organizationId }, select: { status: true, vendorId: true, currency: true } });
+    if (!po) throw invalid("UNKNOWN_PURCHASE_ORDER");
+    if (!["ISSUED", "PARTIALLY_RECEIVED", "RECEIVED", "CLOSED"].includes(po.status)) throw invalid(`PO_NOT_ISSUED:${po.status}`);
+    if (input.vendorId && input.vendorId !== po.vendorId) throw invalid("PO_VENDOR_MISMATCH");
+    if (po.currency !== input.currency) throw invalid("CURRENCY_MISMATCH");
+  }
   const tax = new Decimal(input.taxAmount);
   return { amount: amount.toFixed(2), taxAmount: tax.toFixed(2), total: amount.plus(tax).toFixed(2) };
 }
@@ -206,10 +215,11 @@ export async function createExpense(ctx: Ctx, raw: unknown) {
       data: {
         organizationId: ctx.organizationId, number, categoryId: input.categoryId, vendorId: input.vendorId ?? null, projectId: input.projectId ?? null,
         departmentId: input.departmentId ?? me?.departmentId ?? null, userId: input.userId ?? ctx.userId, date: input.date, ...money, currency: input.currency,
-        paymentMethod: input.paymentMethod ?? null, description: input.description, reference: input.reference ?? null, submittedById: ctx.userId
+        paymentMethod: input.paymentMethod ?? null, description: input.description, reference: input.reference ?? null, submittedById: ctx.userId,
+        purchaseOrderId: input.purchaseOrderId ?? null
       }
     });
-    await uow.audit({ action: "expense.created", entityType: "Expense", entityId: e.id, after: { number, ...money, currency: input.currency, categoryId: input.categoryId, projectId: e.projectId, vendorId: e.vendorId } });
+    await uow.audit({ action: "expense.created", entityType: "Expense", entityId: e.id, after: { number, ...money, currency: input.currency, categoryId: input.categoryId, projectId: e.projectId, vendorId: e.vendorId, purchaseOrderId: e.purchaseOrderId } });
     return { id: e.id, number };
   });
 }
@@ -391,7 +401,7 @@ export async function getExpense(ctx: Ctx, id: string) {
   if (!canAny(ctx, "finance.expenses.view", "finance.expenses.create")) throw forbidden("finance.expenses.view");
   const e = await prisma.expense.findFirst({
     where: and<Prisma.ExpenseWhereInput>({ id, organizationId: ctx.organizationId }, expenseWhere(ctx)),
-    include: { category: true, vendor: true, project: { select: { id: true, number: true, name: true } }, department: { select: { name: true, nameAr: true } }, user: { select: { id: true, name: true, nameAr: true } }, submittedBy: { select: { id: true, name: true, nameAr: true } } }
+    include: { category: true, vendor: true, project: { select: { id: true, number: true, name: true } }, department: { select: { name: true, nameAr: true } }, user: { select: { id: true, name: true, nameAr: true } }, submittedBy: { select: { id: true, name: true, nameAr: true } }, purchaseOrder: { select: { id: true, number: true } } }
   });
   if (!e) throw notFound("Expense");
   const ids = [e.approvedById, e.paidById].filter(Boolean) as string[];

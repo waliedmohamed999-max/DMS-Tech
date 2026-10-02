@@ -1,5 +1,6 @@
 import { prisma, type Tx } from "../db";
 import { notFound } from "../errors";
+import { todayIn } from "../commercial/dates";
 import { formatMoney } from "@/lib/commercial/calc";
 import { COLORS, PAGE, createDoc, header, parties, section, tableHeader, columnXs, type Column } from "./doc";
 import { ltr } from "./text";
@@ -44,6 +45,8 @@ const num = (v: { toFixed(n: number): string } | string, dp = 2) => {
   return `${i.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${f ? `.${f}` : ""}`;
 };
 const qtyStr = (v: { toFixed(n: number): string }) => v.toFixed(3).replace(/\.?0+$/, "");
+/** keep "(40%)" / "12.5%" readable inside RTL text: isolate them left-to-right */
+const isoPct = (s: string) => s.replace(/\(?\d+(?:[.,]\d+)?%\)?/g, (m) => ltr(m));
 const dateStr = (d: Date, lang: "ar" | "en") => new Intl.DateTimeFormat(lang === "ar" ? "ar-SA-u-nu-latn-ca-gregory" : "en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(d);
 
 /**
@@ -125,13 +128,14 @@ export async function renderInvoicePdf(db: Tx | typeof prisma, organizationId: s
   tableHeader(d, cols);
   inv.items.forEach((it, i) => {
     d.font("regular", 8.5);
-    const h = d.measure(it.description, cols[1].width - 8);
+    const desc = rtl ? isoPct(it.description) : it.description;
+    const h = d.measure(desc, cols[1].width - 8);
     d.ensure(Math.max(h, 14) + 10, () => tableHeader(d, cols));
     const y = d.y;
     d.font("regular", 8.5, COLORS.muted);
     d.text(String(i + 1), xs[0] + 4, y, cols[0].width - 8, { align: "center" });
     d.font("regular", 8.5, COLORS.ink);
-    const yy = d.text(it.description, xs[1] + 4, y, cols[1].width - 8);
+    const yy = d.text(desc, xs[1] + 4, y, cols[1].width - 8);
     d.text(`${qtyStr(it.quantity)}${it.unit ? ` ${it.unit}` : ""}`, xs[2] + 4, y, cols[2].width - 8, { align: "center" });
     d.text(num(it.unitPrice), xs[3] + 4, y, cols[3].width - 8, { align: "center" });
     d.text(it.discountAmount.isZero() ? "—" : num(it.discountAmount), xs[4] + 4, y, cols[4].width - 8, { align: "center" });
@@ -167,7 +171,11 @@ export async function renderInvoicePdf(db: Tx | typeof prisma, organizationId: s
   }
   d.font("regular", 7.5, COLORS.faint);
   d.y = d.text(t.amountsIn(inv.currency), boxX + 8, d.y, boxW - 16, { align: "end" }) + 4;
-  if (!opts.original && issued) d.y = d.text(t.asOf(dateStr(new Date(), lang)), boxX + 8, d.y, boxW - 16, { align: "end" }) + 10;
+  if (!opts.original && issued) {
+    // "as of" is the company's calendar day, not the UTC date
+    const tz = (await db.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { timezone: true } })).timezone;
+    d.y = d.text(t.asOf(dateStr(todayIn(tz), lang)), boxX + 8, d.y, boxW - 16, { align: "end" }) + 10;
+  }
   else d.y += 10;
 
   section(d, t.payment, instructions);

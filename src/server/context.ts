@@ -12,6 +12,8 @@ export type Ctx = {
   roleKeys: string[];
   permissions: ReadonlySet<Permission>;
   meta?: { ip?: string | null; userAgent?: string | null };
+  /** Phase 9: causal chain of automation — events written in this context carry it (recursion protection) */
+  trace?: { correlationId: string; causationId: string | null; depth: number };
 };
 
 /** Actor for system-originated work (public website capture). Audit/event actorId is stored as NULL. */

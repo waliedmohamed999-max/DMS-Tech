@@ -9,6 +9,8 @@ import { StageColumns } from "@/components/crm/Charts";
 import { novaStatus } from "@/server/integrations/nova";
 import { projectKpis } from "@/server/projects/insights";
 import { listProjects } from "@/server/projects/projects";
+import { arAging, AGING_BUCKETS, financeKpis } from "@/server/finance/insights";
+import { formatMoney } from "@/lib/commercial/calc";
 import type { Ctx } from "@/server/context";
 import { CREATE_ITEMS, findModule } from "@/lib/os/modules";
 import { Icon } from "@/components/ui/Icon";
@@ -54,15 +56,6 @@ function KpiCard({ k, label, locale, t }: { k: Kpi; label: string; locale: strin
   return k.href ? <Link href={k.href}>{body}</Link> : body;
 }
 
-function PlannedPanel({ title, phase, module, locale, t }: { title: string; phase: number; module: string; locale: string; t: (k: string, v?: Record<string, string | number>) => string }) {
-  const mod = findModule(module);
-  return (
-    <SectionCard title={title} action={<Badge>{t("common.phase", { n: phase })}</Badge>}>
-      <EmptyState icon={mod?.icon ?? "Layers"} title={t("home.plannedTitle", { n: phase })} text={t("home.plannedText", { module: mod ? mod.label[locale as "ar"] : module })} action={mod ? <Link href={mod.href} className="os-btn-ghost text-xs">{mod.label[locale as "ar"]}</Link> : undefined} />
-    </SectionCard>
-  );
-}
-
 /** Phase 4 delivery panel — live counts and the projects that most need a look (scoped to what the viewer may see). */
 async function ProjectsPanel({ ctx }: { ctx: Ctx }) {
   const t = await getTranslations("os");
@@ -100,6 +93,47 @@ async function ProjectsPanel({ ctx }: { ctx: Ctx }) {
           ))}
         </ul>
       )}
+    </SectionCard>
+  );
+}
+
+/** Phase 5 billing & collection panel — real balances (company currency), never labelled revenue. */
+async function FinancePanel({ ctx, locale }: { ctx: Ctx; locale: string }) {
+  const t = await getTranslations("os");
+  const tf = await getTranslations("os.finance");
+  const now = new Date();
+  const [k, aging] = await Promise.all([financeKpis(ctx, { from: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)), to: now }), arAging(ctx)]);
+  const m = (v: string) => formatMoney(v, locale, k.currency);
+  const cells: [string, string, string, string?][] = [
+    [tf("k.invoiced"), m(k.invoiced), "/app/finance/invoices"],
+    ...(k.collected !== null ? ([[tf("k.collected"), m(k.collected), "/app/finance/payments", "text-success"]] as [string, string, string, string?][]) : []),
+    [tf("k.outstanding"), m(k.outstanding), "/app/finance/receivables", Number(k.outstanding) > 0 ? "text-warning" : undefined],
+    [tf("k.overdue"), m(k.overdue), "/app/finance/receivables", Number(k.overdue) > 0 ? "text-danger" : undefined]
+  ];
+  const max = Math.max(1, ...AGING_BUCKETS.map((b) => Number(aging.totals[b])));
+  return (
+    <SectionCard title={t("home.cash")} action={<Link href="/app/finance" className="text-xs text-os-muted hover:text-os-text">{t("common.viewAll")}</Link>}>
+      <div className="grid grid-cols-2 gap-px border-b border-os-line bg-os-line">
+        {cells.map(([label, value, href, cls]) => (
+          <Link key={label} href={href} className="bg-os-surface px-3 py-2.5 hover:bg-os-panel">
+            <p className="truncate text-[11px] text-os-muted">{label}</p>
+            <p className={`text-base font-semibold tabular ${cls ?? ""}`} dir="ltr">
+              {value}
+            </p>
+          </Link>
+        ))}
+      </div>
+      <div className="grid gap-1.5 px-4 py-3">
+        {AGING_BUCKETS.map((b) => (
+          <div key={b} className="grid grid-cols-[80px_1fr] items-center gap-2 text-[11px]">
+            <span className="text-os-muted">{tf(`aging.${b}` as "aging.current")}</span>
+            <span className="h-1.5 overflow-hidden rounded-full bg-os-raised">
+              <span className={`block h-full rounded-full ${b === "current" ? "bg-iris" : b === "d1_30" ? "bg-warning" : "bg-danger"}`} style={{ width: `${(Number(aging.totals[b]) / max) * 100}%` }} />
+            </span>
+          </div>
+        ))}
+        <p className="pt-1 text-[10.5px] text-os-faint">{tf("currencyNote", { c: k.currency })}</p>
+      </div>
     </SectionCard>
   );
 }
@@ -206,7 +240,7 @@ export default async function CommandCenter() {
             <StageColumns rows={pipeline.map((s) => ({ key: s.key, label: locale === "ar" ? s.nameAr : s.nameEn, count: s.count, value: Number(s.value) }))} locale={locale} empty={t("home.pipelineEmpty")} />
           </SectionCard>
         )}
-        <PlannedPanel title={t("home.cash")} phase={5} module="invoices" locale={locale} t={tt} />
+        {can(ctx, "finance.dashboard.view") && <FinancePanel ctx={ctx} locale={locale} />}
         {can(ctx, "projects.view") && <ProjectsPanel ctx={ctx} />}
         {/* NOVA AI is an external DMS Tech platform: launch only, no simulated AI output */}
         {can(ctx, "nova.use") && (

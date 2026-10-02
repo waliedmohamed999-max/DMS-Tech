@@ -80,7 +80,8 @@ function Sidebar({ groups, collapsed, onCollapse, mobileOpen, onNavigate }: { gr
               {!isClosed && (
                 <ul className="grid gap-0.5">
                   {g.items.map((it) => {
-                    const active = isActive(pathname, it.href);
+                    // only the most specific match is active (/app/finance vs /app/finance/invoices)
+                    const active = isActive(pathname, it.href) && !groups.some((gg) => gg.items.some((o) => o.href.length > it.href.length && o.href.startsWith(it.href) && isActive(pathname, o.href)));
                     return (
                       <li key={it.key}>
                         <Link
@@ -328,7 +329,7 @@ function CommandPalette({ open, onClose, nav }: { open: boolean; onClose: () => 
   );
   const entries = [...results, ...navEntries];
 
-  const typeIcon: Record<string, IconName> = { user: "Users", approval: "BadgeCheck", department: "Network", lead: "Filter", opportunity: "Target", client: "Building2", contact: "Users", service: "Package", quotation: "FileText", contract: "Handshake", project: "Layers", task: "ClipboardList", milestone: "Route" };
+  const typeIcon: Record<string, IconName> = { user: "Users", approval: "BadgeCheck", department: "Network", lead: "Filter", opportunity: "Target", client: "Building2", contact: "Users", service: "Package", quotation: "FileText", contract: "Handshake", project: "Layers", task: "ClipboardList", milestone: "Route", invoice: "FileText", payment: "CreditCard", expense: "ShoppingBag", vendor: "Handshake", employee: "Users", candidate: "GraduationCap", job: "Briefcase", procurement: "ClipboardList", purchase_order: "ShoppingCart", ticket: "LifeBuoy", asset: "Monitor", document: "FileSearch", article: "Lightbulb", campaign: "Megaphone", conversation: "MessagesSquare" };
 
   const onChange = (v: string) => {
     setQ(v);

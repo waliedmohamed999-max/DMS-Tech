@@ -142,7 +142,10 @@ export async function getSettings(ctx: Ctx) {
     vatRate: Number(o.vatRate),
     quoteApprovalThreshold: Number(o.quoteApprovalThreshold),
     discountApprovalPercent: Number(o.discountApprovalPercent),
-    quoteExecutiveApprovalThreshold: o.quoteExecutiveApprovalThreshold == null ? null : Number(o.quoteExecutiveApprovalThreshold)
+    quoteExecutiveApprovalThreshold: o.quoteExecutiveApprovalThreshold == null ? null : Number(o.quoteExecutiveApprovalThreshold),
+    expenseApprovalThreshold: Number(o.expenseApprovalThreshold),
+    largeOutstandingThreshold: Number(o.largeOutstandingThreshold),
+    defaultHourlyBillingRate: o.defaultHourlyBillingRate == null ? null : Number(o.defaultHourlyBillingRate)
   };
 }
 
@@ -171,6 +174,13 @@ const settingsSchema = z.object({
   internalProjectsAllowed: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()).optional(),
   timesheetMaxDailyMinutes: z.coerce.number().int().min(60).max(1440).optional(),
   projectInactivityDays: z.coerce.number().int().min(1).max(180).optional(),
+  // Phase 5 finance settings
+  invoiceDueDays: z.coerce.number().int().min(0).max(365).optional(),
+  invoiceDueSoonDays: z.coerce.number().int().min(0).max(60).optional(),
+  invoicePaymentInstructions: z.string().trim().max(2000).optional(),
+  expenseApprovalThreshold: z.coerce.number().min(0).optional(),
+  largeOutstandingThreshold: z.coerce.number().min(0).optional(),
+  defaultHourlyBillingRate: z.preprocess((v) => (v === "" || v == null ? null : v), z.coerce.number().min(0).nullable()).optional(),
   defaultLocale: z.enum(["ar", "en"])
 });
 
@@ -195,7 +205,13 @@ export async function updateSettings(ctx: Ctx, raw: unknown) {
         ...(input.projectFromQuotationAllowed !== undefined && { projectFromQuotationAllowed: input.projectFromQuotationAllowed }),
         ...(input.internalProjectsAllowed !== undefined && { internalProjectsAllowed: input.internalProjectsAllowed }),
         ...(input.timesheetMaxDailyMinutes !== undefined && { timesheetMaxDailyMinutes: input.timesheetMaxDailyMinutes }),
-        ...(input.projectInactivityDays !== undefined && { projectInactivityDays: input.projectInactivityDays })
+        ...(input.projectInactivityDays !== undefined && { projectInactivityDays: input.projectInactivityDays }),
+        ...(input.invoiceDueDays !== undefined && { invoiceDueDays: input.invoiceDueDays }),
+        ...(input.invoiceDueSoonDays !== undefined && { invoiceDueSoonDays: input.invoiceDueSoonDays }),
+        ...(input.invoicePaymentInstructions !== undefined && { invoicePaymentInstructions: input.invoicePaymentInstructions || null }),
+        ...(input.expenseApprovalThreshold !== undefined && { expenseApprovalThreshold: input.expenseApprovalThreshold }),
+        ...(input.largeOutstandingThreshold !== undefined && { largeOutstandingThreshold: input.largeOutstandingThreshold }),
+        ...(input.defaultHourlyBillingRate !== undefined && { defaultHourlyBillingRate: input.defaultHourlyBillingRate })
       }
     });
     await uow.audit({ action: "settings.updated", entityType: "Organization", entityId: after.id, before, after });

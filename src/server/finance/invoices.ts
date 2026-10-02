@@ -446,6 +446,7 @@ export async function invoiceListWhere(ctx: Ctx, raw: unknown) {
 export async function listInvoices(ctx: Ctx, raw: unknown) {
   requirePermission(ctx, "finance.invoices.view");
   const { f, where } = await invoiceListWhere(ctx, raw);
+  const org = await orgFinance(prisma, ctx.organizationId);
   const orderBy: Prisma.InvoiceOrderByWithRelationInput[] = f.sort === "number" ? [{ number: { sort: f.dir, nulls: "last" } }] : [{ [f.sort]: f.dir }];
   const [items, total, sums] = await Promise.all([
     prisma.invoice.findMany({
@@ -453,9 +454,9 @@ export async function listInvoices(ctx: Ctx, raw: unknown) {
       include: { client: { select: { id: true, displayName: true } }, project: { select: { id: true, number: true, name: true } }, createdBy: { select: { id: true, name: true, nameAr: true } } }
     }),
     prisma.invoice.count({ where }),
-    prisma.invoice.aggregate({ where: and<Prisma.InvoiceWhereInput>(where, { AND: [{ status: { notIn: ["DRAFT", "CANCELLED", "VOID"] } }] }), _sum: { total: true, paidAmount: true, balanceDue: true } })
+    prisma.invoice.aggregate({ where: and<Prisma.InvoiceWhereInput>(where, { AND: [{ status: { notIn: ["DRAFT", "CANCELLED", "VOID"] }, currency: org.currency }] }), _sum: { total: true, paidAmount: true, balanceDue: true } })
   ]);
-  return { items, total, page: f.page, pageSize: INVOICES_PAGE_SIZE, filters: f, sums: { total: sums._sum.total?.toFixed(2) ?? "0.00", paid: sums._sum.paidAmount?.toFixed(2) ?? "0.00", balance: sums._sum.balanceDue?.toFixed(2) ?? "0.00" } };
+  return { items, total, page: f.page, pageSize: INVOICES_PAGE_SIZE, filters: f, currency: org.currency, sums: { total: sums._sum.total?.toFixed(2) ?? "0.00", paid: sums._sum.paidAmount?.toFixed(2) ?? "0.00", balance: sums._sum.balanceDue?.toFixed(2) ?? "0.00" } };
 }
 
 export async function getInvoice(ctx: Ctx, id: string) {

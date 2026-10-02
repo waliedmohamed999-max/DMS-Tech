@@ -16,15 +16,14 @@ import { ActivityTimeline, NotesPanel } from "@/components/crm/Timeline";
 import { clientStatusTone, oppStatusTone } from "@/components/crm/tones";
 import { Icon } from "@/components/ui/Icon";
 import { ContractsTab, QuotationsTab } from "@/components/sales/CommercialTabs";
+import { ClientFinanceTab, ClientProjectsTab } from "@/components/finance/ClientTabs";
+import { TicketsCard } from "@/components/ops/SupportTabs";
+import { DocumentsPanel } from "@/components/ops/DocumentsPanel";
 
 export const metadata = { title: "Client" };
 
-const TABS = ["overview", "contacts", "sales", "quotations", "contracts", "activity", "notes", "files"] as const;
-const PLANNED = [
-  { key: "projects", phase: 4 },
-  { key: "finance", phase: 5 },
-  { key: "support", phase: 7 }
-] as const;
+const TABS = ["overview", "contacts", "sales", "quotations", "contracts", "projects", "finance", "support", "activity", "notes", "files"] as const;
+const PLANNED: readonly { key: string; phase: number }[] = [];
 
 function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
   return (
@@ -40,9 +39,11 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   const { id } = await params;
   const { tab: raw } = await searchParams;
   const planned = PLANNED.find((p) => p.key === raw);
-  const tab = planned ? raw! : (TABS as readonly string[]).includes(raw ?? "") ? raw! : "overview";
   const { ctx, allowed } = await pageCtx("crm.clients.view");
   if (!allowed) return <PermissionDenied permission="crm.clients.view" />;
+  // projects / finance tabs exist only for users with those permissions (finance never follows from CRM access)
+  const visibleTabs = TABS.filter((k) => (k !== "projects" || can(ctx, "projects.view")) && (k !== "finance" || can(ctx, "finance.invoices.view")) && (k !== "support" || can(ctx, "support.tickets.view") || can(ctx, "support.tickets.manage")));
+  const tab = planned ? raw! : (visibleTabs as readonly string[]).includes(raw ?? "") ? raw! : "overview";
   const locale = await getLocale();
   const t = await getTranslations("os");
   let data;
@@ -95,7 +96,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
       </div>
 
       <nav className="no-scrollbar flex gap-1 overflow-x-auto border-b border-os-line">
-        {TABS.map((k) => (
+        {visibleTabs.map((k) => (
           <Link key={k} href={`?tab=${k}`} className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm ${tab === k ? "border-iris text-os-text" : "border-transparent text-os-muted hover:text-os-text"}`}>
             {t(`crm.tabs.${k}`)}
             {k === "contacts" && <span className="ms-1 text-os-faint tabular">{c.contacts.length}</span>}
@@ -285,11 +286,10 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
       )}
       {tab === "quotations" && <QuotationsTab ctx={ctx} where={{ clientId: c.id }} createHref={`/app/sales/quotations/new?client=${c.id}`} />}
       {tab === "contracts" && <ContractsTab ctx={ctx} where={{ clientId: c.id }} />}
-      {tab === "files" && (
-        <div className="os-card">
-          <EmptyState icon="FileSearch" title={t("crm.clients.plannedTab", { n: 7 })} text={t("crm.clients.filesPlanned")} />
-        </div>
-      )}
+      {tab === "projects" && <ClientProjectsTab ctx={ctx} clientId={c.id} />}
+      {tab === "finance" && <ClientFinanceTab ctx={ctx} clientId={c.id} />}
+      {tab === "support" && <TicketsCard ctx={ctx} client={c.id} />}
+      {tab === "files" && <DocumentsPanel ctx={ctx} entity={{ type: "CLIENT", id: c.id }} />}
       {planned && (
         <div className="os-card">
           <EmptyState icon="Layers" title={t("crm.clients.plannedTab", { n: planned.phase })} text={t("crm.clients.plannedText")} />

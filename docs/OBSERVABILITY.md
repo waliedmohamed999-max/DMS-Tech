@@ -1,0 +1,127 @@
+# Observability, jobs & reliability (Phase 9)
+
+Code: `src/server/obs/` (logging, redaction, errors, metrics), `src/server/jobs/lease.ts`, `src/server/system/`
+(jobs, health, events, alerts, overview, worker). UI: `/app/admin/system-health` (`system.health.view`).
+
+## Structured logging
+
+`log.info|warn|error(msg, fields)` writes one JSON line:
+
+```json
+{"ts":"…","level":"error","msg":"job_failed","requestId":"…","correlationId":"…","actorId":"…","organizationId":"…","module":"job","operation":"…","job":"sweep:ops","durationMs":812,"error":"…"}
+```
+
+- Context comes from an `AsyncLocalStorage` scope opened by every server action (`runAction`), job run (`withLease`),
+  automation execution and worker pass. The request id doubles as the correlation id of the events written in it.
+- `LOG_LEVEL` = `debug | info | warn | error | silent` (default `info`; `warn` under tests).
+- Ship stdout to the platform log collector; no file logging in the app.
+
+### Redaction
+
+`src/server/obs/redact.ts` is the single redaction utility:
+
+| Class | Keys (case / underscore-insensitive) | In logs | In audit / events |
+|---|---|---|---|
+| SECRET | password, passwordHash, token, accessToken, refreshToken, secret, signingSecret, appSecret, clientSecret, secretAccessKey, accessKeyId, apiKey, verifyToken, authorization, cookie, set-cookie, signature headers, ciphertext, authTag, masterKey, dsn | `[redacted]` | `[redacted]` |
+| PRIVATE | iban, accountNumber, salary, baseSalary, allowances, deductions, grossPay, netPay, compensation, nationalId, passport / iqama number, dateOfBirth | `[private]` | kept (audit is the permission-gated history) |
+| CONTENT | data, content, body (> 200 chars), buffers, files | `[binary N bytes]` / `[text N chars]` | — |
+
+Free text is also scanned for bearer tokens, Meta / Google / Stripe / AWS token shapes, `token=` / `password=` pairs,
+Saudi IBANs and Postgres URLs.
+
+## Error model
+
+Every failure maps to one category (`src/server/obs/errors.ts`):
+
+| Category | HTTP | Typical source |
+|---|---|---|
+| `VALIDATION_ERROR` | 400 | zod, `invalid()` |
+| `UNAUTHENTICATED` / `FORBIDDEN` | 401 / 403 | session, `requirePermission` |
+| `NOT_FOUND` | 404 | missing / invisible record |
+| `CONFLICT` | 409 | business rule conflict, unique violation, DB guard triggers |
+| `STALE_STATE` | 409 | `*_STALE`, concurrent change, serialization failure |
+| `RATE_LIMITED` | 429 | limits |
+| `EXTERNAL_PROVIDER_ERROR` | 502 | `IntegrationError` |
+| `DEPENDENCY_UNAVAILABLE` | 503 | database unreachable (P1001 …) |
+| `INTERNAL_ERROR` | 500 | anything unexpected |
+
+Server actions keep their stable codes (translated in the UI) and now also return `category`; unexpected errors return
+`UNKNOWN` (or `DEPENDENCY_UNAVAILABLE`) with a `ref` (request id) shown as "ref xxxxxxxx" — never a stack trace, SQL or
+provider body. The diagnostic goes to the structured log under the same request id.
+
+**Error tracking adapter.** `ErrorReporter` (`setErrorReporter`) — default is a no-op; the system-health page shows
+"Not configured (log only)". Setting `SENTRY_DSN` / `OTEL_EXPORTER_OTLP_ENDPOINT` without installing an adapter is
+reported as such, never as connected.
+
+## Metrics
+
+`metrics.count / timing` (`src/server/obs/metrics.ts`) — action errors, job runs / failures / duration, webhook
+failures, integration retries, automation executions / failures, domain-event failures. No external backend is
+configured, so counters are per instance ("since start") on the system-health page; cluster-wide truths (queue depth,
+dead letters, job history) come from the database. A `MetricsSink` (OpenTelemetry / Prometheus) can be plugged in
+later. Slow-query tracking is not instrumented in this build (Prisma driver-adapter query events are not wired).
+
+## Jobs
+
+All scheduled work runs under `withLease(key, ttl, fn)` (`JobLease` row, atomic acquire) and is recorded in
+`SystemJob`: status, start / end, last success / failure, duration, sanitized last error, run / fail counts,
+consecutive failure streak, holder and **heartbeat**.
+
+- Heartbeat: every ttl/3 the running holder renews its lease and writes `heartbeatAt`. A dead process stops beating,
+  its lease lapses and another instance takes over (stuck-job recovery). A record existing never implies liveness.
+- Timeout (default = ttl): the run is recorded FAILED (`TIMEOUT …`) and stops heart-beating; work is idempotent, so
+  an abandoned promise finishing later is harmless.
+- Health per job (`jobHealth`): HEALTHY, STALE (no success within 2× the expected interval), STUCK (RUNNING without
+  heartbeat), UNHEALTHY (last run failed / ≥ 3 consecutive failures), NEVER_RUN.
+
+| Job | Every | Runner |
+|---|---|---|
+| `worker:loop` (heartbeat) | 30 s | `npm run worker -- --loop` |
+| `sweep:commercial / projects / finance / ops` | 15 min | worker (or the individual `*:sweep` scripts) |
+| `sweep:hr` | 1 h | worker / `hr:sweep` |
+| `integrations:outbox / campaigns / health` | 1 min / 1 min / 30 min | worker / `integrations:worker` |
+| `system:events` | 1–5 min | worker — domain-event recovery |
+| `system:automation` | 1–5 min | worker — rule retries |
+| `system:alerts` | 5 min | worker |
+| `system:retention` | daily | worker |
+
+The unified worker (`npm run worker`) calls the existing sweeps rather than merging their code: each keeps its own
+lease, so the individual scripts, the lazy page triggers and the worker can never double-run the same sweep.
+
+## Domain events
+
+- Every handler has a key (`subscribe(type, fn, name)`); all handlers run even if one fails; the keys that succeeded
+  are stored (`handlersDone`) and skipped on retry — retries never duplicate notifications or activity.
+- FAILED events are retried by `system:events` with backoff (2, 4, 8, 16 min); after 5 attempts → DEAD_LETTER.
+- PENDING events older than 2 minutes (process died between commit and dispatch) are re-dispatched.
+- Operators (`system.events.retry`) retry or dismiss with a reason (`system.event_retried`, `system.event_dismissed`).
+- Correlation: `correlationId` (request / chain), `causationId` (event that caused it), `depth` (automation hops).
+
+## Dead letters (unified view)
+
+`/app/admin/system-health?tab=dead` lists, without merging tables: integration outbox dead letters / failures
+(`integrations.manage` to act), automation executions (`automation.executions.retry`), domain events
+(`system.events.retry`). Retry and dismiss reuse each module's own audited operation.
+
+## Health & readiness
+
+| Endpoint | Purpose | I/O |
+|---|---|---|
+| `GET /api/health` | liveness: `{status, time, version, commit, environment, uptimeSeconds}` | none |
+| `GET /api/ready` | readiness: 200 / 503 with check names + statuses (details only on the system-health page) | DB, migrations, storage probe (cached 10 s) |
+
+Ready requires: database reachable (3 s timeout); every shipped migration applied and none failed; no critical
+configuration issue; document storage write / read / delete (local) or bucket reachable (S3 metadata check;
+`STORAGE_HEALTH_WRITE=1` for a write test); no active `@dms.test` demo accounts in production; worker heartbeat
+< 5 min **only when** `REQUIRE_WORKER=1`. Optional integrations (WhatsApp, Google, NOVA, …) never affect readiness.
+
+Build metadata (`.build-info.json`, written by `prebuild`): version, commit SHA, build time, migration list.
+
+## Alerts
+
+`system:alerts` evaluates real data and notifies `system.health.view` holders (category SYSTEM, dedupe per kind per
+hour): worker down, unhealthy / stuck required jobs, integration queue backlog (`ALERT_QUEUE_BACKLOG`, default 50
+items overdue > 15 min), dead letters, domain-event failures in the last hour, repeated webhook rejections
+(`ALERT_WEBHOOK_FAILURES`, default 20 / h), stale backup (`BACKUP_MAX_AGE_HOURS`, default 26; in production or once a
+backup exists), failed backup / verification, document storage failure. A database outage cannot be written to the
+database — it is reported through the structured log and the error reporter.

@@ -72,8 +72,8 @@ Database + ORM · migrations · seed (dev-only) · authentication · sessions ·
 | 3 | Service catalog, packages, quotations + PDF, approval rules, contracts | Planned |
 | 4 | Projects, tasks, milestones, timesheets, health engine | Planned |
 | 5 | Invoices, payments, expenses, finance reports | Planned |
-| 6 | Employees, leave, payroll, recruitment | Planned |
-| 7 | Vendors, procurement, support tickets, documents | Planned |
+| 6 | Employees, attendance, leave, payroll, recruitment, performance | ✅ Done — [HR.md](HR.md) |
+| 7 | Procurement, purchase orders, vendors, assets, documents, support tickets, knowledge base | ✅ Done — [OPERATIONS.md](OPERATIONS.md) |
 | 8 | Marketing, WhatsApp Business Platform, integrations | Planned — integration required |
 | 9 | Deterministic (non-AI) business rules; NOVA AI **data** integration (API/webhooks) only once NOVA publishes a spec. No AI engine/agents/tools are built in the OS — NOVA AI is an external platform ([NOVA-INTEGRATION.md](NOVA-INTEGRATION.md)); its launch link already exists | Planned — depends on NOVA spec |
 | 10 | Security hardening, performance, E2E tests, production readiness | Planned |

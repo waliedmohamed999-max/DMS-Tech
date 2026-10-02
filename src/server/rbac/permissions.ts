@@ -24,8 +24,6 @@ export const PERMISSIONS = {
   "admin.departments.manage": { group: "admin", phase: 1 },
   "admin.settings.manage": { group: "admin", phase: 1 },
   "admin.audit.view": { group: "admin", phase: 1 },
-  "admin.integrations.manage": { group: "admin", phase: 8 },
-  "admin.automation.manage": { group: "admin", phase: 9 },
 
   // CRM (Phase 2)
   "crm.clients.view": { group: "crm", phase: 2 },
@@ -102,8 +100,6 @@ export const PERMISSIONS = {
   "projects.time.approve": { group: "delivery", phase: 4 },
   "projects.deliverables.view": { group: "delivery", phase: 4 },
   "projects.deliverables.manage": { group: "delivery", phase: 4 },
-  "support.tickets.view": { group: "delivery", phase: 7 },
-  "support.tickets.manage": { group: "delivery", phase: 7 },
 
   // Finance
   "finance.dashboard.view": { group: "finance", phase: 5 },
@@ -133,30 +129,115 @@ export const PERMISSIONS = {
   "finance.cost_rates.view": { group: "finance", phase: 5 },
   "finance.cost_rates.manage": { group: "finance", phase: 5 },
   "finance.reports.view": { group: "finance", phase: 5 },
-  "finance.payroll.view": { group: "finance", phase: 6 },
-  "finance.payroll.manage": { group: "finance", phase: 6 },
 
-  // People
+  // People (Phase 6) — salary / bank / payroll / performance each have their own keys
+  "hr.dashboard.view": { group: "people", phase: 6 },
+  /** HR record scope: every employee (otherwise department scope, own reports, self) */
+  "hr.records.all": { group: "people", phase: 6 },
+  "hr.records.department": { group: "people", phase: 6 },
   "hr.employees.view": { group: "people", phase: 6 },
-  "hr.employees.manage": { group: "people", phase: 6 },
-  /** Salary, bank details, private HR documents */
+  "hr.employees.create": { group: "people", phase: 6 },
+  "hr.employees.edit": { group: "people", phase: 6 },
+  "hr.employees.archive": { group: "people", phase: 6 },
+  /** Personal contact data, nationality and emergency contact (unmasked) */
   "hr.employees.sensitive": { group: "people", phase: 6 },
+  "hr.compensation.view": { group: "people", phase: 6 },
+  "hr.compensation.manage": { group: "people", phase: 6 },
+  "hr.bank.view": { group: "people", phase: 6 },
+  "hr.bank.manage": { group: "people", phase: 6 },
+  "hr.attendance.view": { group: "people", phase: 6 },
+  "hr.attendance.manage": { group: "people", phase: 6 },
+  "hr.attendance.self": { group: "people", phase: 6 },
+  "hr.leave.view": { group: "people", phase: 6 },
   "hr.leave.request": { group: "people", phase: 6 },
   "hr.leave.approve": { group: "people", phase: 6 },
+  "hr.leave.manage": { group: "people", phase: 6 },
+  "hr.payroll.view": { group: "people", phase: 6 },
+  "hr.payroll.prepare": { group: "people", phase: 6 },
+  "hr.payroll.approve": { group: "people", phase: 6 },
+  "hr.payroll.pay": { group: "people", phase: 6 },
+  "hr.recruitment.view": { group: "people", phase: 6 },
   "hr.recruitment.manage": { group: "people", phase: 6 },
+  "hr.offers.approve": { group: "people", phase: 6 },
+  "hr.performance.view": { group: "people", phase: 6 },
+  "hr.performance.manage": { group: "people", phase: 6 },
 
   // Marketing & operations
-  "marketing.campaigns.manage": { group: "marketing", phase: 8 },
-  "marketing.whatsapp.send": { group: "marketing", phase: 8 },
-  "ops.vendors.manage": { group: "operations", phase: 7 },
-  "ops.procurement.manage": { group: "operations", phase: 7 },
-  "ops.documents.manage": { group: "operations", phase: 7 },
+  // Integrations (Phase 8) — secrets are never readable through any permission
+  "integrations.view": { group: "integrations", phase: 8 },
+  "integrations.manage": { group: "integrations", phase: 8 },
+  "integrations.test": { group: "integrations", phase: 8 },
+  /** Executions, webhook deliveries, outbox / dead-letter (sanitized) — retry and dismiss need integrations.manage */
+  "integrations.logs.view": { group: "integrations", phase: 8 },
+  /** WhatsApp inbox (official Business Platform only) */
+  "whatsapp.view": { group: "marketing", phase: 8 },
+  "whatsapp.send": { group: "marketing", phase: 8 },
+  /** Templates sync, consent overrides, conversation linking */
+  "whatsapp.manage": { group: "marketing", phase: 8 },
+  "whatsapp.campaigns.create": { group: "marketing", phase: 8 },
+  "whatsapp.campaigns.approve": { group: "marketing", phase: 8 },
+  "marketing.view": { group: "marketing", phase: 8 },
+  "marketing.manage": { group: "marketing", phase: 8 },
+  "marketing.reports.view": { group: "marketing", phase: 8 },
+
+  // Operations (Phase 7) — procurement is not accounting: no permission here creates a payment
+  "operations.dashboard.view": { group: "operations", phase: 7 },
+  /** Approval routing rules, asset / knowledge categories, SLA policies */
+  "operations.settings.manage": { group: "operations", phase: 7 },
+  /** All procurement requests (otherwise: own requests, requests of projects I manage) */
+  "procurement.requests.view": { group: "operations", phase: 7 },
+  "procurement.requests.create": { group: "operations", phase: 7 },
+  "procurement.requests.approve": { group: "operations", phase: 7 },
+  /** Requests routed to the executive tier (large purchases) */
+  "procurement.requests.approve_executive": { group: "operations", phase: 7 },
+  "procurement.orders.view": { group: "operations", phase: 7 },
+  "procurement.orders.create": { group: "operations", phase: 7 },
+  "procurement.orders.approve": { group: "operations", phase: 7 },
+  "procurement.orders.issue": { group: "operations", phase: 7 },
+  "procurement.orders.receive": { group: "operations", phase: 7 },
+  "procurement.orders.cancel": { group: "operations", phase: 7 },
+  "assets.view": { group: "operations", phase: 7 },
+  "assets.manage": { group: "operations", phase: 7 },
+  "assets.assign": { group: "operations", phase: 7 },
+  "assets.maintenance": { group: "operations", phase: 7 },
+  /** Open the document center. Every document is still gated by its linked record's own permissions. */
+  "documents.view": { group: "operations", phase: 7 },
+  "documents.create": { group: "operations", phase: 7 },
+  "documents.version": { group: "operations", phase: 7 },
+  "documents.archive": { group: "operations", phase: 7 },
+  /** Company-level (unlinked) confidential / restricted documents */
+  "documents.manage": { group: "operations", phase: 7 },
+  /** Support workspace: tickets assigned to / created by me, and tickets of projects I manage */
+  "support.tickets.view": { group: "operations", phase: 7 },
+  "support.tickets.create": { group: "operations", phase: 7 },
+  "support.tickets.assign": { group: "operations", phase: 7 },
+  /** Every ticket (support leads / operations) */
+  "support.tickets.manage": { group: "operations", phase: 7 },
+  "support.sla.manage": { group: "operations", phase: 7 },
+  "knowledge.view": { group: "operations", phase: 7 },
+  "knowledge.create": { group: "operations", phase: 7 },
+  "knowledge.review": { group: "operations", phase: 7 },
+  "knowledge.publish": { group: "operations", phase: 7 },
+  /** Every article in any state / visibility; publish own articles */
+  "knowledge.manage": { group: "operations", phase: 7 },
+
+  // Business rules (Phase 9) — deterministic trigger → conditions → actions; never AI, never high-risk actions
+  "automation.view": { group: "system", phase: 9 },
+  "automation.manage": { group: "system", phase: 9 },
+  "automation.executions.view": { group: "system", phase: 9 },
+  "automation.executions.retry": { group: "system", phase: 9 },
+  // System operations (Phase 9) — infrastructure details are for administrators, not ordinary staff
+  "system.health.view": { group: "system", phase: 9 },
+  /** Retry / dismiss failed jobs and dead letters across modules */
+  "system.jobs.manage": { group: "system", phase: 9 },
+  "system.events.retry": { group: "system", phase: 9 },
+  "system.backups.view": { group: "system", phase: 9 },
 
   // NOVA AI — external DMS Tech platform; this only gates the launch link / integration page
   "nova.use": { group: "nova", phase: 2 }
 } as const satisfies Record<string, { group: PermissionGroup; phase: number }>;
 
-export type PermissionGroup = "command" | "admin" | "crm" | "sales" | "delivery" | "finance" | "people" | "marketing" | "operations" | "nova";
+export type PermissionGroup = "command" | "admin" | "crm" | "sales" | "delivery" | "finance" | "people" | "marketing" | "operations" | "integrations" | "system" | "nova";
 export type Permission = keyof typeof PERMISSIONS;
 export const ALL_PERMISSIONS = Object.keys(PERMISSIONS) as Permission[];
 export const isPermission = (k: string): k is Permission => k in PERMISSIONS;
@@ -181,7 +262,16 @@ const PROJECT_MANAGE: Permission[] = [
 const PROJECT_READ: Permission[] = ["projects.view", "projects.milestones.view", "projects.tasks.view", "projects.deliverables.view"];
 const CONTRACTS_FULL: Permission[] = ["sales.contracts.view", "sales.contracts.create", "sales.contracts.edit", "sales.contracts.activate", "sales.contracts.terminate"];
 // own expense claims: create + submit (visibility = own records without finance.expenses.view)
-const everyone: Permission[] = ["dashboard.view", "approvals.view", "hr.leave.request", "finance.expenses.create", "finance.expenses.submit", "nova.use"];
+const everyone: Permission[] = [
+  "dashboard.view", "approvals.view", "hr.leave.request", "hr.attendance.self", "finance.expenses.create", "finance.expenses.submit", "nova.use",
+  // Phase 7: own purchase requests, own tickets, company knowledge, document center (each document keeps its record's security)
+  "procurement.requests.create", "support.tickets.create", "knowledge.view", "documents.view", "documents.create"
+];
+const OPS_ALL: Permission[] = (Object.keys(PERMISSIONS) as Permission[]).filter((p) => /^(operations|procurement|assets|documents|support|knowledge)\./.test(p));
+const SUPPORT_AGENT: Permission[] = ["whatsapp.view", "whatsapp.send", "support.tickets.view", "support.tickets.create", "support.tickets.assign", "knowledge.view", "knowledge.create", "documents.create", "documents.version", "crm.clients.view", "crm.contacts.view", "crm.records.all", "services.view"];
+const HR_ALL: Permission[] = (Object.keys(PERMISSIONS) as Permission[]).filter((p) => p.startsWith("hr."));
+/** Line manager: own direct reports only (scope is enforced by the HR services, not by these keys) */
+const LINE_MANAGER: Permission[] = ["approvals.decide", "hr.leave.approve", "hr.attendance.view", "hr.performance.view", "hr.performance.manage"];
 const FIN_INVOICING: Permission[] = ["finance.invoices.view", "finance.invoices.create", "finance.invoices.edit", "finance.invoices.issue", "finance.invoices.send", "finance.invoices.cancel", "finance.collections.manage"];
 /** Day-to-day finance operations (accountant): billing, receipts, expense processing, vendors — no reversals, no margins, no cost rates */
 const FIN_OPS: Permission[] = [
@@ -195,12 +285,15 @@ export const SYSTEM_ROLES: RoleDef[] = [
   {
     key: "ceo",
     name: { ar: "الرئيس التنفيذي", en: "CEO" },
-    permissions: ALL_PERMISSIONS.filter((p) => !["admin.roles.grant_privileged", "admin.integrations.manage"].includes(p))
+    // bank details stay with HR (hr.bank.*) — even executives see salaries, never IBANs
+    permissions: // Phase 9: rules yes; infrastructure operations (jobs, event retry, backups) stay with the system administrator
+    ALL_PERMISSIONS.filter((p) => !["admin.roles.grant_privileged", "integrations.manage", "hr.bank.view", "hr.bank.manage", "system.jobs.manage", "system.events.retry", "system.backups.view"].includes(p))
   },
   {
     key: "general_manager",
     name: { ar: "المدير العام", en: "General Manager" },
-    permissions: ALL_PERMISSIONS.filter((p) => !p.startsWith("admin.") && p !== "finance.payroll.manage" && p !== "hr.employees.sensitive").concat(
+    // executive oversight: approves payroll and offers, sees salaries; no bank data, no payroll preparation/payment, no personal data
+    permissions: ALL_PERMISSIONS.filter((p) => !p.startsWith("admin.") && !p.startsWith("system.") && !p.startsWith("automation.") && !["hr.employees.sensitive", "hr.bank.view", "hr.bank.manage", "hr.compensation.manage", "hr.payroll.prepare", "hr.payroll.pay"].includes(p)).concat(
       "admin.users.view",
       "admin.audit.view"
     )
@@ -212,12 +305,15 @@ export const SYSTEM_ROLES: RoleDef[] = [
       ...everyone,
       "dashboard.finance_kpis", "approvals.decide", "activity.view_all",
       ...FIN_OPS, "finance.payments.reverse", "finance.expenses.approve_executive", "finance.profitability.view", "finance.cost_rates.view", "finance.cost_rates.manage",
-      "finance.payroll.view", "finance.payroll.manage",
+      // payroll: approves and pays from period totals; employee-level lines need hr.payroll.view (not granted)
+      "hr.payroll.approve", "hr.payroll.pay",
       "services.view", "sales.quotations.view", "sales.quotations.approve", "sales.contracts.view", "crm.clients.view", "crm.contacts.view", "crm.records.all", ...PROJECT_READ, "projects.records.all", "projects.time.view",
-      "ops.vendors.manage", "ops.procurement.manage"
+      // procurement: financial oversight + executive tier; orders approval
+      "operations.dashboard.view", "procurement.requests.view", "procurement.requests.approve", "procurement.requests.approve_executive",
+      "procurement.orders.view", "procurement.orders.approve", "assets.view", "documents.create", "documents.version"
     ]
   },
-  { key: "accountant", name: { ar: "محاسب", en: "Accountant" }, permissions: [...everyone, "approvals.decide", ...FIN_OPS, "crm.clients.view", "crm.contacts.view", "crm.records.all", "services.view", "sales.quotations.view", "sales.contracts.view", ...PROJECT_READ, "projects.records.all", "projects.time.view"] },
+  { key: "accountant", name: { ar: "محاسب", en: "Accountant" }, permissions: [...everyone, "approvals.decide", ...FIN_OPS, "crm.clients.view", "crm.contacts.view", "crm.records.all", "services.view", "sales.quotations.view", "sales.contracts.view", ...PROJECT_READ, "projects.records.all", "projects.time.view", "procurement.requests.view", "procurement.orders.view", "documents.create", "documents.version"] },
   {
     key: "sales_manager",
     name: { ar: "مدير المبيعات", en: "Sales Manager" },
@@ -225,7 +321,9 @@ export const SYSTEM_ROLES: RoleDef[] = [
       ...everyone, "approvals.decide",
       ...CRM_FULL.filter((p) => p !== "crm.clients.archive"),
       ...QUOTES_OWN, "services.manage", "sales.quotations.approve", ...CONTRACTS_FULL,
-      "finance.invoices.view", ...PROJECT_READ
+      "finance.invoices.view", ...PROJECT_READ,
+      // Phase 8: WhatsApp inbox, campaign approval (not creation), marketing reports
+      "whatsapp.view", "whatsapp.send", "whatsapp.campaigns.approve", "marketing.view", "marketing.reports.view"
     ]
   },
   {
@@ -242,16 +340,26 @@ export const SYSTEM_ROLES: RoleDef[] = [
     key: "project_manager",
     name: { ar: "مدير مشاريع", en: "Project Manager" },
     // manages assigned + department projects; contract read access (record scope) for the commercial hand-off
-    permissions: [...everyone, "approvals.decide", ...PROJECT_MANAGE, "projects.records.team", "crm.clients.view", "crm.contacts.view", "crm.records.all", "support.tickets.view", "support.tickets.manage", "hr.leave.approve", "services.view", "sales.contracts.view", "finance.invoices.view"]
+    permissions: [...everyone, "approvals.decide", ...PROJECT_MANAGE, "projects.records.team", "crm.clients.view", "crm.contacts.view", "crm.records.all", "support.tickets.view", "support.tickets.assign", "hr.leave.approve", "services.view", "sales.contracts.view", "finance.invoices.view", "documents.create", "documents.version", "procurement.orders.view"]
   },
-  { key: "developer", name: { ar: "مطوّر", en: "Developer" }, permissions: [...everyone, ...PROJECT_CONTRIBUTOR, ...view("support.tickets.view")] },
+  { key: "developer", name: { ar: "مطوّر", en: "Developer" }, permissions: [...everyone, ...PROJECT_CONTRIBUTOR, ...view("support.tickets.view"), "documents.create"] },
   { key: "designer", name: { ar: "مصمم", en: "Designer" }, permissions: [...everyone, ...PROJECT_CONTRIBUTOR] },
-  { key: "marketing", name: { ar: "تسويق", en: "Marketing" }, permissions: [...everyone, "marketing.campaigns.manage", "marketing.whatsapp.send", "crm.leads.view", "crm.leads.create", "crm.activities.view", "crm.activities.create", "services.view", ...PROJECT_CONTRIBUTOR] },
+  { key: "marketing", name: { ar: "تسويق", en: "Marketing" }, permissions: [...everyone, "marketing.view", "marketing.manage", "marketing.reports.view", "whatsapp.view", "whatsapp.send", "whatsapp.campaigns.create", "crm.leads.view", "crm.leads.create", "crm.activities.view", "crm.activities.create", "services.view", ...PROJECT_CONTRIBUTOR] },
   {
     key: "hr_manager",
     name: { ar: "مدير الموارد البشرية", en: "HR Manager" },
-    permissions: [...everyone, "approvals.decide", "hr.employees.view", "hr.employees.manage", "hr.employees.sensitive", "hr.leave.approve", "hr.recruitment.manage", "finance.payroll.view", "admin.departments.manage"]
+    // full HR except approving and paying payroll (prepared by HR, approved by finance / executive)
+    permissions: [...everyone, ...HR_ALL.filter((p) => !["hr.payroll.approve", "hr.payroll.pay"].includes(p)), "approvals.decide", "admin.departments.manage", "assets.view", "assets.assign", "documents.create", "documents.version", "documents.archive"]
   },
+  // people managers: their direct reports' leave, attendance and performance (no salary, bank or payroll)
+  { key: "line_manager", name: { ar: "مدير مباشر", en: "Line Manager" }, permissions: [...everyone, ...LINE_MANAGER] },
+  // procurement, assets, documents, support and knowledge — not finance, HR or sales records
+  {
+    key: "operations_manager",
+    name: { ar: "مدير العمليات", en: "Operations Manager" },
+    permissions: [...everyone, "approvals.decide", ...OPS_ALL.filter((p) => p !== "procurement.requests.approve_executive"), "finance.vendors.view", "finance.vendors.manage", "crm.clients.view", "crm.contacts.view", "crm.records.all", "services.view", ...PROJECT_READ]
+  },
+  { key: "support_agent", name: { ar: "موظف دعم فني", en: "Support Agent" }, permissions: [...everyone, ...SUPPORT_AGENT] },
   // own assigned tasks/projects only (project scope = membership)
   { key: "employee", name: { ar: "موظف", en: "Employee" }, permissions: [...everyone, "projects.view", "projects.milestones.view", "projects.tasks.view", "projects.tasks.change_status", "projects.time.view", "projects.time.create", "projects.time.submit", "projects.deliverables.view"] }
 ];
@@ -277,10 +385,26 @@ export const PERMISSION_RENAMES: Record<string, Permission[]> = {
   "tasks.manage": ["projects.tasks.view", "projects.tasks.create", "projects.tasks.edit", "projects.tasks.change_status"],
   // Phase 5 (finance.expenses.submit keeps its key and gains create — submitting needs a draft)
   "finance.invoices.manage": ["finance.invoices.view", "finance.invoices.create", "finance.invoices.edit", "finance.invoices.issue", "finance.invoices.send", "finance.invoices.cancel"],
-  "finance.payments.manage": ["finance.payments.view", "finance.payments.create"]
+  "finance.payments.manage": ["finance.payments.view", "finance.payments.create"],
+  // Phase 6 (payroll moved from finance to the HR domain; never broader than before)
+  "finance.payroll.view": ["hr.payroll.view"],
+  "finance.payroll.manage": ["hr.payroll.view", "hr.payroll.prepare"],
+  "hr.employees.manage": ["hr.employees.view", "hr.employees.create", "hr.employees.edit", "hr.employees.archive"],
+  // Phase 7 (placeholder keys become real ones; approval rights are never implied)
+  "ops.vendors.manage": ["finance.vendors.view", "finance.vendors.manage"],
+  "ops.procurement.manage": ["procurement.requests.view", "procurement.requests.create", "procurement.orders.view", "procurement.orders.create", "procurement.orders.issue", "procurement.orders.receive", "procurement.orders.cancel"],
+  "ops.documents.manage": ["documents.view", "documents.create", "documents.version", "documents.archive"],
+  // Phase 8 (placeholders become real keys; approval rights are never implied)
+  // Phase 9
+  "admin.automation.manage": ["automation.view", "automation.manage", "automation.executions.view", "automation.executions.retry"],
+  "admin.integrations.manage": ["integrations.view", "integrations.manage", "integrations.test", "integrations.logs.view"],
+  "marketing.campaigns.manage": ["marketing.view", "marketing.manage", "marketing.reports.view", "whatsapp.campaigns.create"],
+  "marketing.whatsapp.send": ["whatsapp.view", "whatsapp.send"]
 };
 
 /** Keys added next to an existing key on custom roles (the old key stays). Never broader than its meaning. */
 export const PERMISSION_COMPANIONS: Record<string, Permission[]> = {
-  "finance.expenses.submit": ["finance.expenses.create"]
+  "finance.expenses.submit": ["finance.expenses.create"],
+  "hr.recruitment.manage": ["hr.recruitment.view"],
+  "support.tickets.manage": ["support.tickets.view", "support.tickets.create", "support.tickets.assign"]
 };
