@@ -239,6 +239,50 @@ Rules for unlinked (company) documents and filing:
 
 **Review.** An optional reviewer is set at upload (status IN_REVIEW), notified, and approves. Self-review is blocked.
 
+### Malware scanning (Phase 11)
+
+`src/server/ops/scanner.ts` is a scanner **boundary**. No antivirus ships with the application; a real one is plugged
+in by configuration:
+
+| `DOCUMENT_SCANNER` | Meaning |
+|---|---|
+| (unset) | `NOT_CONFIGURED`; nothing claims a scan happened |
+| `clamd` | ClamAV daemon over TCP (INSTREAM), `CLAMD_HOST`, `CLAMD_PORT` (default 3310) |
+| `http` | A scanning service with a small JSON contract: POST raw bytes → `{"result":"clean"}` or `{"result":"infected","signature":"…"}`. Set `DOCUMENT_SCANNER_URL` (https in production) and `DOCUMENT_SCANNER_TOKEN`. |
+| `test-eicar` | **Deterministic test adapter, not an antivirus.** It only recognises the EICAR test string. Refused in staging and production. |
+
+**Status of each version** (stored in `DocumentVersionScan`; the version row itself stays immutable):
+* `PENDING`
+* `CLEAN`
+* `INFECTED` (final, enforced by a DB trigger)
+* `FAILED` (retried up to `DOCUMENT_SCAN_MAX_ATTEMPTS`, then final and audited)
+* `NOT_CONFIGURED`
+
+**On upload:**
+* The magic-byte, size and type checks run first.
+* Then a short inline scan runs (`DOCUMENT_SCAN_INLINE_TIMEOUT_MS`). An infected file is refused before its bytes are
+  stored. A scanner error or timeout leaves the version `PENDING`.
+* The worker job `documents:scan` scans pending versions, retries failures, and enqueues files that were uploaded before a
+  scanner existed. It re-checks the stored hash first: a tampered file is `FAILED` (`HASH_MISMATCH`), never `CLEAN`.
+
+**Download policy:**
+* `INFECTED` is never served.
+* `DOCUMENT_SCAN_POLICY=required` serves `CLEAN` only. This is fail-safe: pending, failed and not-configured files are
+  refused.
+* `optional` (the default) serves everything except infected files.
+* `REQUIRE_SCAN_BEFORE_DOWNLOAD=true` is the legacy alias for `required`.
+
+Decisions never use the file name. Logs, audit and metrics carry ids, verdict, engine and detection name only, never
+file contents.
+
+**go-live (`antivirus`):**
+* A configured real scanner must answer its health probe: PASS with `required`, WARN with `optional`.
+* No scanner with `ANTIVIRUS_DECISION=NOT_SCANNED_ACCEPTED` gives a WARN.
+* Otherwise, or with the test adapter, it is a BLOCK.
+
+The adapters are tested against local protocol stubs (`tests/scanner.test.ts`). **They have not been tested against a
+real ClamAV or scanning service**; do that on the target infrastructure.
+
 ## Support
 
 **Statuses:** NEW → OPEN / IN_PROGRESS / WAITING_CLIENT / WAITING_INTERNAL → RESOLVED → CLOSED, with CANCELLED. Transitions are explicit (`TICKET_TRANSITIONS`), with stale-state checks.

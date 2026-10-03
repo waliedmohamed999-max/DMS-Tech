@@ -138,3 +138,22 @@ bash scripts/staging/restore-drill.sh                       # with the topology 
 ```
 
 Evidence files are in `.local/staging/timings/` (gitignored).
+
+## Phase 11 regression (2026-10-03, release rc2 = Phase 11 working tree, fresh `npm ci`)
+
+| Area | Result |
+|---|---|
+| Fresh install (`npm ci` from the lockfile, isolated copy) | 597 packages in 47 s; `prisma generate`, tsc, eslint clean; production build 55 s |
+| Clean database | 18 migrations in 28 s, no drift, `os:bootstrap` creates org, roles and the first admin |
+| Migration from a Phase 10 database copy | 4 migrations in 9.1 s on the copy, 2.8 s on staging. Row counts and the invoice total are unchanged: invoices 1 / 69000.00, payments 2, employees 2, encrypted IBANs 1, documents 2, users 39. No drift. |
+| Vitest | 305 / 305 (19 files) |
+| Smoke over HTTPS | 15 / 15, including the new `public_csp_strict` and `app_csp_nonce` checks |
+| End-to-end business flow | Pass (made rerunnable: payroll uses the first month without a period) |
+| Multi-instance (2 web + 2 workers) | Pass: no duplicate deliveries, one rule execution per event |
+| Webhooks over HTTPS | 16 / 16 |
+| Correlation trace | Pass |
+| Storage recovery + authorization | 12 / 12 |
+| go-live:check (staging) | `http_redirect` now **PASS**: 301 to the same host / port with path + query preserved (the Phase 10 false WARN is gone). `csp_public_site` **PASS**. Remaining BLOCKs are external: encryption-at-rest evidence, durable document storage, ZATCA decision. |
+| Restore drill | Writes stopped → restored + ready + smoke 14/14 in **18.4 s** (1.2 MB dump). The post-backup change was absent. |
+| Rollback drill (rc1 = Phase 10 build on the Phase 11 schema) | Serving in 10.4 s. Every page works, **including HR Compensation**. Smoke 13/14: the one failure is `public_csp_strict`, as expected, because rc1 does not have the Phase 11 CSP. See DEPLOYMENT-RUNBOOK for what a rollback gives up. |
+| Public CSP in the browser | 21 URLs, CSP enforced vs bypassed: 0 violations, 0 CSP console errors, pixel-identical, hydration + client navigation OK. `/favicon.ico` and unknown locales now return 404, not 500. |

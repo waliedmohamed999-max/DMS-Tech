@@ -1,10 +1,12 @@
 import { configuredScanner as scannerOf, scanPolicy } from "../ops/scanner";
 import path from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { prisma } from "../db";
 import { verifyPassword } from "../auth/password";
 import { DEMO_EMAIL_DOMAIN, DEMO_PASSWORD } from "../bootstrap";
 import { activeDriver } from "../ops/storage";
 import { complianceStatus } from "../finance/zatca";
+import { zatcaReadiness } from "../zatca/service";
 import { fieldCryptoAvailable } from "../security/fieldcrypto";
 import { errorReporterStatus } from "../obs/errors";
 import { validateConfig } from "./config";
@@ -151,8 +153,11 @@ export async function goLiveChecks(opts: Opts = {}): Promise<GateResult[]> {
   add("database_backup", verified && engine === "pg_dump" && fresh ? "PASS" : "BLOCK", verified ? `last VERIFIED ${verified.startedAt.toISOString()} engine=${engine}${engine !== "pg_dump" ? " (must be pg_dump)" : ""}${fresh ? "" : ` (older than ${maxAgeH} h)`}` : "no verified backup");
 
   // 7. compliance / policy decisions
+  // Phase 11: ZATCA lifecycle readiness — code is in place; what is missing is listed with its kind (credential,
+  // infrastructure, business decision, data, code)
   const z = complianceStatus(env);
-  add("zatca", z.status === "NOT_REQUIRED" || z.status === "READY" ? "PASS" : "BLOCK", `${z.status} — ${z.reason}${z.decisionRef ? ` (${z.decisionRef})` : ""}`);
+  const zr = await zatcaReadiness(env);
+  add("zatca", zr.status === "NOT_REQUIRED" || zr.status === "READY" ? "PASS" : "BLOCK", `${zr.status}${z.decisionRef ? ` (${z.decisionRef})` : ""}${zr.missing.length ? ` — missing: ${zr.missing.map((m) => `[${m.kind}] ${m.item}`).join("; ")}` : ""}`);
   // Phase 11: a configured REAL scanner must answer its health probe; the test adapter never counts; without a scanner a
   // documented decision (NOT_SCANNED_ACCEPTED) is a WARN, no decision a BLOCK
   const av = env.ANTIVIRUS_DECISION?.trim();
@@ -172,10 +177,21 @@ export async function goLiveChecks(opts: Opts = {}): Promise<GateResult[]> {
   add("retention_mode", env.RETENTION_DRY_RUN === "0" || env.RETENTION_DRY_RUN === "1" ? "PASS" : "WARN", env.RETENTION_DRY_RUN === undefined ? "RETENTION_DRY_RUN not set explicitly (worker purges by default)" : `RETENTION_DRY_RUN=${env.RETENTION_DRY_RUN}`);
   const rep = errorReporterStatus();
   add("error_tracking", rep.configured ? "PASS" : "WARN", rep.configured ? rep.name : "no external error tracking (logs only)");
-  add("csp_public_site", "WARN", "public website pages keep 'unsafe-inline' scripts (static pages cannot carry a per-request nonce) — /app uses a nonce");
+  // Phase 11: public pages get a per-page hash CSP from a build-time manifest — it must exist for THIS build
+  const nextDir = path.join(process.cwd(), ".next");
+  const buildId = existsSync(path.join(nextDir, "BUILD_ID")) ? readFileSync(path.join(nextDir, "BUILD_ID"), "utf8").trim() : null;
+  let manifestBuild: string | null = null;
+  try {
+    manifestBuild = (JSON.parse(readFileSync(path.join(nextDir, "csp-public.json"), "utf8")) as { buildId: string }).buildId;
+  } catch {
+    manifestBuild = null;
+  }
+  if (!buildId) add("csp_public_site", "WARN", "no build in this directory — run go-live:check from the deployed release");
+  else add("csp_public_site", manifestBuild === buildId ? "PASS" : "BLOCK", manifestBuild === buildId ? "public pages: sha256-hash CSP (static) / nonce (dynamic), no 'unsafe-inline' scripts; /app nonce + strict-dynamic" : "csp-public.json missing or from another build — public pages would lose their scripts (npm run build runs postbuild)");
 
   // 8. HTTPS / HSTS / HTTP→HTTPS (live, read-only GETs — probeTransport)
   if (opts.probeUrl !== false) for (const r of await probeTransport(env)) add(r.key, r.level, r.detail);
+  else if (!env.NEXT_PUBLIC_SITE_URL?.startsWith("https://")) add("https_health", "BLOCK", "NEXT_PUBLIC_SITE_URL is not https");
   return out;
 }
 

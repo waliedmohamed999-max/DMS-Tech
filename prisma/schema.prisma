@@ -3597,6 +3597,7 @@ enum IntegrationProvider {
   WEBHOOK
   CUSTOM
   S3
+  ZATCA
 }
 
 enum IntegrationStatus {
@@ -4258,4 +4259,122 @@ model DeploymentMarker {
   id          Int      @id @default(1)
   environment String
   createdAt   DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Phase 11 (P11-F) — ZATCA e-invoicing lifecycle (src/server/zatca, docs/ZATCA.md). Separate from invoice accounting:
+// the Invoice keeps its numbers / totals / status; these tables hold the compliance artefacts and their state.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/// One E-invoice Generation Solution unit (EGS). Holds the document chain (ICV counter + previous invoice hash).
+/// Secrets are REFERENCES only (env:VAR / file:path / enc:id) — never a private key or CSID secret in clear.
+model ZatcaEgsUnit {
+  id                 String    @id @default(cuid())
+  organizationId     String
+  name               String
+  /// SANDBOX | SIMULATION | PRODUCTION — sandbox / simulation results are never production compliance
+  environment        String
+  /// ZATCA functionality map "TSCZ" (e.g. 1000 = standard only)
+  functionalityMap   String    @default("1000")
+  /// NOT_ONBOARDED | ACTIVE | LOCKED_AFTER_RESTORE | REVOKED
+  status             String    @default("NOT_ONBOARDED")
+  /// last Invoice Counter Value (ICV) issued by this unit; the next document gets counter + 1
+  invoiceCounter     Int       @default(0)
+  /// hash of the last generated document (KSA-13 of the next one); null = first document
+  lastInvoiceHash    String?
+  certificatePem     String?
+  certificateExpiresAt DateTime?
+  csidTokenRef       String?
+  csidSecretRef      String?
+  privateKeyRef      String?
+  lockedReason       String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  documents ZatcaDocument[]
+
+  @@index([organizationId, status])
+}
+
+/// Structured party data required by the XML standard (national address, identifiers). clientId null = the seller.
+model ZatcaPartyProfile {
+  id             String   @id @default(cuid())
+  organizationId String
+  clientId       String?
+  registrationName String?
+  vatNumber      String?
+  /// other seller / buyer identification (BT-29 / BT-46) and its scheme (CRN, MOM, MLS, 700, SAG, OTH, TIN, NAT, GCC, IQA, PAS)
+  otherId        String?
+  otherIdScheme  String?
+  streetName     String?
+  additionalStreetName String?
+  buildingNumber String?
+  plotIdentification String?
+  district       String?
+  city           String?
+  postalCode     String?
+  countryCode    String   @default("SA")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, clientId])
+}
+
+/// One generated compliance document (invoice 388 / credit 381 / debit 383). xml + hash + icv + uuid are immutable
+/// (DB trigger). A rejected document stays in the chain; a corrected one is a NEW document (new ICV / UUID / hash).
+model ZatcaDocument {
+  id             String    @id @default(cuid())
+  organizationId String
+  invoiceId      String
+  egsUnitId      String
+  /// STANDARD (clearance) | SIMPLIFIED (reporting)
+  kind           String
+  typeCode       String
+  environment    String
+  icv            Int
+  uuid           String    @unique
+  previousHash   String
+  invoiceHash    String
+  xml            String
+  issueDate      String
+  issueTime      String
+  /// GENERATED | SUBMITTING | UNKNOWN | RETRY_SCHEDULED | CLEARED | REPORTED | REJECTED | AUTH_FAILED
+  status         String    @default("GENERATED")
+  warnings       Json?
+  errors         Json?
+  /// the cleared XML returned by ZATCA (standard documents) — the document to hand to the buyer
+  clearedXml     String?
+  submittedVia   String?
+  attempts       Int       @default(0)
+  lastErrorCategory String?
+  lastErrorCode  String?
+  lastSubmittedAt DateTime?
+  finalizedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  egsUnit     ZatcaEgsUnit      @relation(fields: [egsUnitId], references: [id], onDelete: Restrict)
+  submissions ZatcaSubmission[]
+
+  @@unique([egsUnitId, icv])
+  @@unique([egsUnitId, invoiceHash])
+  @@index([invoiceId])
+  @@index([organizationId, status])
+}
+
+/// Every submission attempt (no XML bodies, no secrets — status, codes and timing only).
+model ZatcaSubmission {
+  id          String   @id @default(cuid())
+  documentId  String
+  attempt     Int
+  endpoint    String
+  httpStatus  Int?
+  outcome     String
+  errorCodes  Json?
+  durationMs  Int
+  createdAt   DateTime @default(now())
+
+  document ZatcaDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@index([documentId])
 }

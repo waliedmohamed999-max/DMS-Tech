@@ -74,3 +74,25 @@ only with that page broken. Rules:
 
 The individual `*:sweep` and `integrations:worker` scripts remain available; running them together with the worker is
 safe (shared leases).
+
+## Phase 11 notes
+
+* **Build with `npm run build`**, not `next build`: `postbuild` writes `.next/csp-public.json`. Without it the public
+  pages lose their scripts; `release:verify` and `go-live:check` block on it.
+* **nginx**: `proxy_buffer_size 16k` (hash-based CSP headers up to ~5 KB).
+* **Migrations** (additive): `phase11_offboarding` (Employee.accessRevokedAt), `phase11_document_scan`
+  (DocumentVersionScan + guard), `phase11_zatca` (+ `IntegrationProvider.ZATCA`), `phase11_zatca_live_document`.
+  * Staging rehearsal: 9.1 s on a copy, 2.8 s on staging, business row counts unchanged, no drift.
+  * Take and verify a `db:backup` first (`scripts/staging/migrate-drill.sh` aborts if it cannot).
+* **First worker pass after deploy**: the HR sweep revokes access for employees who were already terminated (date
+  passed) but kept an active account. This is intended; review the `employee.access_revoked` audit entries afterwards.
+* **Rollback to 1.0.0-rc.1 (Phase 10)**: the schema change is additive. The rc1 build runs on the Phase 11 schema;
+  every page works, including Compensation (drill: STAGING.md). A rollback **gives up** the Phase 11 protections while it
+  is in place:
+  * public pages go back to `'unsafe-inline'` scripts;
+  * offboarding is manual again;
+  * malware verdicts found later by the worker (`DocumentVersionScan`) are ignored, so a file flagged INFECTED after
+    upload could be served;
+  * ZATCA guards are gone: an uncleared standard invoice can be marked sent, a cleared one voided.
+
+  Do not roll back while ZATCA is live in production or while the scanner policy is relied on. Fix forward instead.

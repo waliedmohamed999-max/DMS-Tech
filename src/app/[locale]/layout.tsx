@@ -16,6 +16,10 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
+// only the configured locales exist: any other first segment (e.g. the browser's automatic /favicon.ico) is a static
+// 404 instead of a dynamic render that fails (500) while loading translations for a non-existent locale
+export const dynamicParams = false;
+
 export const viewport: Viewport = { themeColor: "#151718" };
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {

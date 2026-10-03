@@ -12,7 +12,7 @@ import "../../src/server/handlers";
 import { appEnv } from "../../src/server/system/environment";
 import { isPermission } from "../../src/server/rbac/permissions";
 import type { Ctx } from "../../src/server/context";
-import { configureConnection, testConnection } from "../../src/server/integrations/registry";
+import { configureConnection, setConnectionDisabled, testConnection } from "../../src/server/integrations/registry";
 import { createRule, setRuleEnabled } from "../../src/server/automation/engine";
 
 const A = "http://127.0.0.1:3200";
@@ -77,6 +77,10 @@ async function main() {
   await new Promise<void>((r) => srv.listen(9911, "127.0.0.1", r));
   const admin = await ctxFor("it.backup@dmstech.sa");
   const conn = await prisma.integrationConnection.findFirstOrThrow({ where: { organizationId: admin.organizationId, provider: "CUSTOM" } });
+  // other drills (correlation-trace) disable this test connection when they finish — rerunnable: enable it again
+  if (conn.status === "DISABLED") await setConnectionDisabled(admin, conn.id, false);
+  // the receiver must never keep the process alive after a failure
+  process.once("exit", () => srv.close());
   await configureConnection(admin, conn.id, { environment: "SANDBOX", config: { endpointUrl: "http://127.0.0.1:9911/hook", events: "lead.created" }, secrets: { signingSecret: secret } });
   const t = await testConnection(admin, conn.id);
   results.customConnection = t.status;
@@ -126,4 +130,7 @@ main()
     console.error(e);
     process.exitCode = 1;
   })
-  .finally(() => prisma.$disconnect());
+  .finally(async () => {
+    await prisma.$disconnect();
+    process.exit(); // closes the local receiver even when main() failed half-way
+  });

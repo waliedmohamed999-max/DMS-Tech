@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # LOCAL STAGING REHEARSAL — disaster-restore drill (Phase 10, docs/DISASTER-RECOVERY.md). Never touches production.
 #   bash scripts/staging/restore-drill.sh
-# Prereqs: staging DB running (scripts/staging/staging-db.mjs), release in .local/releases/rc1, pg tools in .local/pgtools.
+# Prereqs: staging DB running (scripts/staging/staging-db.mjs), release in STAGING_RELEASE (default .local/releases/rc1), pg tools in .local/pgtools.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 ENVF=.local/staging/staging.env
@@ -35,7 +35,7 @@ $PSQL "${ADMIN_URL/\/postgres\?/\/dms_os_staging_restore?}" -qc "create extensio
 node scripts/staging/with-env.mjs . npm run --silent db:restore -- --file "$FILE" --target "$RESTORE_URL" --confirm dms_os_staging_restore | tee -a "$LOG"
 
 mark "5. temporary app instance on the restored database (port 3300)"
-node scripts/staging/with-env.mjs .local/releases/rc1 "DATABASE_URL=$RESTORE_URL" npx next start -p 3300 > .local/staging/logs/drill-3300.out 2>&1 &
+node scripts/staging/with-env.mjs "${STAGING_RELEASE:-.local/releases/rc1}" "DATABASE_URL=$RESTORE_URL" npx next start -p 3300 > .local/staging/logs/drill-3300.out 2>&1 &
 for i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:3300/api/health && break; sleep 1; done
 
 mark "6. readiness"

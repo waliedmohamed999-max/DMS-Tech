@@ -41,13 +41,21 @@ export function complianceStatus(env: Record<string, string | undefined> = proce
     if (!adapter) return { status: "REQUIRED_NOT_READY", reason: "ZATCA_STATUS=READY but no compliance adapter is installed", decisionRef, adapter: null };
     return { status: "READY", reason: "adapter installed", decisionRef, adapter: adapter.name };
   }
-  if (raw === "REQUIRED_NOT_READY") return { status: "REQUIRED_NOT_READY", reason: "e-invoicing required; no compliant implementation", decisionRef, adapter: null };
+  if (raw === "REQUIRED_NOT_READY" || raw === "REQUIRED") return { status: "REQUIRED_NOT_READY", reason: "e-invoicing required — readiness is decided by the ZATCA lifecycle (zatcaReadiness)", decisionRef, adapter: null };
   return { status: "NOT_CONFIGURED", reason: "no ZATCA decision recorded", decisionRef, adapter: null };
 }
 
-/** Production gate before an invoice gets its number (tests / development / staging are not gated). */
-export function assertInvoiceIssuingAllowed() {
+/**
+ * Production gate before an invoice gets its number (tests / development / staging are not gated).
+ * Phase 11: when e-invoicing is REQUIRED, issuing is allowed only once the ZATCA lifecycle is READY (onboarded
+ * PRODUCTION unit, credentials, seller data, policies) — see src/server/zatca/service.ts zatcaReadiness().
+ */
+export async function assertInvoiceIssuingAllowed() {
   if (appEnv() !== "production") return;
   const s = complianceStatus();
-  if (s.status !== "NOT_REQUIRED" && s.status !== "READY") throw conflict(`ZATCA_NOT_READY:${s.status}`);
+  if (s.status === "NOT_REQUIRED") return;
+  if (s.status === "NOT_CONFIGURED") throw conflict("ZATCA_NOT_READY:NOT_CONFIGURED");
+  const { zatcaReadiness } = await import("../zatca/service");
+  const r = await zatcaReadiness();
+  if (r.status !== "READY") throw conflict(`ZATCA_NOT_READY:${r.status}`);
 }

@@ -308,7 +308,10 @@ export async function verifyBackup(file: string, opts: { serverUrl: string; appD
         paidInvoicesWithBalance: await inv(`SELECT count(*)::int AS n FROM "Invoice" WHERE "status" = 'PAID' AND "balanceDue" <> 0`),
         paymentsAllocationMismatch: await inv(`SELECT count(*)::int AS n FROM "Payment" p WHERE p."reversedAt" IS NULL AND p."amount" <> COALESCE((SELECT sum(a."amount") FROM "PaymentAllocation" a WHERE a."paymentId" = p."id"), 0)`),
         invoiceTotalsMismatch: await inv(`SELECT count(*)::int AS n FROM "Invoice" WHERE "total" <> "subtotal" - "discountTotal" + "taxTotal" OR "balanceDue" <> "total" - "paidAmount"`),
-        bankRowsWithoutIban: await inv(`SELECT count(*)::int AS n FROM "EmployeeBankAccount" WHERE "iban" IS NULL AND "ibanCiphertext" IS NULL`)
+        bankRowsWithoutIban: await inv(`SELECT count(*)::int AS n FROM "EmployeeBankAccount" WHERE "iban" IS NULL AND "ibanCiphertext" IS NULL`),
+        // Phase 11: ZATCA document chain per EGS unit — gap-free ICVs, each previous hash = hash of the document before
+        zatcaChainBroken: await inv(`SELECT count(*)::int AS n FROM (SELECT "icv", "previousHash", lag("icv") OVER w AS pi, lag("invoiceHash") OVER w AS ph FROM "ZatcaDocument" WINDOW w AS (PARTITION BY "egsUnitId" ORDER BY "icv")) x WHERE x.pi IS NOT NULL AND (x."icv" <> x.pi + 1 OR x."previousHash" <> x.ph)`),
+        zatcaCounterBehind: await inv(`SELECT count(*)::int AS n FROM "ZatcaEgsUnit" u WHERE u."invoiceCounter" < COALESCE((SELECT max(d."icv") FROM "ZatcaDocument" d WHERE d."egsUnitId" = u.id), 0)`)
       };
       const bad = Object.entries(broken).filter(([, n]) => n > 0);
       if (bad.length) return fail("integrity", bad.map(([k, n]) => `${k}=${n}`).join(", "));
@@ -340,12 +343,15 @@ export async function restoreBackup(file: string, opts: { targetUrl: string; app
   }
   if (file.endsWith(".ndjson.gz")) {
     await opts.migrate(opts.targetUrl);
-    return logicalLoad(file, opts.targetUrl);
+    const loaded = await logicalLoad(file, opts.targetUrl);
+    await lockZatcaChains(opts.targetUrl, file);
+    return loaded;
   }
   const tool = findTool("pg_restore");
   if (!tool) throw new Error("PG_RESTORE_NOT_FOUND");
   // --no-comments: COMMENT ON EXTENSION needs the extension owner; the application role restores everything else
   await run(tool, ["--no-owner", "--no-acl", "--no-comments", "-h", t.host, "-p", t.port, "-U", t.user, "-d", t.database, file], t.password);
+  await lockZatcaChains(opts.targetUrl, file);
   // report what was actually restored (exact row counts per public table)
   const r = await client(opts.targetUrl);
   try {
@@ -355,5 +361,20 @@ export async function restoreBackup(file: string, opts: { targetUrl: string; app
     return counts;
   } finally {
     await r.end();
+  }
+}
+
+/**
+ * Phase 11: a restored database may be BEHIND the ZATCA document chain (documents generated after the backup were
+ * already submitted). Every ACTIVE EGS unit is therefore locked until an operator reconciles counter + previous hash
+ * (scripts/zatca-unit.ts unlock). Backups taken before Phase 11 have no such table — nothing to lock.
+ */
+async function lockZatcaChains(targetUrl: string, file: string) {
+  const c = await client(targetUrl);
+  try {
+    const exists = Number((await c.query(`SELECT count(*)::int AS n FROM pg_tables WHERE schemaname = 'public' AND tablename = 'ZatcaEgsUnit'`)).rows[0].n);
+    if (exists) await c.query(`UPDATE "ZatcaEgsUnit" SET "status" = 'LOCKED_AFTER_RESTORE', "lockedReason" = $1, "updatedAt" = now() WHERE "status" = 'ACTIVE'`, [`restored from ${path.basename(file)} at ${new Date().toISOString()}`]);
+  } finally {
+    await c.end();
   }
 }

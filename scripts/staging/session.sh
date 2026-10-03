@@ -6,7 +6,7 @@
 set -uo pipefail
 cd "$(dirname "$0")/../.."
 L=.local/staging/logs
-REL=.local/releases/rc1
+REL=${STAGING_RELEASE:-.local/releases/rc1}
 mkdir -p "$L"
 
 stop_all() {
@@ -20,7 +20,8 @@ stop_all
 rm -f .local/staging/pg/postmaster.pid 2>/dev/null || true
 node scripts/staging/staging-db.mjs > .local/staging/staging-db.log 2>&1 &
 for i in $(seq 1 60); do (echo > /dev/tcp/127.0.0.1/54330) 2>/dev/null && break; sleep 1; done
-sleep 2
+DBURL=$(grep "^DATABASE_URL=" .local/staging/staging.env | head -1 | cut -d= -f2-)
+for i in $(seq 1 60); do .local/pgtools/pgsql/bin/psql.exe "$DBURL" -tAc "select 1" >/dev/null 2>&1 && break; sleep 1; done
 node scripts/staging/https-proxy.mjs > "$L/proxy.out" 2>&1 &
 node scripts/staging/with-env.mjs "$REL" npx next start -p 3200 > "$L/web-3200.out" 2>&1 &
 node scripts/staging/with-env.mjs "$REL" npx next start -p 3201 > "$L/web-3201.out" 2>&1 &

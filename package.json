@@ -41,7 +41,10 @@
     "production:data-check": "tsx scripts/production-data-check.ts",
     "go-live:check": "tsx scripts/go-live-check.ts",
     "backup:prune": "tsx scripts/backup-prune.ts",
-    "dev:cleanup-qa": "tsx scripts/dev-cleanup-qa.ts"
+    "dev:cleanup-qa": "tsx scripts/dev-cleanup-qa.ts",
+    "zatca:unit": "tsx scripts/zatca-unit.ts",
+    "zatca:sdk-validate": "tsx scripts/zatca-sdk-validate.ts",
+    "release:verify": "tsx scripts/release-verify.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",

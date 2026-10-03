@@ -16,11 +16,14 @@ There is no `SESSION_SECRET`: tokens are not signed, they are random and looked 
 
 ## Security headers
 
-`security-headers.mjs` (used by `next.config.mjs`):
+`security-headers.mjs` (used by `next.config.mjs`) sets the baseline headers on every response. **Page CSPs are set per
+request by `src/proxy.ts`** (Phase 10 for `/app`, Phase 11 for the public site):
 
 | Header | Value |
 |---|---|
-| Content-Security-Policy | `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'` (+ `'unsafe-eval'` / `ws:` in development only) |
+| Content-Security-Policy (public pages) | `script-src 'self' 'sha256-…'` (exact hashes of that page's inline scripts) · `style-src 'self' 'unsafe-hashes' 'sha256-…'` (exact hashes of that page's inline styles) · plus `default-src 'self'; img-src 'self' data: blob: https://*.supabase.co; font-src 'self' data:; connect-src 'self'; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'`. **No `'unsafe-inline'`, no `'unsafe-eval'`** |
+| Content-Security-Policy (`/app`, login included) | `script-src 'self' 'nonce-<per request>' 'strict-dynamic'` · `style-src 'self' 'unsafe-inline'` (see below) |
+| Content-Security-Policy (API, directly opened SVG) | `default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'` |
 | Strict-Transport-Security | `max-age=31536000; includeSubDomains` (production only — add `preload` only after a deliberate decision) |
 | X-Frame-Options | `DENY` |
 | X-Content-Type-Options | `nosniff` |
@@ -28,14 +31,40 @@ There is no `SESSION_SECRET`: tokens are not signed, they are random and looked 
 | Permissions-Policy | camera, microphone, geolocation, payment, usb, interest-cohort disabled |
 | Cross-Origin-Opener-Policy | `same-origin` |
 
-**Phase 10: nonce CSP for the Business OS.** `src/proxy.ts` generates a fresh nonce per request for `/app/*` and sends
-`script-src 'self' 'nonce-<random>' 'strict-dynamic'` (built by `src/lib/os/csp.ts`; `'unsafe-eval'` in development
-only). Next.js applies the nonce to its own scripts. This was verified in a browser on staging: no CSP violations, and
-hydration and client navigation work. The static CSP above now covers **only the public website**. Its pages are
-statically generated, so they cannot carry a per-request nonce and keep `'unsafe-inline'` for scripts (WARN
-`csp_public_site` in go-live:check). The public site has no session and no forms besides the rate-limited lead form.
-`upgrade-insecure-requests` was removed because TLS is enforced by HSTS and the edge redirect. PDF / download / payslip routes keep the baseline headers but not the page CSP — they send their own
-`Content-Security-Policy: sandbox`, `nosniff`, `no-store`, so the browser PDF viewer keeps working.
+### Public site CSP without `'unsafe-inline'` (Phase 11)
+
+**Inventory of the 40 prerendered pages:**
+* Inline scripts: only Next.js's own RSC bootstrap and flight scripts (`self.__next_f…`), about 5 per page.
+* Inline event handlers and `javascript:` URLs: none.
+* Inline styles: 389 `style=""` attributes with 81 distinct values. Sources are `next/image` (`color:transparent`, fill
+  positioning) and component style props (grid backgrounds, animation delays).
+* `<style>` elements: only on Next's default error pages.
+
+**How the policy is built:** static pages cannot carry a per-request nonce, so `npm run build` runs
+`scripts/csp-manifest.mjs` (`postbuild`). The script hashes every inline script body, style attribute value and `<style>`
+body of every prerendered page into `.next/csp-public.json`, keyed by route and tied to the `BUILD_ID`. The proxy
+then sends each page exactly its own hashes:
+* Inline styles are allowed only by exact hash, via CSP3 `'unsafe-hashes'`. That is far narrower than `'unsafe-inline'`.
+* Dynamically rendered public pages (`/quote`) and unknown paths (404) get a per-request nonce, which Next.js applies to
+  its scripts. Their styles use the site-wide set of style hashes.
+* A missing or stale manifest yields the strict policy without hashes. Pages would visibly break; the policy is never
+  silently weakened. `go-live:check` (`csp_public_site`) and `release:verify` (`csp_manifest`) check that it matches the
+  build.
+
+**Verified in a browser:** 21 public URLs (AR + EN, static and dynamic, plus a 404) were each loaded twice, once with the
+CSP enforced and once with it bypassed:
+* 0 CSP violations, 0 console errors, hydration and client navigation work.
+* Screenshots are pixel-identical (home 0.04 %, caused by an animation).
+
+**Header size:** up to ~4.9 KB, so `deploy/nginx/dms-os.conf` raises `proxy_buffer_size` to 16k.
+
+**Residual:** `/app` keeps `style-src 'unsafe-inline'`. Its pages are dynamic, with style attributes computed at render
+(progress bars, colours), so they cannot be hashed in advance, and nonces do not apply to `style=""` attributes.
+Scripts on `/app` are nonce-only. Style injection cannot execute script and cannot exfiltrate through `connect-src` or
+`img-src` (both `'self'`).
+
+PDF / download / payslip routes keep the baseline headers but not the page CSP. They send their own
+`Content-Security-Policy: sandbox`, `nosniff`, `no-store`, so the browser's PDF viewer keeps working.
 
 ## CSRF
 
@@ -89,9 +118,8 @@ All limits are DB-backed (`RateLimit`) and hold across instances; ordinary navig
 
 ## Known security limitations
 
-- Public website CSP keeps `'unsafe-inline'` for scripts (static pages; `/app` uses a nonce since Phase 10).
-- Terminating an employee does not disable their system account automatically (two-step offboarding; go-live:check
-  warns about leftovers).
+- `/app` keeps `style-src 'unsafe-inline'` (dynamic style attributes); scripts everywhere are nonce / hash only (Phase 11).
+- Offboarding is automatic since Phase 11 (account disabled + sessions revoked on the termination's effective date — HR.md#offboarding); an admin can still re-enable an account deliberately (flagged by go-live:check).
 - No WAF / bot protection beyond rate limits and the honeypot.
 - No antivirus scanner.
 - Webhook secret rotation has no overlap window.

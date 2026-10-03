@@ -200,9 +200,20 @@ async function main() {
     if ((await prisma.leaveRequest.findUniqueOrThrow({ where: { id: r.id } })).status !== "APPROVED") throw new Error("leave not approved");
   });
   await step("payroll: period → calculate → approve → mark paid → payslip", async () => {
-    const month = new Date();
-    const start = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), 1));
-    const end = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0));
+    // rerunnable on the same staging database: the first month (from now) without a payroll period — overlapping
+    // periods are refused by design (PERIOD_OVERLAP), so a second run must not reuse the month of the first
+    const now = new Date();
+    let start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    let end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0));
+    for (let i = 0; i < 24; i++) {
+      const s0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + i, 1));
+      const e0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + i + 1, 0));
+      if (!(await prisma.payrollPeriod.count({ where: { organizationId: org.id, periodStart: { lte: e0 }, periodEnd: { gte: s0 } } }))) {
+        start = s0;
+        end = e0;
+        break;
+      }
+    }
     const period = (await createPeriod(s.hr, { periodStart: ymd(start), periodEnd: ymd(end), payDate: ymd(end) })).id;
     await calculatePeriod(s.hr, period);
     const sub = await submitPayroll(s.hr, period);

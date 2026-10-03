@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { assertInvoiceIssuingAllowed } from "./zatca";
+import { assertDeliverableTx, assertNotLockedByZatcaTx, generateForIssuedInvoiceTx } from "../zatca/service";
 import { z } from "zod";
 import type { InvoiceStatus, Prisma } from "@/generated/prisma/client";
 import { prisma, type Tx } from "../db";
@@ -273,7 +274,7 @@ function hashOf(inv: { number: string | null; clientId: string; currency: string
 export async function issueInvoice(ctx: Ctx, id: string) {
   requirePermission(ctx, "finance.invoices.issue");
   // Phase 10: production issuing waits for an explicit ZATCA decision (docs/ZATCA-DECISION.md)
-  assertInvoiceIssuingAllowed();
+  await assertInvoiceIssuingAllowed();
   return unitOfWork(ctx, async (tx, uow) => {
     const inv = await lockInvoice(tx, ctx, id);
     if (inv.status !== "DRAFT") throw conflict(`INVOICE_NOT_DRAFT:${inv.status}`);
@@ -298,6 +299,9 @@ export async function issueInvoice(ctx: Ctx, id: string) {
       data: { number, status, issuedAt: new Date(), issuedById: ctx.userId || null, sellerSnapshot: seller, buyerSnapshot: buyer, paymentInstructions: org.invoicePaymentInstructions, contentHash }
     });
     if (res.count !== 1) throw conflict("INVOICE_NOT_DRAFT");
+    // Phase 11: ZATCA compliance document (when required and an EGS unit is set up) — same transaction, so a
+    // validation failure leaves the invoice a draft and its number unused
+    await generateForIssuedInvoiceTx(tx, uow, ctx, id);
     // exact issued artifact (append-only) — later downloads of the original serve these bytes
     const { renderInvoicePdf } = await import("../pdf/invoice");
     const pdf = await renderInvoicePdf(tx, ctx.organizationId, id, { original: true });
@@ -318,6 +322,7 @@ export async function markInvoiceSent(ctx: Ctx, id: string, raw: unknown) {
     const inv = await lockInvoice(tx, ctx, id);
     if (inv.sentAt) throw conflict("INVOICE_ALREADY_SENT");
     if (!MANUAL_ACTIONS.send.includes(inv.status)) throw conflict(`INVOICE_INVALID_TRANSITION:${inv.status}`);
+    await assertDeliverableTx(tx, id); // Phase 11: a standard e-invoice reaches the buyer only once cleared by ZATCA
     const org = await orgFinance(tx, ctx.organizationId);
     const sentAt = new Date();
     const status = deriveStatus({ total: inv.total.toFixed(2), paid: inv.paidAmount.toFixed(2), sentAt, dueDate: inv.dueDate, today: todayIn(org.timezone) });
@@ -362,6 +367,7 @@ export async function voidInvoice(ctx: Ctx, id: string, raw: unknown) {
     const inv = await lockInvoice(tx, ctx, id);
     if (inv.paidAmount.gt(0)) throw conflict("INVOICE_HAS_PAYMENTS"); // reverse the payments first
     if (!MANUAL_ACTIONS.void.includes(inv.status)) throw conflict(`INVOICE_INVALID_TRANSITION:${inv.status}`);
+    await assertNotLockedByZatcaTx(tx, id); // Phase 11: a submitted e-invoice is corrected by a credit note, not voided
     const links = await tx.invoiceTimeEntry.findMany({ where: { invoiceId: id, releasedAt: null }, include: { item: { select: { sortOrder: true } } } });
     await releaseTime(tx, id);
     await tx.invoice.update({ where: { id }, data: { status: "VOID", voidedAt: new Date(), voidedById: ctx.userId || null, voidReason: input.reason } });

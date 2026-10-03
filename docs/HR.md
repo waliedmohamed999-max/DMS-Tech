@@ -77,6 +77,31 @@ Trigger codes are surfaced as translated errors by `runAction`.
 
 **Lifecycle.** Status moves ACTIVE / PROBATION ↔ ON_LEAVE / SUSPENDED → TERMINATED → ARCHIVED. Terminating needs a date and a reason, and is refused while the employee still has direct reports (`HAS_DIRECT_REPORTS`).
 
+### Offboarding (Phase 11)
+
+Access ends on the termination's **effective date**, which is the organization's calendar day
+(`src/server/hr/offboarding.ts`):
+
+| Situation | What happens |
+|---|---|
+| Termination date today or earlier | Within the same transaction as the status change: the linked account is set to DISABLED, every session is revoked, and `user.disabled` (reason `offboarding`) plus `employee.access_revoked` are audited and emitted |
+| Termination date in the future | Nothing yet; access continues. The HR sweep in the worker revokes access on the effective day. It never depends on someone opening a page. |
+| Archived | Revoked immediately |
+| Employee without an account | Recorded (`outcome: no_account`) |
+| Account already disabled | Remaining sessions are revoked; no second `user.disabled` |
+| Retry / two workers | Idempotent: claimed once through `Employee.accessRevokedAt` |
+| The employee is the last active Super Admin | Termination refused (`LAST_SUPER_ADMIN`): provision a second named admin first |
+| Other HR edits, suspension, leave | Never touch the account |
+
+Accounts that are not linked to an employee (service, smoke-test and break-glass accounts) are never touched. Nothing
+is deleted; user, employee and audit history stay.
+
+Terminations cannot be cancelled in this domain (TERMINATED → ARCHIVED only), so a scheduled revocation is final.
+An administrator can still deliberately re-enable an account. `go-live:check` (`offboarding_accounts`) flags two
+exceptions:
+* re-enabled offboarded accounts;
+* leavers still holding access more than 36 h after the effective date (worker down, or the Super Admin guard).
+
 **Reporting line.** `managerId` is validated on the server: no self, no cycle, and the manager must not be terminated or archived. A manager change is audited as `employee.manager_changed`.
 
 **Visibility** (`employeeWhere`):

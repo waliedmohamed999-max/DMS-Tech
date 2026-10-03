@@ -163,7 +163,7 @@ describe("ZATCA decision gate", () => {
     const client = await createClient(sm, { displayName: "Gate Client" });
     const { id } = await createInvoice(fm, { clientId: client.id, items: [{ description: "Consulting", quantity: "1", unitPrice: "1000" }] });
     await withEnv({ APP_ENV: "production", ZATCA_STATUS: undefined }, async () => {
-      expect(() => assertInvoiceIssuingAllowed()).toThrow(/ZATCA_NOT_READY:NOT_CONFIGURED/);
+      await expect(assertInvoiceIssuingAllowed()).rejects.toThrow(/ZATCA_NOT_READY:NOT_CONFIGURED/);
       await expect(issueInvoice(fm, id)).rejects.toMatchObject(code(/ZATCA_NOT_READY/));
     });
     expect((await prisma.invoice.findUniqueOrThrow({ where: { id } })).status).toBe("DRAFT");

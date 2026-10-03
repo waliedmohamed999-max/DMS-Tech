@@ -69,8 +69,32 @@ the worker. It installs one of the following:
 
 `SENTRY_DSN` is format-checked at startup. Delivery failures of the reporter itself never break the request.
 `OTEL_EXPORTER_OTLP_ENDPOINT` still has no adapter and is reported as "requested but missing", never as connected.
-These adapters have **not** been tested against a real Sentry project: none was available. Test with a real DSN
-before go-live.
+**Production boundary (Phase 11).** Every event carries:
+* environment, release (version + commit) and Next.js BUILD_ID;
+* process (`web` / `worker`);
+* request id and correlation id, module and job;
+* normalized stack frames: app-relative paths, absolute machine paths stripped, dependency frames marked.
+
+Redaction is central:
+* Credentials, cookies, authorization headers and API keys become `[redacted]`.
+* HR and financial fields (IBAN, salary, net pay, national ID) become `[private]`.
+* Any `…body` or `…content` value becomes a size marker.
+
+Delivery is fire-and-forget and bounded:
+* 5 s timeout per attempt.
+* One retry on 5xx or network failure; 4xx is dropped.
+* 429 `Retry-After` is honoured.
+* At most 20 deliveries in flight.
+* Counters via `reporterDeliveryStats()`.
+
+`ERROR_REPORT_SAMPLE_RATE` (0–1) samples what is sent; everything is still logged.
+
+A reporter failure cannot affect the request: `reportError` returns the reference immediately, even when the tracker is
+down or throws. Expected business errors (validation, conflict, …) are not sent.
+
+`tests/error-tracking.test.ts` checks all of this against a local HTTP receiver. **It has not been checked against a
+real Sentry project**; activating Sentry needs only `SENTRY_DSN` and the project. Send one test error and confirm it
+arrives with the tags above.
 
 ## Metrics
 

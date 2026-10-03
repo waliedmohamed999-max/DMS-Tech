@@ -8,6 +8,23 @@ target server and prints PASS / WARN / BLOCK for every item it can observe, then
 The command reads evidence. It cannot create evidence: an item like `DB_ENCRYPTION_AT_REST` only passes when you
 record a real provider setting or ticket reference. The staging rehearsal results are in [STAGING.md](STAGING.md).
 
+## Release verification (Phase 11)
+
+`npm run release:verify` collects every read-only check for a release candidate:
+* lint, typecheck, security-policy tests, full tests, build;
+* the public-CSP manifest of the build;
+* migration status and schema drift;
+* all `go-live:check` items;
+* ZATCA readiness, malware scanner, error tracking and log shipping.
+
+Each check is `PASS`, `WARN`, `BLOCKED_CODE`, `BLOCKED_EXTERNAL` or `NOT_APPLICABLE`. Results are written as JSON
+(`--out`) plus a human summary. Unavailable external services are never reported as PASS. Skipped steps
+(`--no-tests`, or a deployment context without a test database) are WARN.
+
+Exit code:
+* 1 on any `BLOCKED_CODE`;
+* with `--strict`, 1 on any blocker at all.
+
 ## Configuration
 
 | Variable | Required | Notes |
@@ -29,6 +46,10 @@ record a real provider setting or ticket reference. The staging rehearsal result
 | `ANTIVIRUS_DECISION` | yes (Phase 10) | `NOT_SCANNED_ACCEPTED` (WARN, documented risk) or `SCANNER_INTEGRATED` |
 | `SENTRY_DSN` or `ERROR_REPORT_WEBHOOK_URL` | recommended | External error tracking (Phase 10 adapters). Without it errors go to logs only (WARN) |
 | `LOG_DIR` | recommended | Daily JSONL log files in addition to stdout |
+| `HTTP_BASE_URL` | when the plain-HTTP edge is not `http://<site host>:80` | go-live:check verifies the 301/308 redirect there (Phase 11) |
+| `ERROR_REPORT_SAMPLE_RATE` | optional | 0–1, default 1 |
+| `DOCUMENT_SCANNER` (+ `CLAMD_HOST` or `DOCUMENT_SCANNER_URL` / `_TOKEN`), `DOCUMENT_SCAN_POLICY` | recommended | Malware-scanning boundary (OPERATIONS.md). `required` holds downloads until CLEAN |
+| `ZATCA_STATUS=REQUIRED`, `ZATCA_SUPPLY_DATE_POLICY`, `ZATCA_API_BASE_URL` | if e-invoicing applies | See [ZATCA.md](ZATCA.md) |
 | `BACKUP_KEEP_DAILY/WEEKLY/MONTHLY` | for `backup:prune` | Retention of local dump files |
 
 Verify: `npm run config:check` → `"ok": true` with no critical issue. The server refuses to start otherwise.
@@ -65,7 +86,7 @@ Verify: `npm run config:check` → `"ok": true` with no critical issue. The serv
 - [ ] Antivirus decision recorded (`ANTIVIRUS_DECISION`).
 - [ ] Smoke account provisioned (`npm run admin:provision -- --smoke --email …`): low privilege, used only by the smoke suite.
 - [ ] `npm run production:data-check` clean (no demo or test artefacts).
-- [ ] Offboarding procedure agreed. Terminating an employee in HR does **not** disable their system account; an admin disables it in Admin → Users. go-live:check flags terminated employees with active accounts (`offboarding_accounts`).
+- [ ] Offboarding: since Phase 11 the account is disabled and sessions are revoked automatically on the termination's effective date (HR.md#offboarding-phase-11). go-live:check flags only exceptions (re-enabled accounts, overdue revocations).
 
 ## Not included in this build (decide before go-live)
 

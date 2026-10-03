@@ -14,3 +14,4 @@ import "./ops/orders"; // PURCHASE_ORDER
 import "./marketing/campaigns"; // CAMPAIGN
 import "./integrations/worker"; // outbox handlers (whatsapp.send, custom.deliver)
 
+import "./zatca/service"; // outbox handler zatca.submit (Phase 11)

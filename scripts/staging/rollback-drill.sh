@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # LOCAL STAGING REHEARSAL — application rollback drill (Phase 10). Run inside scripts/staging/session.sh:
 #   bash scripts/staging/session.sh bash scripts/staging/rollback-drill.sh
-# Starts the PREVIOUS release (.local/releases/phase9) against a COPY of the current (Phase 10 schema) staging database
+# Starts the PREVIOUS release (PREVIOUS_RELEASE, default .local/releases/phase9) against a COPY of the current staging database
 # and measures what still works. Migrations are forward-only: no schema downgrade is attempted.
 set -uo pipefail
 cd "$(dirname "$0")/../.."
@@ -12,6 +12,7 @@ RB_URL=${DBURL/\/dms_os_staging\?/\/dms_os_staging_rollback?}
 ADMIN_URL=$(get VERIFY_DATABASE_URL)
 PSQL=.local/pgtools/pgsql/bin/psql.exe
 SMOKE_PW=$(grep "Password:" .local/staging/smoke-account.txt | awk '{print $2}')
+PREV=${PREVIOUS_RELEASE:-.local/releases/phase9}
 ADMIN_PW=$(cat .local/staging/admin-pw.txt)
 LOG=.local/staging/timings/rollback-drill.txt
 : > "$LOG"
@@ -26,9 +27,9 @@ $PSQL "$ADMIN_URL" -qc "drop database if exists dms_os_staging_rollback with (fo
 $PSQL "${ADMIN_URL/\/postgres\?/\/dms_os_staging_rollback?}" -qc "create extension if not exists pg_stat_statements"
 node scripts/staging/with-env.mjs . npm run --silent db:restore -- --file "$FILE" --target "$RB_URL" --confirm dms_os_staging_rollback | tail -1 | tee -a "$LOG"
 
-mark "3. start PREVIOUS release (phase9, build $(cat .local/releases/phase9/.next/BUILD_ID)) on :3400 against the copy"
+mark "3. start PREVIOUS release ($PREV, build $(cat $PREV/.next/BUILD_ID)) on :3400 against the copy"
 T_START=$(date +%s%3N)
-node scripts/staging/with-env.mjs .local/releases/phase9 "DATABASE_URL=$RB_URL" npx next start -p 3400 > .local/staging/logs/rollback-3400.out 2>&1 &
+node scripts/staging/with-env.mjs "$PREV" "DATABASE_URL=$RB_URL" npx next start -p 3400 > .local/staging/logs/rollback-3400.out 2>&1 &
 for i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:3400/api/health && break; sleep 1; done
 mark "   previous release serving after $(( $(date +%s%3N) - T_START )) ms"
 echo "ready: $(curl -s http://127.0.0.1:3400/api/ready | head -c 400)" | tee -a "$LOG"
