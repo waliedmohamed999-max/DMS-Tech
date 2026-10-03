@@ -1,8 +1,11 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import createIntlMiddleware from "next-intl/middleware";
 import { routing } from "@/i18n/routing";
 import { SESSION_COOKIE } from "@/lib/os/constants";
 import { osCsp } from "@/lib/os/csp";
+import { publicCsp, publicRouteKey, type PublicCspManifest } from "@/lib/csp/public";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 const intl = createIntlMiddleware(routing);
 
@@ -43,10 +46,54 @@ function osProxy(request: NextRequest) {
   return res;
 }
 
+const DEV = process.env.NODE_ENV !== "production";
+let manifest: PublicCspManifest | null | undefined;
+/** Build-time hash manifest (scripts/csp-manifest.mjs). Missing / stale → null: pages get the STRICT policy without
+ *  hashes (inline scripts blocked, visibly broken) — never a weaker policy. release:verify checks it exists. */
+function cspManifest() {
+  if (manifest !== undefined) return manifest;
+  try {
+    const dir = path.join(process.cwd(), ".next");
+    const m = JSON.parse(readFileSync(path.join(dir, "csp-public.json"), "utf8")) as PublicCspManifest;
+    const buildId = readFileSync(path.join(dir, "BUILD_ID"), "utf8").trim();
+    manifest = m.buildId === buildId ? m : null;
+    if (!manifest) console.error(JSON.stringify({ level: "error", msg: "csp_manifest_stale", manifestBuild: m.buildId, buildId }));
+  } catch {
+    manifest = null;
+    console.error(JSON.stringify({ level: "error", msg: "csp_manifest_missing" }));
+  }
+  return manifest;
+}
+
+function publicProxy(request: NextRequest) {
+  if (DEV) {
+    const res = intl(request);
+    res.headers.set("Content-Security-Policy", publicCsp({ dev: true }));
+    return res;
+  }
+  const m = cspManifest();
+  const entry = m?.routes[publicRouteKey(request.nextUrl.pathname)] ?? null;
+  let csp: string;
+  let req = request;
+  if (entry) csp = publicCsp({ entry });
+  else {
+    // dynamically rendered public page (e.g. /quote) or unknown path: per-request nonce, forwarded to the renderer
+    const nonce = btoa(crypto.randomUUID());
+    csp = publicCsp({ nonce, styleUnion: m?.styleUnion, notFound: m?.notFound });
+    const headers = new Headers(request.headers);
+    headers.set("x-nonce", nonce);
+    headers.set("Content-Security-Policy", csp);
+    req = new NextRequest(request, { headers });
+  }
+  const res = intl(req);
+  if (res.status < 300 || res.status >= 400) res.headers.set("Content-Security-Policy", csp);
+  return res;
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (pathname === "/app" || pathname.startsWith("/app/")) return osProxy(request);
-  return intl(request);
+  return publicProxy(request);
 }
 
 export const config = {

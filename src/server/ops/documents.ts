@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Document, DocumentClassification, DocumentEntityType, Prisma } from "@/generated/prisma/client";
 import { prisma } from "../db";
-import { can, canAny, requirePermission, type Ctx } from "../context";
+import { can, canAny, requirePermission, systemCtx, type Ctx } from "../context";
 import { conflict, forbidden, invalid, notFound } from "../errors";
 import { unitOfWork } from "../events/bus";
 import { optId, optText, reqText } from "../crm/normalize";
@@ -13,7 +13,8 @@ import { employeeAccess } from "../hr/access";
 import { requestWhere } from "./procurement";
 import { poWhere } from "./orders";
 import { ticketWhere } from "./support";
-import { activeDriver, documentScanner, newStorageKey, sha256, storageFor, validateUpload } from "./storage";
+import { activeDriver, newStorageKey, sha256, storageFor, validateUpload } from "./storage";
+import { configuredScanner, downloadBlockedBy, effectiveScanStatus, runScan, scanTimeoutMs } from "./scanner";
 
 /**
  * Document management (docs/OPERATIONS.md#documents).
@@ -171,12 +172,24 @@ export type UploadedFile = { name: string; type: string; data: Buffer };
 async function storeFile(organizationId: string, file: UploadedFile) {
   const v = validateUpload(file.name, file.type, file.data);
   if ("error" in v) throw invalid(v.error!);
-  const scan = await documentScanner.scan(file.data, { mime: v.mime, name: v.name });
-  if (scan === "INFECTED") throw invalid("FILE_REJECTED_BY_SCANNER");
+  // Phase 11 scanning boundary: a short inline attempt when a scanner is configured — INFECTED is refused before the
+  // bytes are stored; CLEAN is recorded; a scanner error / timeout leaves the version PENDING for the worker
+  const scanner = configuredScanner();
+  let scan: "NOT_CONFIGURED" | "PENDING" | "CLEAN" = "NOT_CONFIGURED";
+  let scanRow: { organizationId: string; status: "PENDING" | "CLEAN"; scanner: string; scannedAt: Date | null; attempts: number } | undefined;
+  if (scanner) {
+    const verdict = process.env.DOCUMENT_SCAN_INLINE === "0" ? null : await runScan(scanner, file.data, Math.min(scanTimeoutMs(), Number(process.env.DOCUMENT_SCAN_INLINE_TIMEOUT_MS ?? 10_000)));
+    if (verdict?.result === "INFECTED") {
+      await unitOfWork(systemCtx(organizationId, { ip: "system", userAgent: "document-scanner" }), (_tx, uow) => uow.audit({ action: "document.upload_rejected_infected", entityType: "Document", after: { scanner: scanner.name, signature: verdict.signature, size: file.data.length, mime: v.mime } }));
+      throw invalid("FILE_REJECTED_BY_SCANNER");
+    }
+    scan = verdict?.result === "CLEAN" ? "CLEAN" : "PENDING";
+    scanRow = { organizationId, status: scan, scanner: scanner.name, scannedAt: scan === "CLEAN" ? new Date() : null, attempts: verdict ? 1 : 0 };
+  }
   const key = newStorageKey(organizationId);
   const driver = activeDriver();
   await storageFor(driver).put(key, file.data);
-  return { key, driver, sha: sha256(file.data), mime: v.mime, size: file.data.length, name: v.name, scan };
+  return { key, driver, sha: sha256(file.data), mime: v.mime, size: file.data.length, name: v.name, scan, scanRow };
 }
 
 export async function createDocument(ctx: Ctx, raw: unknown, file: UploadedFile) {
@@ -200,7 +213,7 @@ export async function createDocument(ctx: Ctx, raw: unknown, file: UploadedFile)
           organizationId: ctx.organizationId, number, title: input.title, description: input.description ?? null, category: input.category ?? (input.entityType ? DEFAULT_CATEGORY[input.entityType] : "COMPANY") as never,
           entityType: input.entityType, entityId: input.entityId ?? null, ownerId: ctx.userId, classification: input.classification, tags: input.tags, currentVersion: 1,
           ...(input.reviewerId ? { status: "IN_REVIEW" as const, reviewerId: input.reviewerId, reviewRequestedAt: new Date() } : {}),
-          versions: { create: { organizationId: ctx.organizationId, versionNumber: 1, storageKey: stored.key, storageDriver: stored.driver, sha256: stored.sha, mime: stored.mime, size: stored.size, originalName: stored.name, scanStatus: stored.scan, note: input.note ?? null, uploadedById: ctx.userId } }
+          versions: { create: { organizationId: ctx.organizationId, versionNumber: 1, storageKey: stored.key, storageDriver: stored.driver, sha256: stored.sha, mime: stored.mime, size: stored.size, originalName: stored.name, scanStatus: stored.scan, note: input.note ?? null, uploadedById: ctx.userId, ...(stored.scanRow ? { scan: { create: stored.scanRow } } : {}) } }
         }
       });
       await uow.audit({ action: "document.created", entityType: "Document", entityId: d.id, after: { number, title: d.title, classification: d.classification, entity: input.entityType ? `${input.entityType}:${input.entityId}` : null, sha256: stored.sha, size: stored.size, mime: stored.mime } });
@@ -234,7 +247,7 @@ export async function addVersion(ctx: Ctx, id: string, file: UploadedFile, raw: 
       const cur = await tx.document.findUniqueOrThrow({ where: { id } });
       const versionNumber = cur.currentVersion + 1;
       // unique (documentId, versionNumber) is the backstop for concurrent uploads
-      await tx.documentVersion.create({ data: { organizationId: ctx.organizationId, documentId: id, versionNumber, storageKey: stored.key, storageDriver: stored.driver, sha256: stored.sha, mime: stored.mime, size: stored.size, originalName: stored.name, scanStatus: stored.scan, note: note ?? null, uploadedById: ctx.userId } });
+      await tx.documentVersion.create({ data: { organizationId: ctx.organizationId, documentId: id, versionNumber, storageKey: stored.key, storageDriver: stored.driver, sha256: stored.sha, mime: stored.mime, size: stored.size, originalName: stored.name, scanStatus: stored.scan, note: note ?? null, uploadedById: ctx.userId, ...(stored.scanRow ? { scan: { create: stored.scanRow } } : {}) } });
       await tx.document.update({ where: { id }, data: { currentVersion: versionNumber } });
       await uow.audit({ action: "document.version_uploaded", entityType: "Document", entityId: id, after: { version: versionNumber, sha256: stored.sha, size: stored.size, mime: stored.mime } });
       uow.emit({ type: "document.version_created", entityType: "Document", entityId: id, payload: { documentId: id, number: cur.number, version: versionNumber, title: cur.title } });
@@ -287,10 +300,14 @@ export async function approveDocumentReview(ctx: Ctx, id: string) {
 /** Authorised download. Confidential / restricted downloads are audited; the stored hash is re-verified. */
 export async function downloadDocument(ctx: Ctx, id: string, version?: number) {
   const { d } = await loadDoc(ctx, id);
-  const v = await prisma.documentVersion.findFirst({ where: { documentId: id, versionNumber: version ?? d.currentVersion } });
+  const v = await prisma.documentVersion.findFirst({ where: { documentId: id, versionNumber: version ?? d.currentVersion }, include: { scan: { select: { status: true } } } });
   if (!v) throw notFound("DocumentVersion");
-  // Phase 9: optional company policy — only CLEAN files may be downloaded (off by default; without a scanner nothing is CLEAN)
-  if (process.env.REQUIRE_SCAN_BEFORE_DOWNLOAD === "true" && v.scanStatus !== "CLEAN") throw conflict(`SCAN_REQUIRED:${v.scanStatus}`);
+  // Phase 11: INFECTED is never served; DOCUMENT_SCAN_POLICY=required serves CLEAN only (fail-safe) — scanner.ts
+  const blocked = downloadBlockedBy(effectiveScanStatus(v.scan, v.scanStatus));
+  if (blocked) {
+    if (blocked === "FILE_INFECTED") await unitOfWork(ctx, (_tx, uow) => uow.audit({ action: "document.download_blocked", entityType: "Document", entityId: id, after: { version: v.versionNumber, reason: blocked } }));
+    throw conflict(blocked);
+  }
   const data = await Promise.resolve()
     .then(() => storageFor(v.storageDriver).get(v.storageKey))
     .catch(() => null);
@@ -348,7 +365,8 @@ export async function documentsFor(ctx: Ctx, ref: EntityRef) {
 
 export async function getDocument(ctx: Ctx, id: string) {
   const { d, a } = await loadDoc(ctx, id);
-  const versions = await prisma.documentVersion.findMany({ where: { documentId: id }, orderBy: { versionNumber: "desc" }, select: { id: true, versionNumber: true, sha256: true, mime: true, size: true, originalName: true, scanStatus: true, note: true, uploadedById: true, createdAt: true } });
+  const rows = await prisma.documentVersion.findMany({ where: { documentId: id }, orderBy: { versionNumber: "desc" }, select: { id: true, versionNumber: true, sha256: true, mime: true, size: true, originalName: true, scanStatus: true, note: true, uploadedById: true, createdAt: true, scan: { select: { status: true } } } });
+  const versions = rows.map(({ scan, ...v }) => ({ ...v, scanStatus: effectiveScanStatus(scan, v.scanStatus) }));
   const people = await prisma.user.findMany({ where: { id: { in: [...new Set([d.ownerId, d.reviewerId, ...versions.map((v) => v.uploadedById)].filter(Boolean) as string[])] } }, select: { id: true, name: true, nameAr: true } });
   return { doc: d, versions, people, access: a, can: { version: a.manage && can(ctx, "documents.version") && d.status !== "ARCHIVED", archive: a.manage && can(ctx, "documents.archive") && d.status !== "ARCHIVED", edit: a.manage && d.status !== "ARCHIVED", review: d.status === "IN_REVIEW" && d.ownerId !== ctx.userId && (a.reviewer || can(ctx, "documents.manage")) } };
 }

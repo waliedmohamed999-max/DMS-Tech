@@ -6,7 +6,8 @@ import { conflict, forbidden, invalid } from "../errors";
 import { unitOfWork } from "../events/bus";
 import { optDate, optEmail, optId, optText, parseListParams, reqText } from "../crm/normalize";
 import { nextNumber } from "../crm/sequence";
-import { ymd } from "../commercial/dates";
+import { todayIn, ymd } from "../commercial/dates";
+import { assertNotLastSuperAdmin, isTerminationEffective, revokeEmployeeAccessTx } from "./offboarding";
 import { employeeAccess, employeeWhere, maskEmail, maskPhone, may, myEmployee } from "./access";
 
 /**
@@ -182,7 +183,20 @@ export async function changeEmployeeStatus(ctx: Ctx, id: string, raw: unknown) {
     uow.emit({ type: "employee.status_changed", entityType: "Employee", entityId: id, payload });
     if (input.to === "ACTIVE" && e.status === "PROBATION") uow.emit({ type: "employee.activated", entityType: "Employee", entityId: id, payload });
     if (input.to === "TERMINATED") uow.emit({ type: "employee.terminated", entityType: "Employee", entityId: id, payload, activity: { entityLabel: `${e.number} · ${e.displayName}`, href: `/app/hr/employees/${id}`, visibility: "hr.employees.view" } });
-    return { id };
+    // Phase 11 offboarding: access ends on the effective date (today → now; future → HR sweep on that day; archive → now)
+    let access: "revoked_now" | "scheduled" | null = null;
+    if (input.to === "TERMINATED" || input.to === "ARCHIVED") {
+      const org = await tx.organization.findUniqueOrThrow({ where: { id: ctx.organizationId }, select: { timezone: true } });
+      const effective = input.to === "ARCHIVED" || isTerminationEffective(input.terminationDate ?? e.terminationDate, todayIn(org.timezone));
+      if (effective) {
+        await revokeEmployeeAccessTx(tx, uow, id, new Date(), input.to === "ARCHIVED" ? "archive" : "termination");
+        access = "revoked_now";
+      } else {
+        if (e.userId) await assertNotLastSuperAdmin(tx, ctx.organizationId, e.userId); // refuse now, not on the effective day
+        access = "scheduled";
+      }
+    }
+    return { id, access };
   });
 }
 

@@ -256,7 +256,7 @@ describe("documents", () => {
     const doc = await prisma.document.findUniqueOrThrow({ where: { id: d.id }, include: { versions: true } });
     expect(doc.number).toMatch(/^DOC-\d{6}$/);
     expect(doc.versions[0].sha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(doc.versions[0].scanStatus).toBe("NOT_SCANNED");
+    expect(doc.versions[0].scanStatus).toBe("NOT_CONFIGURED");
     expect(doc.versions[0].storageKey).not.toMatch(/public|\.\./);
     expect((await downloadDocument(u.hr, d.id)).data.equals(PDF("salary"))).toBe(true);
     for (const who of [u.mgr, u.fm, u.emp2, u.ops, u.emp]) await expect(downloadDocument(who, d.id)).rejects.toMatchObject({ code: "NOT_FOUND" });

@@ -8,6 +8,7 @@ import { sweepProjects } from "../projects/sweep";
 import { sweepFinance } from "../finance/sweep";
 import { sweepHr } from "../hr/sweep";
 import { sweepOps } from "../ops/sweep";
+import { scanPendingDocuments } from "../ops/scanner";
 import { integrationsTick } from "../integrations/worker";
 import { automationTick } from "../automation/engine";
 import { recoverEvents } from "./events";
@@ -45,6 +46,8 @@ export async function systemTick(now = new Date(), opts: { retention?: boolean }
     out.integrations = await step("integrations", () => integrationsTick(now));
     out.events = await step("events", async () => (await withLease("system:events", 5 * 60_000, () => recoverEvents(now))) ?? { skipped: true });
     out.automation = await step("automation", async () => (await withLease("system:automation", 5 * 60_000, () => automationTick(now))) ?? { skipped: true });
+    // Phase 11: malware scanning of pending document versions (only when a scanner is configured)
+    out.documentScan = await step("documents:scan", async () => (await withLease("documents:scan", 15 * 60_000, () => scanPendingDocuments(now))) ?? { skipped: true });
     out.alerts = await step("alerts", async () => (await withLease("system:alerts", 5 * 60_000, () => alertTick(now))) ?? { skipped: true });
     // retention runs at most once a day (registry decides — survives restarts)
     const last = await prisma.systemJob.findUnique({ where: { key: "system:retention" }, select: { lastSucceededAt: true } });

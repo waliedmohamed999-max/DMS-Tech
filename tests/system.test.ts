@@ -386,17 +386,14 @@ describe("production protection & security", () => {
 
   it("25–27. security headers, CSRF same-origin guard, session cookie attributes, rate limits", async () => {
     const prod = headerRules(true);
-    const page = prod.find((r) => r.source.startsWith("/:path((?!"))!;
+    const page = prod.find((r) => r.source === "/:path*")!;
     const h = Object.fromEntries(page.headers.map((x) => [x.key, x.value]));
-    expect(h["Content-Security-Policy"]).toMatch(/default-src 'self'/);
-    expect(h["Content-Security-Policy"]).toMatch(/frame-ancestors 'none'/);
-    expect(h["Content-Security-Policy"]).toMatch(/object-src 'none'/);
-    expect(h["Content-Security-Policy"]).not.toMatch(/unsafe-eval/);
+    // Phase 11: page CSPs come from the proxy (tests/csp.test.ts) — the static rules never send a page CSP
+    expect(h["Content-Security-Policy"]).toBeUndefined();
     expect(h["Strict-Transport-Security"]).toMatch(/max-age=31536000/);
     expect(h).toMatchObject({ "X-Frame-Options": "DENY", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "strict-origin-when-cross-origin" });
-    const files = prod.find((r) => r.source.includes("(?:pdf|download|payslip))"))!;
-    expect(files.headers.some((x) => x.key === "Content-Security-Policy")).toBe(false); // PDF viewer keeps working; routes set `sandbox`
-    expect(headerRules(false)[1].headers.some((x) => x.key === "Strict-Transport-Security")).toBe(false);
+    expect(prod.find((r) => r.source === "/api/:path*")!.headers[0].value).toMatch(/default-src 'none'/);
+    expect(headerRules(false)[0].headers.some((x) => x.key === "Strict-Transport-Security")).toBe(false);
     // CSRF
     const H = (o: Record<string, string>) => new Headers({ host: "os.example.com", ...o });
     expect(isSameOrigin(H({ origin: "https://os.example.com", "sec-fetch-site": "same-origin" }))).toBe(true);

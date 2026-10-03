@@ -2179,6 +2179,7 @@ model Employee {
   probationEndDate      DateTime?        @db.Date
   terminationDate       DateTime?        @db.Date
   terminationReason     String?
+  accessRevokedAt       DateTime?
   workLocation          String?
   country               String           @default("SA")
   city                  String?
@@ -3358,7 +3359,7 @@ model DocumentVersion {
   mime           String
   size           Int
   originalName   String
-  /// NOT_SCANNED unless a real scanner is configured (DocumentScanner)
+  /// status at upload (immutable): NOT_CONFIGURED / legacy NOT_SCANNED, PENDING, CLEAN — live result in DocumentVersionScan
   scanStatus     String   @default("NOT_SCANNED")
   note           String?
   uploadedById   String
@@ -3369,7 +3370,34 @@ model DocumentVersion {
   /// Phase 8: storage driver that holds this version (local / s3) — old versions keep their driver
   storageDriver String @default("local")
 
+  /// Phase 11: malware-scan result (the version row itself is immutable)
+  scan DocumentVersionScan?
+
   @@unique([documentId, versionNumber])
+}
+
+/// Phase 11 (P11-C): malware-scan state of one document version (src/server/ops/scanner.ts).
+/// status: PENDING | CLEAN | INFECTED | FAILED. Only ids, engine and detection name are stored — never file contents.
+model DocumentVersionScan {
+  id             String    @id @default(cuid())
+  organizationId String
+  versionId      String    @unique
+  status         String
+  scanner        String?
+  attempts       Int       @default(0)
+  lastErrorCode  String?
+  signature      String?
+  nextAttemptAt  DateTime  @default(now())
+  lockedAt       DateTime?
+  lockedBy       String?
+  scannedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  version DocumentVersion @relation(fields: [versionId], references: [id], onDelete: Restrict)
+
+  @@index([status, nextAttemptAt])
+  @@index([organizationId])
 }
 
 model SlaPolicy {

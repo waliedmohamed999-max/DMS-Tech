@@ -9,7 +9,7 @@
 export const SECRET_KEYS = [
   "password", "passwordhash", "newpassword", "currentpassword", "token", "accesstoken", "refreshtoken", "idtoken", "sessiontoken", "secret",
   "signingsecret", "appsecret", "clientsecret", "secretaccesskey", "accesskeyid", "apikey", "verifytoken", "authorization", "cookie",
-  "set-cookie", "x-hub-signature-256", "x-dms-signature", "ciphertext", "authtag", "masterkey", "integration_master_key", "dsn"
+  "set-cookie", "x-hub-signature-256", "x-dms-signature", "x-api-key", "proxy-authorization", "x-sentry-auth", "privatekey", "csr", "ciphertext", "authtag", "masterkey", "integration_master_key", "dsn"
 ];
 export const PRIVATE_KEYS = [
   "iban", "ibanencrypted", "ibanlast4", "accountnumber", "bankaccount", "salary", "basesalary", "basicsalary", "housingallowance",
@@ -22,6 +22,7 @@ const SECRET = new Set(SECRET_KEYS);
 const PRIVATE = new Set(PRIVATE_KEYS);
 const CONTENT = new Set(CONTENT_KEYS);
 const norm = (k: string) => k.toLowerCase().replace(/_/g, "");
+const isContentKey = (n: string) => CONTENT.has(n) || n.endsWith("body") || n.endsWith("content");
 
 /** Strings that look like credentials even under an innocent key. */
 const VALUE_PATTERNS: [RegExp, string][] = [
@@ -60,7 +61,9 @@ export function redact(value: unknown, mode: Mode = "log", depth = 0, seen = new
     const n = norm(k);
     if (SECRET.has(n)) out[k] = "[redacted]";
     else if (mode === "log" && PRIVATE.has(n)) out[k] = "[private]";
-    else if (mode === "log" && CONTENT.has(n) && (typeof v === "string" ? v.length > 200 : typeof v === "object" && v !== null && (Buffer.isBuffer(v) || v instanceof Uint8Array))) out[k] = typeof v === "string" ? `[text ${v.length} chars]` : `[binary ${(v as Uint8Array).length} bytes]`;
+    // Phase 11: content keys (exact, or any key ending in "body" / "content", e.g. messageBody) never reach logs or
+    // error reports — whatever their length; only a size marker remains
+    else if (mode === "log" && isContentKey(n) && (typeof v === "string" || Buffer.isBuffer(v) || v instanceof Uint8Array)) out[k] = typeof v === "string" ? `[text ${v.length} chars]` : `[binary ${(v as Uint8Array).length} bytes]`;
     else out[k] = redact(v, mode, depth + 1, seen);
   }
   return out;

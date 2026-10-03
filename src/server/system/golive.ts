@@ -1,3 +1,4 @@
+import { configuredScanner as scannerOf, scanPolicy } from "../ops/scanner";
 import path from "node:path";
 import { prisma } from "../db";
 import { verifyPassword } from "../auth/password";
@@ -107,9 +108,20 @@ export async function goLiveChecks(opts: Opts = {}): Promise<GateResult[]> {
   const admins = await prisma.user.findMany({ where: { status: "ACTIVE", deletedAt: null, roles: { some: { role: { key: "super_admin" } } } }, select: { mustChangePassword: true } });
   add("super_admins", admins.length >= 2 ? "PASS" : admins.length === 1 ? "WARN" : "BLOCK", `${admins.length} active (recommend ≥ 2 named admins)`);
   if (admins.some((a) => a.mustChangePassword)) add("admin_first_login", "WARN", "a provisioned admin has not replaced the temporary password yet");
-  // offboarding is two explicit steps (HR terminates, admin disables the account) — flag any account left active
-  const leavers = await prisma.employee.count({ where: { status: { in: ["TERMINATED", "ARCHIVED"] }, user: { status: "ACTIVE", deletedAt: null } } });
-  add("offboarding_accounts", leavers ? "WARN" : "PASS", leavers ? `${leavers} terminated / archived employee(s) still have an ACTIVE system account — disable in Admin → Users` : "no active accounts for terminated employees");
+  // Phase 11: offboarding is automatic (status change / HR sweep) — only the EXCEPTIONS are flagged:
+  //   overdue  = effective > 36 h ago (sweep lag allowed) but access not revoked (worker down, LAST_SUPER_ADMIN guard)
+  //   reEnabled = revoked by offboarding, then re-activated by an admin (explicit decision — review it)
+  const lag = new Date(Date.now() - 36 * 3600_000);
+  const [overdue, reEnabled, scheduled] = await Promise.all([
+    prisma.employee.count({ where: { accessRevokedAt: null, userId: { not: null }, OR: [{ status: "TERMINATED", terminationDate: { lt: lag } }, { status: "ARCHIVED" }] } }),
+    prisma.employee.count({ where: { accessRevokedAt: { not: null }, user: { status: "ACTIVE", deletedAt: null } } }),
+    prisma.employee.count({ where: { accessRevokedAt: null, status: "TERMINATED", terminationDate: { gte: lag } } })
+  ]);
+  add(
+    "offboarding_accounts",
+    overdue || reEnabled ? "WARN" : "PASS",
+    [overdue ? `${overdue} leaver(s) past the effective date still have access (check the worker / LAST_SUPER_ADMIN)` : "", reEnabled ? `${reEnabled} offboarded account(s) were re-enabled by an admin` : "", `${scheduled} termination(s) scheduled`].filter(Boolean).join("; ")
+  );
   const company = await companyReadiness();
   add("company_data", company.missing.length ? "BLOCK" : company.warn.length ? "WARN" : "PASS", company.missing.length ? `missing: ${company.missing.join(", ")}` : company.warn.length ? `recommended: ${company.warn.join(", ")}` : "complete");
 
@@ -141,27 +153,92 @@ export async function goLiveChecks(opts: Opts = {}): Promise<GateResult[]> {
   // 7. compliance / policy decisions
   const z = complianceStatus(env);
   add("zatca", z.status === "NOT_REQUIRED" || z.status === "READY" ? "PASS" : "BLOCK", `${z.status} — ${z.reason}${z.decisionRef ? ` (${z.decisionRef})` : ""}`);
+  // Phase 11: a configured REAL scanner must answer its health probe; the test adapter never counts; without a scanner a
+  // documented decision (NOT_SCANNED_ACCEPTED) is a WARN, no decision a BLOCK
   const av = env.ANTIVIRUS_DECISION?.trim();
-  add("antivirus", av === "SCANNER_INTEGRATED" ? "PASS" : av === "NOT_SCANNED_ACCEPTED" ? "WARN" : "BLOCK", av ? av : "no decision recorded (ANTIVIRUS_DECISION=NOT_SCANNED_ACCEPTED | SCANNER_INTEGRATED)");
+  let scanner: Awaited<ReturnType<typeof scannerOf>> = null;
+  try {
+    scanner = scannerOf(env);
+  } catch (e) {
+    add("antivirus", "BLOCK", String((e as Error).message));
+  }
+  if (scanner && !scanner.isAntivirus) add("antivirus", "BLOCK", `${scanner.name} is a test adapter`);
+  else if (scanner) {
+    const h = await scanner.health(AbortSignal.timeout(5000));
+    const policy = scanPolicy(env);
+    add("antivirus", !h.ok ? "BLOCK" : policy === "required" ? "PASS" : "WARN", `${scanner.name}: ${h.ok ? "reachable" : "UNREACHABLE"} (${h.detail}); DOCUMENT_SCAN_POLICY=${policy}${policy === "required" ? "" : " — downloads are not held until CLEAN"}`);
+  } else if (!out.some((c) => c.key === "antivirus"))
+    add("antivirus", av === "NOT_SCANNED_ACCEPTED" ? "WARN" : "BLOCK", av === "NOT_SCANNED_ACCEPTED" ? "no scanner — risk accepted (ANTIVIRUS_DECISION=NOT_SCANNED_ACCEPTED)" : "no scanner and no decision (DOCUMENT_SCANNER=clamd|http, or ANTIVIRUS_DECISION=NOT_SCANNED_ACCEPTED)");
   add("retention_mode", env.RETENTION_DRY_RUN === "0" || env.RETENTION_DRY_RUN === "1" ? "PASS" : "WARN", env.RETENTION_DRY_RUN === undefined ? "RETENTION_DRY_RUN not set explicitly (worker purges by default)" : `RETENTION_DRY_RUN=${env.RETENTION_DRY_RUN}`);
   const rep = errorReporterStatus();
   add("error_tracking", rep.configured ? "PASS" : "WARN", rep.configured ? rep.name : "no external error tracking (logs only)");
   add("csp_public_site", "WARN", "public website pages keep 'unsafe-inline' scripts (static pages cannot carry a per-request nonce) — /app uses a nonce");
 
-  // 8. HTTPS (live probe of the configured origin — read-only GETs)
-  const site = env.NEXT_PUBLIC_SITE_URL;
-  if (opts.probeUrl !== false && site?.startsWith("https://")) {
-    try {
-      const r = await fetch(`${site.replace(/\/+$/, "")}/api/health`, { redirect: "manual" });
-      add("https_health", r.status === 200 ? "PASS" : "BLOCK", `GET ${site}/api/health → ${r.status}`);
-      const hsts = (await fetch(site, { redirect: "manual" })).headers.get("strict-transport-security");
-      add("hsts", hsts ? "PASS" : "BLOCK", hsts ?? "missing");
-      const http = await fetch(site.replace(/^https:/, "http:"), { redirect: "manual" }).catch(() => null);
-      add("http_redirect", http && [301, 302, 307, 308].includes(http.status) && (http.headers.get("location") ?? "").startsWith("https://") ? "PASS" : "WARN", http ? `http → ${http.status} ${http.headers.get("location") ?? ""}` : "http port closed (acceptable if the edge only listens on 443)");
-    } catch (e) {
-      add("https_health", "BLOCK", `unreachable: ${String((e as Error).message).slice(0, 80)}`);
-    }
-  } else add("https_health", "BLOCK", "NEXT_PUBLIC_SITE_URL is not https");
+  // 8. HTTPS / HSTS / HTTP→HTTPS (live, read-only GETs — probeTransport)
+  if (opts.probeUrl !== false) for (const r of await probeTransport(env)) add(r.key, r.level, r.detail);
+  return out;
+}
+
+/**
+ * Phase 11 (P11-E) transport checks. The plain-HTTP origin is HTTP_BASE_URL when set (staging edges on custom ports);
+ * otherwise it is derived from NEXT_PUBLIC_SITE_URL only when that uses the default port (production: http://host → :80).
+ * PASS needs a PERMANENT redirect (301 / 308) to https:// on the same host and port, with path and query preserved,
+ * and an HTTPS target that does not bounce back to http (no downgrade). Nothing passes by being skipped:
+ *   http port closed → WARN (acceptable only if the edge listens on 443 alone) · explicit HTTP_BASE_URL closed → BLOCK.
+ */
+export async function probeTransport(env: Record<string, string | undefined>, fetchImpl: typeof fetch = fetch): Promise<GateResult[]> {
+  const out: GateResult[] = [];
+  const add = (key: string, level: Level, detail: string) => out.push({ key, level, detail });
+  const site = env.NEXT_PUBLIC_SITE_URL?.replace(/\/+$/, "");
+  if (!site?.startsWith("https://")) return [{ key: "https_health", level: "BLOCK", detail: "NEXT_PUBLIC_SITE_URL is not https" }];
+  const siteUrl = new URL(site);
+  const get = (url: string) => fetchImpl(url, { redirect: "manual", signal: AbortSignal.timeout(10_000) });
+  try {
+    const r = await get(`${site}/api/health`);
+    add("https_health", r.status === 200 ? "PASS" : "BLOCK", `GET ${site}/api/health → ${r.status}`);
+    const hsts = (await get(site)).headers.get("strict-transport-security") ?? "";
+    const maxAge = Number(/max-age=(\d+)/i.exec(hsts)?.[1] ?? 0);
+    add("hsts", maxAge >= 15_552_000 ? "PASS" : hsts ? "WARN" : "BLOCK", hsts ? `${hsts}${maxAge < 15_552_000 ? " (max-age below 180 days)" : ""}` : "missing");
+  } catch (e) {
+    add("https_health", "BLOCK", `unreachable: ${String((e as Error).message).slice(0, 80)}`);
+    return out;
+  }
+  const explicit = env.HTTP_BASE_URL?.replace(/\/+$/, "");
+  if (!explicit && siteUrl.port) {
+    add("http_redirect", "WARN", `NEXT_PUBLIC_SITE_URL uses port ${siteUrl.port} — set HTTP_BASE_URL to the plain-HTTP origin to verify the redirect`);
+    return out;
+  }
+  const httpBase = explicit ?? `http://${siteUrl.hostname}`;
+  if (!httpBase.startsWith("http://")) {
+    add("http_redirect", "BLOCK", "HTTP_BASE_URL must be an http:// origin");
+    return out;
+  }
+  const probePath = "/app/login?probe=redirect-check";
+  const res = await get(`${httpBase}${probePath}`).catch(() => null);
+  if (!res) {
+    add("http_redirect", explicit ? "BLOCK" : "WARN", explicit ? `${httpBase} unreachable (HTTP_BASE_URL is set, so the redirect is expected)` : "http port closed (acceptable only if the edge listens on 443 alone)");
+    return out;
+  }
+  const location = res.headers.get("location") ?? "";
+  let target: URL | null = null;
+  try {
+    target = new URL(location, httpBase);
+  } catch {
+    target = null;
+  }
+  const problems: string[] = [];
+  if (![301, 308].includes(res.status)) problems.push(`status ${res.status} (expected a permanent 301 / 308)`);
+  if (!target || target.protocol !== "https:") problems.push(`location "${location.slice(0, 80)}" is not https`);
+  else {
+    if (target.host !== siteUrl.host) problems.push(`redirects to ${target.host}, expected ${siteUrl.host}`);
+    if (`${target.pathname}${target.search}` !== probePath) problems.push("path / query not preserved");
+  }
+  if (!problems.length && target) {
+    const next = await get(target.toString()).catch(() => null);
+    const back = next?.headers.get("location") ?? "";
+    if (next && back && back.startsWith("http://")) problems.push(`downgrade: the https target redirects back to ${back.slice(0, 60)}`);
+  }
+  add("http_redirect", problems.length ? (res.status >= 300 && res.status < 400 && target?.protocol === "https:" ? "WARN" : "BLOCK") : "PASS", problems.length ? problems.join("; ") : `${httpBase}${probePath} → ${res.status} ${location}`);
   return out;
 }
 

@@ -20,6 +20,8 @@ export const viewport: Viewport = { themeColor: "#151718" };
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
+  // unknown first segment (e.g. the browser's automatic /favicon.ico) → 404, not a 500 from the translation loader
+  if (!hasLocale(routing.locales, locale)) notFound();
   const t = await getTranslations({ locale, namespace: "metadata" });
   const path = locale === routing.defaultLocale ? "/" : `/${locale}`;
 

@@ -3200,7 +3200,8 @@
         "REVIEW_NOT_OF_EMPLOYEE": "Review does not belong to this employee.",
         "FIELD_KEY_NOT_CONFIGURED": "Bank details cannot be saved: the field encryption key is not configured.",
         "FIELD_DECRYPTION_FAILED": "The bank details could not be decrypted (wrong key or altered data).",
-        "FIELD_KEY_UNAVAILABLE": "The key for this bank record version is not available."
+        "FIELD_KEY_UNAVAILABLE": "The key for this bank record version is not available.",
+        "LAST_SUPER_ADMIN": "This employee is the only active Super Admin. Provision a second named admin before offboarding them."
       }
     },
     "ops": {
@@ -3454,7 +3455,10 @@
       "scan": {
         "NOT_SCANNED": "not scanned",
         "CLEAN": "scanned: clean",
-        "INFECTED": "infected"
+        "INFECTED": "infected",
+        "PENDING": "scan pending",
+        "FAILED": "scan failed",
+        "NOT_CONFIGURED": "not scanned (no scanner)"
       },
       "supportSubtitle": "Ticket queues with elapsed-time SLAs",
       "supportSubtitleRequester": "Your requests to the support team",
@@ -4584,7 +4588,9 @@
         "DEPENDENCY_UNAVAILABLE": "A required service is unavailable — try again shortly.",
         "SCAN_REQUIRED": "This file has not passed a virus scan and cannot be downloaded (company policy).",
         "RULE_VERSION_IMMUTABLE": "Rule versions cannot be changed.",
-        "ENVIRONMENT_BLOCKED": "This environment may not deliver through a production connection."
+        "ENVIRONMENT_BLOCKED": "This environment may not deliver through a production connection.",
+        "FILE_INFECTED": "This file was flagged as malware by the virus scanner and cannot be downloaded.",
+        "FILE_REJECTED_BY_SCANNER": "The virus scanner flagged this file. It was not uploaded."
       }
     }
   }

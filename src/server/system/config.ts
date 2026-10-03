@@ -2,7 +2,8 @@
  * Typed configuration validation (docs/GO-LIVE.md#configuration). Checks presence / shape only and NEVER returns values.
  *
  *  REQUIRED (production)   DATABASE_URL, NEXT_PUBLIC_SITE_URL (https), DOCUMENT_STORAGE (+ its settings)
- *  OPTIONAL                INTEGRATION_MASTER_KEY, NOVA_URL, LOG_LEVEL, ERROR_REPORTER, REQUIRE_SCAN_BEFORE_DOWNLOAD,
+ *  OPTIONAL                INTEGRATION_MASTER_KEY, NOVA_URL, LOG_LEVEL, ERROR_REPORTER, DOCUMENT_SCANNER (+ CLAMD_* /
+ *                          DOCUMENT_SCANNER_URL), DOCUMENT_SCAN_POLICY (REQUIRE_SCAN_BEFORE_DOWNLOAD = legacy alias),
  *                          REQUIRE_WORKER, BACKUP_DIR, BACKUP_MAX_AGE_HOURS, RETENTION_* overrides
  *  DEVELOPMENT ONLY        ALLOW_DEMO_SEED, TEST_DATABASE_URL, OS_LOCAL_PROD_TEST — forbidden in production
  *
@@ -67,8 +68,26 @@ export function validateConfig(env: Env = process.env): ConfigReport {
   if (env.NOVA_URL && !/^https?:\/\//.test(env.NOVA_URL)) warn("NOVA_URL", "INVALID_URL");
   if (env.ALLOW_NON_PRODUCTION_OUTBOUND === "1") warn("ALLOW_NON_PRODUCTION_OUTBOUND", "NON_PRODUCTION_MAY_USE_PRODUCTION_CONNECTIONS");
   if (env.LOG_LEVEL && !["debug", "info", "warn", "error", "silent"].includes(env.LOG_LEVEL)) warn("LOG_LEVEL", "INVALID");
-  if (env.REQUIRE_SCAN_BEFORE_DOWNLOAD === "true" && !env.DOCUMENT_SCANNER) warn("REQUIRE_SCAN_BEFORE_DOWNLOAD", "NO_SCANNER_ALL_DOWNLOADS_BLOCKED");
+  // Phase 11 malware-scanning boundary (src/server/ops/scanner.ts)
+  const scanner = (env.DOCUMENT_SCANNER ?? "").trim().toLowerCase();
+  const deployEnv = (env.APP_ENV ?? (production ? "production" : "development")).trim().toLowerCase();
+  if (scanner && !["none", "clamd", "http", "test-eicar"].includes(scanner)) critical("DOCUMENT_SCANNER", "UNSUPPORTED");
+  if (scanner === "test-eicar" && (deployEnv === "staging" || deployEnv === "production")) critical("DOCUMENT_SCANNER", "TEST_ADAPTER_NOT_ALLOWED");
+  if (scanner === "clamd" && !env.CLAMD_HOST) critical("CLAMD_HOST", "MISSING");
+  if (scanner === "http") {
+    if (!env.DOCUMENT_SCANNER_URL || !/^https?:\/\//.test(env.DOCUMENT_SCANNER_URL)) critical("DOCUMENT_SCANNER_URL", "MISSING_OR_INVALID");
+    else if (deployEnv === "production" && !/^https:\/\//.test(env.DOCUMENT_SCANNER_URL)) critical("DOCUMENT_SCANNER_URL", "HTTPS_REQUIRED");
+  }
+  const policy = (env.DOCUMENT_SCAN_POLICY ?? "").trim().toLowerCase();
+  if (policy && policy !== "required" && policy !== "optional") critical("DOCUMENT_SCAN_POLICY", "INVALID");
+  if ((policy === "required" || env.REQUIRE_SCAN_BEFORE_DOWNLOAD === "true") && (!scanner || scanner === "none")) warn("DOCUMENT_SCAN_POLICY", "NO_SCANNER_ALL_DOWNLOADS_BLOCKED");
   if (env.SENTRY_DSN && !/^https:\/\/[^@\s]+@[^/\s]+\/\S+$/.test(env.SENTRY_DSN)) critical("SENTRY_DSN", "INVALID");
+  if (env.ERROR_REPORT_WEBHOOK_URL && !/^https:\/\//.test(env.ERROR_REPORT_WEBHOOK_URL) && production) critical("ERROR_REPORT_WEBHOOK_URL", "HTTPS_REQUIRED");
+  if (env.ERROR_REPORT_SAMPLE_RATE !== undefined) {
+    const r = Number(env.ERROR_REPORT_SAMPLE_RATE);
+    if (!Number.isFinite(r) || r < 0 || r > 1) critical("ERROR_REPORT_SAMPLE_RATE", "INVALID");
+    else if (r === 0) warn("ERROR_REPORT_SAMPLE_RATE", "ZERO_NOTHING_REPORTED");
+  }
 
   if (production) {
     if (env.ALLOW_DEMO_SEED) prodOnly("ALLOW_DEMO_SEED", "FORBIDDEN_IN_PRODUCTION");

@@ -1,28 +1,8 @@
 /**
- * Security headers (Phase 9 review — docs/SECURITY.md#headers). Imported by next.config.mjs and by the tests.
- *
- * CSP: Next.js App Router streams inline RSC bootstrap scripts, so script-src needs 'unsafe-inline' (no nonce pipeline in
- * this build); every other directive is strict: no third-party script / connect / frame origins, no plugins, no framing,
- * forms only to self. PDF / file responses keep their own `sandbox` CSP (set by the route) and are excluded here so the
- * browser's built-in PDF viewer keeps working.
+ * Security headers (Phase 9 review, Phase 11 CSP — docs/SECURITY.md#security-headers). Imported by next.config.mjs and
+ * the tests. Page CSPs are set per request by src/proxy.ts (no 'unsafe-inline' scripts); this file only carries the
+ * baseline headers and the strict CSP for non-page responses.
  */
-export function contentSecurityPolicy(production) {
-  return [
-    "default-src 'self'",
-    `script-src 'self' 'unsafe-inline'${production ? "" : " 'unsafe-eval'"}`,
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.supabase.co",
-    "font-src 'self' data:",
-    `connect-src 'self'${production ? "" : " ws: wss:"}`,
-    "frame-src 'none'",
-    "frame-ancestors 'none'",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'"
-    // no upgrade-insecure-requests: HSTS already forces HTTPS in production, and the directive breaks local http tests
-  ].join("; ");
-}
-
 export function securityHeaders(production) {
   return [
     { key: "X-Frame-Options", value: "DENY" },
@@ -35,16 +15,19 @@ export function securityHeaders(production) {
   ];
 }
 
+/** Non-page responses (API JSON, static files with an extension): nothing may execute or be framed. */
+export const NON_PAGE_CSP = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'";
+
 export function headerRules(production) {
   const base = securityHeaders(production);
-  const csp = { key: "Content-Security-Policy", value: contentSecurityPolicy(production) };
   return [
-    { source: "/", headers: [...base, csp] },
-    // public site: every path except /app (nonce CSP set per request by src/proxy.ts) and file / PDF routes
-    { source: "/:path((?!app(?:/|$))(?!.*/(?:pdf|download|payslip)$).+)", headers: [...base, csp] },
-    // /app pages: baseline headers here, CSP from the proxy (nonce)
-    { source: "/app/:path*", headers: base },
-    { source: "/app", headers: base },
-    { source: "/:path((?!app(?:/|$)).*/(?:pdf|download|payslip))", headers: base }
+    // Phase 11: EVERY page CSP is set per request by src/proxy.ts —
+    //   public pages: build-time sha256 hashes (static) or a nonce (dynamic), no 'unsafe-inline' (src/lib/csp/public.ts)
+    //   /app pages:   per-request nonce + 'strict-dynamic' (src/lib/os/csp.ts)
+    // (file / PDF routes send their own `sandbox` CSP from the route handler)
+    { source: "/:path*", headers: base },
+    // API responses and directly opened SVG files: nothing may execute or be framed
+    { source: "/api/:path*", headers: [{ key: "Content-Security-Policy", value: NON_PAGE_CSP }] },
+    { source: "/:path(.*\\.svg)", headers: [{ key: "Content-Security-Policy", value: NON_PAGE_CSP }] }
   ];
 }

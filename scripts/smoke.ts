@@ -46,8 +46,14 @@ async function main() {
   check("security_headers", Boolean(csp.includes("frame-ancestors 'none'") && home.headers.get("x-content-type-options") === "nosniff"), csp ? "csp present" : "csp missing");
   if (base.startsWith("https://")) check("hsts", Boolean(home.headers.get("strict-transport-security")), home.headers.get("strict-transport-security") ?? "missing");
 
+  // Phase 11: no page may allow inline scripts wholesale — public pages use hashes / a nonce, /app a nonce
+  const scriptSrc = (c: string) => c.split(";").map((d) => d.trim()).find((d) => d.startsWith("script-src")) ?? "";
+  const pub = scriptSrc(csp);
+  check("public_csp_strict", Boolean(pub) && !pub.includes("'unsafe-inline'") && !pub.includes("'unsafe-eval'") && /'(sha256-|nonce-)/.test(pub), pub.slice(0, 60) || "no script-src");
   const lp = await get("/app/login");
   check("login_page", lp.status === 200, String(lp.status));
+  const lsrc = scriptSrc(lp.headers.get("content-security-policy") ?? "");
+  check("app_csp_nonce", lsrc.includes("'nonce-") && lsrc.includes("'strict-dynamic'") && !lsrc.includes("'unsafe-inline'"), lsrc.slice(0, 60) || "no script-src");
   const app = await get("/app");
   check("auth_required", app.status >= 300 && app.status < 400 && (app.headers.get("location") ?? "").includes("/app/login"), app.headers.get("location") ?? String(app.status));
   const up = await get("/app/documents/upload", { method: "POST", headers: { origin: "https://evil.example" } });

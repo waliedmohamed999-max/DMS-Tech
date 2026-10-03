@@ -31,7 +31,7 @@ process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 async function main() {
   assertStartupConfig();
-  configureObservability();
+  configureObservability(process.env, "worker");
   registerSubscribers();
   do {
     const started = Date.now();

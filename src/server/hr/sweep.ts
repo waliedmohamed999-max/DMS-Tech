@@ -4,6 +4,8 @@ import { unitOfWork } from "../events/bus";
 import { addDays, todayIn, ymd } from "../commercial/dates";
 import { withLease } from "../jobs/lease";
 import { workingDaysBetween } from "./attendance";
+import { revokeEmployeeAccessTx } from "./offboarding";
+import { log } from "../obs/log";
 
 /**
  * HR sweep (docs/HR.md) — JobLease-guarded, every signal claimed once by a conditional update:
@@ -12,6 +14,8 @@ import { workingDaysBetween } from "./attendance";
  *   · leave starting within 2 days → employee + manager reminder (claim: LeaveRequest.startNotifiedAt)
  *   · performance reviews due within 7 days → reviewer reminder (claim: dueNotifiedAt)
  *   · sent offers expiring within 2 days → recruiter reminder (claim: expiryNotifiedAt)
+ *   · Phase 11 offboarding: termination effective (date ≤ today) or archived, access not yet revoked → disable the
+ *     linked account + revoke sessions (claim: Employee.accessRevokedAt; see offboarding.ts)
  * Notifications carry entity dedupe keys. Never touches payroll.
  */
 export async function sweepHr(organizationId: string, now = new Date()) {
@@ -23,7 +27,23 @@ async function runSweep(organizationId: string, now: Date) {
   const org = await prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { timezone: true } });
   const today = todayIn(org.timezone, now);
   const ctx = systemCtx(organizationId, { ip: "system", userAgent: "hr-sweep" });
-  const out = { missingAttendance: 0, leaveStarting: 0, reviewsDue: 0, offersExpiring: 0 };
+  const out = { missingAttendance: 0, leaveStarting: 0, reviewsDue: 0, offersExpiring: 0, accessRevoked: 0, offboardingBlocked: 0 };
+
+  const leavers = await prisma.employee.findMany({
+    where: { organizationId, accessRevokedAt: null, OR: [{ status: "TERMINATED", terminationDate: { lte: today } }, { status: "ARCHIVED" }] },
+    select: { id: true },
+    take: 500
+  });
+  for (const l of leavers) {
+    try {
+      const r = await unitOfWork(ctx, (tx, uow) => revokeEmployeeAccessTx(tx, uow, l.id, now, "scheduled_termination"));
+      if (r.outcome !== "already_done") out.accessRevoked++;
+    } catch (err) {
+      // e.g. LAST_SUPER_ADMIN — stays pending (go-live:check / system health show it); other leavers continue
+      out.offboardingBlocked++;
+      log.warn("offboarding_blocked", { employeeId: l.id, error: String((err as Error)?.message ?? err) });
+    }
+  }
 
   const yesterday = addDays(today, -1);
   const { days } = await workingDaysBetween(prisma, organizationId, yesterday, yesterday);

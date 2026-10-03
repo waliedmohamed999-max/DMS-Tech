@@ -68,14 +68,7 @@ export const LocalStorageForTests = LocalSecureStorage;
 export const newStorageKey = (organizationId: string) => `${organizationId.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40)}/${new Date().getUTCFullYear()}/${randomUUID()}`;
 export const sha256 = (b: Buffer) => createHash("sha256").update(b).digest("hex");
 
-/**
- * Malware scanning hook. No scanner is installed, so uploads are recorded as NOT_SCANNED —
- * the UI says so; nothing claims a scan happened. A real scanner implements this interface.
- */
-export interface DocumentScanner {
-  scan(data: Buffer, meta: { mime: string; name: string }): Promise<"CLEAN" | "INFECTED" | "NOT_SCANNED">;
-}
-export const documentScanner: DocumentScanner = { scan: async () => "NOT_SCANNED" };
+// Malware scanning: see ./scanner.ts (Phase 11 boundary — adapters, policy, worker job).
 
 // --- upload validation ------------------------------------------------------------------------
 
