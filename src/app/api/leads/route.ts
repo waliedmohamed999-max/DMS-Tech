@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { leadSchema, saveLead } from "@/lib/leads";
 import { hit } from "@/server/rate-limit";
+import { randomUUID } from "node:crypto";
+import { runWithObs } from "@/server/obs/context";
+import { reportError } from "@/server/obs/errors";
 
 const MAX_BODY = 16_000;
 
@@ -11,6 +14,15 @@ const MAX_BODY = 16_000;
  * - never returns internal ids
  */
 export async function POST(request: NextRequest) {
+  // Phase 10: request id → lead.created event → automation → outbox share one correlation id
+  const rid = request.headers.get("x-request-id");
+  const requestId = rid && /^[A-Za-z0-9-]{8,64}$/.test(rid) ? rid : randomUUID();
+  const res = await runWithObs({ requestId, correlationId: requestId, module: "public", operation: "website_lead" }, () => handle(request));
+  res.headers.set("x-request-id", requestId);
+  return res;
+}
+
+async function handle(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? "unknown";
   const userAgent = request.headers.get("user-agent");
 
@@ -40,7 +52,7 @@ export async function POST(request: NextRequest) {
   try {
     await saveLead(parsed.data, { ip, userAgent });
   } catch (e) {
-    console.error("[website lead]", e);
+    reportError(e, "website_lead");
     return NextResponse.json({ ok: false, error: "server" }, { status: 500 });
   }
   return NextResponse.json({ ok: true });

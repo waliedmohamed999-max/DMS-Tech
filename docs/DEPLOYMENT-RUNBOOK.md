@@ -43,8 +43,25 @@ that system health is denied, that an unknown document download is 404, and that
 | Migration failed half-way | `prisma migrate status` shows it; fix the cause, `prisma migrate resolve --rolled-back <name>` only if the SQL did not apply, redeploy. Never edit an applied migration. |
 | Migration damaged data | Restore runbook ([DISASTER-RECOVERY.md](DISASTER-RECOVERY.md#restore-runbook-production)) to the pre-deploy backup. |
 
-Forward-fix policy: correct problems with a new migration and a new release; restoring a backup is the last resort
+Forward-fix policy: correct problems with a new migration and a new release. Restoring a backup is the last resort
 because it loses everything written since.
+
+### Phase 10 release (1.0.0-rc.1) — rollback drill result
+
+On 2026-10-03 the Phase 9 build was started against a copy of the Phase 10 schema
+(`scripts/staging/rollback-drill.sh`). Result:
+* Serving in 13.6 s. Smoke 12/12.
+* Dashboard, CRM, finance, projects, HR list and System Health all work.
+* **HR → employee → Compensation crashes.** After `hr:encrypt-iban` the plaintext `iban` column is null, and the Phase 9 code assumes it is not.
+
+Phase 10 is therefore **not purely additive**. Rolling back the code alone is acceptable as an emergency measure, but
+only with that page broken. Rules:
+
+* Take and verify a `db:backup` **before** `db:deploy` and before `hr:encrypt-iban`. That backup is the only way back
+  to a fully working Phase 9.
+* Never downgrade the schema by hand and never decrypt IBANs back into plaintext. Fix forward.
+* `hr:encrypt-iban` is a separate, deliberate step after the deploy is verified. Until it has run, Phase 9 code still
+  reads every row.
 
 ## Scheduling
 

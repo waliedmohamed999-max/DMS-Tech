@@ -1,6 +1,6 @@
 {
   "name": "dms-tech",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -35,6 +35,11 @@
     "config:check": "tsx scripts/config-check.ts",
     "retention:purge": "tsx scripts/retention.ts",
     "secrets:rotate": "tsx scripts/rotate-master-key.ts",
+    "hr:encrypt-iban": "tsx scripts/hr-encrypt-iban.ts",
+    "admin:provision": "tsx scripts/admin-provision.ts",
+    "production:data-check": "tsx scripts/production-data-check.ts",
+    "go-live:check": "tsx scripts/go-live-check.ts",
+    "backup:prune": "tsx scripts/backup-prune.ts",
     "dev:cleanup-qa": "tsx scripts/dev-cleanup-qa.ts"
   },
   "dependencies": {

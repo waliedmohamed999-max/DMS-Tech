@@ -40,8 +40,11 @@ export function headerRules(production) {
   const csp = { key: "Content-Security-Policy", value: contentSecurityPolicy(production) };
   return [
     { source: "/", headers: [...base, csp] },
-    // every path except file / PDF routes
-    { source: "/:path((?!.*/(?:pdf|download|payslip)$).+)", headers: [...base, csp] },
-    { source: "/:path(.*/(?:pdf|download|payslip))", headers: base }
+    // public site: every path except /app (nonce CSP set per request by src/proxy.ts) and file / PDF routes
+    { source: "/:path((?!app(?:/|$))(?!.*/(?:pdf|download|payslip)$).+)", headers: [...base, csp] },
+    // /app pages: baseline headers here, CSP from the proxy (nonce)
+    { source: "/app/:path*", headers: base },
+    { source: "/app", headers: base },
+    { source: "/:path((?!app(?:/|$)).*/(?:pdf|download|payslip))", headers: base }
   ];
 }

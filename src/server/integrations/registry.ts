@@ -10,6 +10,7 @@ import { customWebhook, google, missingRequirements, nova, s3, whatsapp, type He
 import { IntegrationError } from "./http";
 import { novaStatus } from "./nova";
 import { enforceLimit } from "../security/limits";
+import { isProduction } from "../system/environment";
 
 /**
  * Integration registry (docs/INTEGRATIONS.md). One row per provider ("default") is provisioned by bootstrap
@@ -88,7 +89,8 @@ const configureSchema = z.object({
 export async function configureConnection(ctx: Ctx, id: string, raw: unknown) {
   requirePermission(ctx, "integrations.manage");
   const input = configureSchema.parse(raw);
-  if (input.environment === "SANDBOX" && process.env.NODE_ENV === "production") throw invalid("SANDBOX_NOT_ALLOWED_IN_PRODUCTION");
+  // Phase 10: APP_ENV decides (staging runs a production build but is allowed — and expected — to use SANDBOX connections)
+  if (input.environment === "SANDBOX" && isProduction()) throw invalid("SANDBOX_NOT_ALLOWED_IN_PRODUCTION");
   return unitOfWork(ctx, async (tx, uow) => {
     const c = await lock(tx, ctx, id);
     const def = providerDef(c.provider);

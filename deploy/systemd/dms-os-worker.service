@@ -1,0 +1,27 @@
+# DMS Business OS — the ONE canonical scheduler (Phase 10): sweeps, integrations outbox / campaigns / health,
+# domain-event recovery, automation retries, alerts, daily retention. Heart-beats every pass (worker:loop).
+# Running it on two hosts is safe (leases + idempotency) — use that for redundancy, not cron duplicates.
+[Unit]
+Description=DMS Business OS worker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dms-os
+Group=dms-os
+WorkingDirectory=/srv/dms-os/current
+EnvironmentFile=/etc/dms-os/app.env
+ExecStart=/usr/bin/npm run worker -- --loop
+Restart=always
+RestartSec=10
+# graceful: the worker finishes its pass, releases its heartbeat and exits on SIGTERM
+KillSignal=SIGTERM
+TimeoutStopSec=120
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/dms-os /var/log/dms-os
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

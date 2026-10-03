@@ -14,7 +14,12 @@ const threshold = () => ORDER[(process.env.LOG_LEVEL as Level) ?? (process.env.V
 
 /** Test hook: capture lines instead of writing to stdout. */
 let sink: ((line: string) => void) | null = null;
-export const setLogSink = (fn: ((line: string) => void) | null) => (sink = fn);
+let sinkAll = false;
+/** `all` = receive every level regardless of LOG_LEVEL (tests); persistent sinks respect LOG_LEVEL. */
+export const setLogSink = (fn: ((line: string) => void) | null, all = false) => {
+  sink = fn;
+  sinkAll = all;
+};
 
 export function format(level: Level, msg: string, fields: Record<string, unknown> = {}) {
   const o = currentObs();
@@ -29,7 +34,7 @@ export function format(level: Level, msg: string, fields: Record<string, unknown
 }
 
 function write(level: Level, msg: string, fields?: Record<string, unknown>) {
-  if (!sink && ORDER[level] < threshold()) return;
+  if (!(sink && sinkAll) && ORDER[level] < threshold()) return;
   const line = format(level, msg, fields);
   if (sink) return sink(line);
   if (level === "error" || level === "warn") console.error(line);

@@ -5,6 +5,7 @@ import { log } from "../obs/log";
 import { reportError } from "../obs/errors";
 import { jobHealth } from "./jobs";
 import { checkStorage } from "./health";
+import { appEnv } from "./environment";
 
 /**
  * System alerts (docs/OBSERVABILITY.md#alerts). Evaluated by the worker (job "system:alerts") from REAL data.
@@ -41,7 +42,7 @@ export async function evaluateAlerts(now = new Date()): Promise<Alert[]> {
 
   const maxAgeH = Number(process.env.BACKUP_MAX_AGE_HOURS ?? 26);
   const lastBackup = await prisma.backupRecord.findFirst({ where: { kind: "database", status: { in: ["COMPLETED", "VERIFIED"] } }, orderBy: { startedAt: "desc" } });
-  const backupExpected = process.env.NODE_ENV === "production" || Boolean(lastBackup);
+  const backupExpected = ["production", "staging"].includes(appEnv()) || Boolean(lastBackup);
   if (backupExpected && (!lastBackup || now.getTime() - lastBackup.startedAt.getTime() > maxAgeH * 3600_000))
     out.push({ kind: "backup_stale", severity: "URGENT", en: lastBackup ? `Last database backup is older than ${maxAgeH} h` : "No database backup recorded", ar: lastBackup ? `آخر نسخة احتياطية أقدم من ${maxAgeH} ساعة` : "لا توجد نسخة احتياطية مسجلة", href: "/app/admin/system-health?tab=backups" });
   const failedBackup = await prisma.backupRecord.findFirst({ where: { status: { in: ["FAILED", "VERIFY_FAILED"] }, startedAt: { gte: new Date(now.getTime() - 24 * 3600_000) } } });

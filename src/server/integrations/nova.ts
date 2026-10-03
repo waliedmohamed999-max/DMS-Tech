@@ -42,7 +42,7 @@ function parseUrl(raw: string | undefined): { url: URL | null; invalid: boolean 
   try {
     const u = new URL(v);
     const local = u.hostname === "localhost" || u.hostname === "127.0.0.1";
-    if (u.protocol === "https:" || (u.protocol === "http:" && local && process.env.NODE_ENV !== "production")) return { url: u, invalid: false };
+    if (u.protocol === "https:" || (u.protocol === "http:" && local && process.env.APP_ENV !== "production" && process.env.NODE_ENV !== "production")) return { url: u, invalid: false };
   } catch {
     /* fall through */
   }

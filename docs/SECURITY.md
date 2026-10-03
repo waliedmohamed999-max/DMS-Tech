@@ -28,8 +28,13 @@ There is no `SESSION_SECRET`: tokens are not signed, they are random and looked 
 | Permissions-Policy | camera, microphone, geolocation, payment, usb, interest-cohort disabled |
 | Cross-Origin-Opener-Policy | `same-origin` |
 
-`'unsafe-inline'` for scripts is required by the App Router's inline bootstrap without a nonce pipeline (documented
-limitation). PDF / download / payslip routes keep the baseline headers but not the page CSP — they send their own
+**Phase 10: nonce CSP for the Business OS.** `src/proxy.ts` generates a fresh nonce per request for `/app/*` and sends
+`script-src 'self' 'nonce-<random>' 'strict-dynamic'` (built by `src/lib/os/csp.ts`; `'unsafe-eval'` in development
+only). Next.js applies the nonce to its own scripts. This was verified in a browser on staging: no CSP violations, and
+hydration and client navigation work. The static CSP above now covers **only the public website**. Its pages are
+statically generated, so they cannot carry a per-request nonce and keep `'unsafe-inline'` for scripts (WARN
+`csp_public_site` in go-live:check). The public site has no session and no forms besides the rate-limited lead form.
+`upgrade-insecure-requests` was removed because TLS is enforced by HSTS and the edge redirect. PDF / download / payslip routes keep the baseline headers but not the page CSP — they send their own
 `Content-Security-Policy: sandbox`, `nosniff`, `no-store`, so the browser PDF viewer keeps working.
 
 ## CSRF
@@ -42,6 +47,9 @@ limitation). PDF / download / payslip routes keep the baseline headers but not t
 - Public endpoints carry no session authority: the website lead form (rate limited, honeypot) and inbound webhooks
   (HMAC signature, replay window).
 - Integration configuration, payments, payroll and approvals are server actions (covered by the first point).
+- Phase 10 staging evidence ([STAGING.md](STAGING.md)): a real server action captured in the browser was replayed.
+  Same origin → 200. `Origin: https://evil.example` and `Origin: null` → aborted by Next.js. A cross-origin upload
+  → 403. After logout, replaying the old cookie lands on the login page.
 
 ## Rate limits
 
@@ -81,9 +89,34 @@ All limits are DB-backed (`RateLimit`) and hold across instances; ordinary navig
 
 ## Known security limitations
 
-- CSP needs `'unsafe-inline'` for scripts (no nonce pipeline).
-- IBANs are stored in clear text in the database (masked in UI / audit, reveal is audited); rely on database
-  encryption at rest — column-level encryption is future work.
+- Public website CSP keeps `'unsafe-inline'` for scripts (static pages; `/app` uses a nonce since Phase 10).
+- Terminating an employee does not disable their system account automatically (two-step offboarding; go-live:check
+  warns about leftovers).
 - No WAF / bot protection beyond rate limits and the honeypot.
 - No antivirus scanner.
 - Webhook secret rotation has no overlap window.
+
+## Sensitive field encryption (Phase 10)
+
+IBANs (`EmployeeBankAccount`) are encrypted at the application level in addition to database encryption at rest.
+
+- **Algorithm:** AES-256-GCM using Node's `crypto` (no homemade crypto). A random 96-bit IV per value and a 128-bit
+  auth tag. The AAD is `EmployeeBankAccount.iban:<employeeId>`, so ciphertext copied to another employee fails to decrypt.
+- **Key:** `HR_FIELD_KEY` (32 bytes) is separate from `INTEGRATION_MASTER_KEY`, and config validation refuses equal keys.
+  The key version is stored per row. Rotation uses `HR_FIELD_KEY_PREVIOUS` + `npm run hr:encrypt-iban -- --rotate --apply`.
+- **Stored per row:** `ibanCiphertext`, `ibanIv`, `ibanTag`, `ibanKeyVersion`, and `ibanLast4` for masking. The plaintext
+  `iban` column is null after migration.
+- **Database guards:**
+  - CHECK: a row has either a plaintext IBAN or a complete ciphertext.
+  - The history trigger (`bank_history_guard`) allows only two in-place changes, and both must keep the same last4:
+    plaintext → ciphertext (encryption), and a higher key version (rotation). Anything else is still append-only.
+- **Reads:**
+  - Generic employee payloads never contain the IBAN, only `•••• •••• •••• 1234`.
+  - Decryption happens only in `revealBankAccount`, after the permission check, and the reveal is audited.
+  - Decryption failures raise `FIELD_DECRYPTION_FAILED` and the value is never logged.
+- **Migration:**
+  - `npm run hr:encrypt-iban` is a dry run. With `-- --apply`, each row is encrypted, decrypted back and compared
+    before the plaintext is cleared, inside one transaction.
+  - Take a verified backup first (see the DEPLOYMENT-RUNBOOK rollback note).
+- **If the key is lost:** encrypted IBANs cannot be recovered. Back up `HR_FIELD_KEY` in the secret manager,
+  separately from database backups.

@@ -1,7 +1,12 @@
-# Go-live checklist (Phase 9)
+# Go-live checklist (Phase 9, extended in Phase 10)
 
 Tick every line before real data enters the system. Items marked **BLOCKER** must be done; the others are strongly
 recommended. "Verify" means a command or screen that proves it, not an assumption.
+
+**Phase 10:** the checklist can be checked by a machine. `npm run go-live:check -- --env production` runs on the
+target server and prints PASS / WARN / BLOCK for every item it can observe, then a verdict. It exits 1 on any BLOCK.
+The command reads evidence. It cannot create evidence: an item like `DB_ENCRYPTION_AT_REST` only passes when you
+record a real provider setting or ticket reference. The staging rehearsal results are in [STAGING.md](STAGING.md).
 
 ## Configuration
 
@@ -16,6 +21,15 @@ recommended. "Verify" means a command or screen that proves it, not an assumptio
 | `REQUIRE_WORKER=1` | recommended | readiness then requires the worker heartbeat |
 | `LOG_LEVEL`, `ERROR_REPORTER` / `SENTRY_DSN` | optional | error tracking is "not configured" until an adapter is installed |
 | `ALLOW_DEMO_SEED`, `TEST_DATABASE_URL`, `OS_LOCAL_PROD_TEST` | **must be absent** | critical config error in production |
+| `APP_ENV=production` | yes (Phase 10) | Deployment environment, separate from `NODE_ENV`. It must match the database's immutable `DeploymentMarker` and the storage marker file |
+| `HR_FIELD_KEY` | yes (Phase 10) | 32 bytes, base64. Encrypts IBANs (AES-256-GCM). **Must differ from** `INTEGRATION_MASTER_KEY`. Back it up separately: without it, encrypted IBANs cannot be read |
+| `DB_ENCRYPTION_AT_REST` | yes (Phase 10) | Evidence text: provider + setting / ticket reference. Missing → BLOCK |
+| `STORAGE_BACKUP_POLICY` | yes (Phase 10) | How document storage is backed up (for example "S3 versioning + replication to …") |
+| `ZATCA_STATUS` (+ `ZATCA_DECISION_REF`) | yes (Phase 10) | `NOT_CONFIGURED` / `REQUIRED_NOT_READY` block invoice issuing in production. `NOT_REQUIRED` needs a decision reference. See [ZATCA-DECISION.md](ZATCA-DECISION.md) |
+| `ANTIVIRUS_DECISION` | yes (Phase 10) | `NOT_SCANNED_ACCEPTED` (WARN, documented risk) or `SCANNER_INTEGRATED` |
+| `SENTRY_DSN` or `ERROR_REPORT_WEBHOOK_URL` | recommended | External error tracking (Phase 10 adapters). Without it errors go to logs only (WARN) |
+| `LOG_DIR` | recommended | Daily JSONL log files in addition to stdout |
+| `BACKUP_KEEP_DAILY/WEEKLY/MONTHLY` | for `backup:prune` | Retention of local dump files |
 
 Verify: `npm run config:check` → `"ok": true` with no critical issue. The server refuses to start otherwise.
 
@@ -41,7 +55,19 @@ Verify: `npm run config:check` → `"ok": true` with no critical issue. The serv
 - [ ] Public website smoke: home, services, contact form → lead in CRM.
 - [ ] Data protection: privacy notice for website / WhatsApp consent, retention defaults accepted (DATA-CLASSIFICATION.md).
 
+### Phase 10 additions
+
+- [ ] **BLOCKER** `npm run go-live:check -- --env production` → verdict GO (no BLOCK). Keep the output with the release record.
+- [ ] **BLOCKER** Admins provisioned with `npm run admin:provision -- --email … --name …`: named people, at least 2, a one-time password changed at first sign-in. No `admin@dms.test`, no shared password.
+- [ ] **BLOCKER** `npm run hr:encrypt-iban` run (dry run first, then `-- --apply`) **after** a verified pre-deploy backup. go-live:check `iban_encryption` PASS.
+- [ ] **BLOCKER** ZATCA decision recorded (`ZATCA_STATUS`), or invoices are not issued from this system.
+- [ ] **BLOCKER** Database encryption at rest confirmed with the provider (`DB_ENCRYPTION_AT_REST`).
+- [ ] Antivirus decision recorded (`ANTIVIRUS_DECISION`).
+- [ ] Smoke account provisioned (`npm run admin:provision -- --smoke --email …`): low privilege, used only by the smoke suite.
+- [ ] `npm run production:data-check` clean (no demo or test artefacts).
+- [ ] Offboarding procedure agreed. Terminating an employee in HR does **not** disable their system account; an admin disables it in Admin → Users. go-live:check flags terminated employees with active accounts (`offboarding_accounts`).
+
 ## Not included in this build (decide before go-live)
 
-General ledger, bank reconciliation, ZATCA integration, antivirus scanning, external error tracking adapter, ads-API
-spend sync, NOVA data exchange.
+General ledger, bank reconciliation, ZATCA integration, antivirus scanning, ads-API spend sync, NOVA data exchange.
+(External error tracking: Sentry / webhook adapters were added in Phase 10 and need only configuration.)

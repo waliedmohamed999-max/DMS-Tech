@@ -4,6 +4,8 @@ import { activeDriver, storageFor } from "../ops/storage";
 import { buildInfo } from "./buildinfo";
 import { validateConfig } from "./config";
 import { jobHealth } from "./jobs";
+import path from "node:path";
+import { appEnv, checkLocalStorageMarker, databaseEnvironment } from "./environment";
 
 /**
  * Liveness vs readiness (docs/OBSERVABILITY.md#health):
@@ -88,8 +90,25 @@ export async function checkDemoAccounts(): Promise<Check> {
   return timed("demo_accounts", async () => {
     const n = await prisma.user.count({ where: { email: { endsWith: "@dms.test" }, status: "ACTIVE", deletedAt: null } });
     if (!n) return { status: "ok" };
-    const prod = process.env.NODE_ENV === "production" && process.env.OS_LOCAL_PROD_TEST !== "1";
+    const prod = appEnv() === "production" && process.env.OS_LOCAL_PROD_TEST !== "1";
     return { status: prod ? "fail" : "warn", detail: `${n} active demo accounts` };
+  });
+}
+
+/** Phase 10: the database and the document storage must belong to THIS deployment environment. */
+export async function checkEnvironment(): Promise<Check> {
+  return timed("environment", async () => {
+    const env = appEnv();
+    const dbEnv = await databaseEnvironment();
+    const strict = env === "production" || env === "staging";
+    if (!dbEnv) return { status: strict ? "fail" : "warn", detail: `database has no environment marker (app: ${env}) — run os:bootstrap` };
+    if (dbEnv !== env) return { status: "fail", detail: `ENVIRONMENT_MISMATCH: app=${env} database=${dbEnv}` };
+    if (activeDriver() === "local") {
+      const root = process.env.DOCUMENT_STORAGE_DIR ?? path.join(process.cwd(), ".local", "storage", "documents");
+      const m = checkLocalStorageMarker(root, env);
+      if (!m.ok) return { status: "fail", detail: `ENVIRONMENT_MISMATCH: app=${env} storage=${m.marker}` };
+    }
+    return { status: "ok", detail: env };
   });
 }
 
@@ -108,7 +127,7 @@ let cache: { at: number; value: Awaited<ReturnType<typeof computeReadiness>> } |
 async function computeReadiness(dbClient?: Db) {
   const db = await checkDatabase(dbClient);
   // without a database nothing else can be verified
-  const rest = db.status === "ok" ? await Promise.all([checkMigrations(), checkStorage(), checkDemoAccounts(), checkWorker()]) : [];
+  const rest = db.status === "ok" ? await Promise.all([checkMigrations(), checkEnvironment(), checkStorage(), checkDemoAccounts(), checkWorker()]) : [];
   const checks = [db, checkConfig(), ...rest];
   const ready = checks.every((c) => c.status !== "fail");
   return { ready, status: ready ? "ready" : "not_ready", time: new Date().toISOString(), version: buildInfo().version, checks };

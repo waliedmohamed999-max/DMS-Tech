@@ -18,7 +18,7 @@
 | Integration secrets | `IntegrationSecret` (AES-256-GCM, `INTEGRATION_MASTER_KEY`) or `env:` refs | SECRET | write-only UI, redacted everywhere |
 | Webhook signing secrets, provider tokens | as above | SECRET | as above |
 | Employee compensation | `EmployeeCompensation`, `PayrollEntry`, `PayrollAdjustment` | RESTRICTED | `hr.compensation.view`, payroll permissions; payslips per employee |
-| Bank details (IBAN) | `EmployeeBankAccount.iban` (clear text in DB) | RESTRICTED | `hr.bank.*`, masked in UI / audit, reveal audited (`bank.revealed`) |
+| Bank details (IBAN) | `EmployeeBankAccount.ibanCiphertext` (AES-256-GCM, `HR_FIELD_KEY`; Phase 10, plaintext column cleared) + `ibanLast4` | RESTRICTED | `hr.bank.*`, masked in UI / audit, decrypted only on audited reveal (`bank.revealed`) — see SECURITY.md#sensitive-field-encryption-phase-10 |
 | Employee personal data | `Employee` (personal e-mail / phone, nationality, emergency contact, dates) | RESTRICTED | `hr.employees.sensitive`, department / manager scope |
 | Leave / attendance | `LeaveRequest`, `AttendanceRecord` | RESTRICTED | self, manager chain, HR |
 | Candidates | `Candidate`, `Application`, `Offer` | RESTRICTED | `hr.recruitment.*` |

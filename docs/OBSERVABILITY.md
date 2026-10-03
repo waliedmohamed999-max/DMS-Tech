@@ -1,4 +1,4 @@
-# Observability, jobs & reliability (Phase 9)
+# Observability, jobs & reliability (Phase 9, extended in Phase 10)
 
 Code: `src/server/obs/` (logging, redaction, errors, metrics), `src/server/jobs/lease.ts`, `src/server/system/`
 (jobs, health, events, alerts, overview, worker). UI: `/app/admin/system-health` (`system.health.view`).
@@ -14,7 +14,16 @@ Code: `src/server/obs/` (logging, redaction, errors, metrics), `src/server/jobs/
 - Context comes from an `AsyncLocalStorage` scope opened by every server action (`runAction`), job run (`withLease`),
   automation execution and worker pass. The request id doubles as the correlation id of the events written in it.
 - `LOG_LEVEL` = `debug | info | warn | error | silent` (default `info`; `warn` under tests).
-- Ship stdout to the platform log collector; no file logging in the app.
+- Ship stdout to the platform log collector. Phase 10: with `LOG_DIR` set, lines are **also** appended to
+  `<LOG_DIR>/dms-YYYY-MM-DD.jsonl` (for hosts without a collector; rotate / ship those files).
+- **Correlation (Phase 10):**
+  - Requests: the proxy assigns `x-request-id` to every `/app` request and the response echoes it. The website-lead and
+    webhook routes do the same.
+  - Records written: server actions use it as the correlation id of the DomainEvents they write. Outbox items store
+    the correlation id of the context that enqueued them (`IntegrationOutbox.correlationId`).
+  - Background work: domain-event dispatch (including worker retries) and outbox delivery run under the original
+    correlation id, so a failure line such as `outbox_delivery_failed` traces back to the request.
+  - Verified end to end on staging: request → event → outbox → worker log line (`scripts/staging/correlation-trace.ts`).
 
 ### Redaction
 
@@ -49,9 +58,19 @@ Server actions keep their stable codes (translated in the UI) and now also retur
 `UNKNOWN` (or `DEPENDENCY_UNAVAILABLE`) with a `ref` (request id) shown as "ref xxxxxxxx" — never a stack trace, SQL or
 provider body. The diagnostic goes to the structured log under the same request id.
 
-**Error tracking adapter.** `ErrorReporter` (`setErrorReporter`) — default is a no-op; the system-health page shows
-"Not configured (log only)". Setting `SENTRY_DSN` / `OTEL_EXPORTER_OTLP_ENDPOINT` without installing an adapter is
-reported as such, never as connected.
+**Error tracking adapters (Phase 10).** `configureObservability()` runs at server start (`instrumentation.ts`) and in
+the worker. It installs one of the following:
+
+- `SENTRY_DSN` → `sentryReporter`. It posts to the Sentry envelope API with `fetch` (no SDK dependency), carries the
+  error reference as a tag, and sends redacted messages and stack frames only.
+- else `ERROR_REPORT_WEBHOOK_URL` (+ optional `ERROR_REPORT_WEBHOOK_TOKEN`) → `webhookReporter`, which posts JSON to
+  any collector.
+- else no-op. System health shows "Not configured (log only)" and go-live:check gives a WARN for `error_tracking`.
+
+`SENTRY_DSN` is format-checked at startup. Delivery failures of the reporter itself never break the request.
+`OTEL_EXPORTER_OTLP_ENDPOINT` still has no adapter and is reported as "requested but missing", never as connected.
+These adapters have **not** been tested against a real Sentry project: none was available. Test with a real DSN
+before go-live.
 
 ## Metrics
 

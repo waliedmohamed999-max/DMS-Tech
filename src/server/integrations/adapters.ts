@@ -5,6 +5,7 @@ import { providerDef } from "./providers";
 import { resolveAll } from "./secrets";
 import { httpJson, IntegrationError } from "./http";
 import { S3StorageAdapter } from "../ops/s3";
+import { isProduction } from "../system/environment";
 
 /**
  * Provider adapters. Every health check either calls the provider or reports honestly that it cannot.
@@ -36,7 +37,7 @@ const safeUrl = (raw: string, sandbox: boolean) => {
   }
   const local = ["localhost", "127.0.0.1"].includes(u.hostname);
   if (u.protocol === "https:") return u;
-  if (u.protocol === "http:" && local && (sandbox || process.env.NODE_ENV !== "production")) return u;
+  if (u.protocol === "http:" && local && (sandbox || !isProduction())) return u;
   throw new IntegrationError("CONFIG_INSECURE_URL", "https required", false);
 };
 
@@ -52,7 +53,7 @@ export function waBase(c: Conn) {
   const base = (cfg(c).apiBaseUrl || "https://graph.facebook.com").replace(/\/+$/, "");
   const official = /^https:\/\/graph\.facebook\.com$/.test(base);
   // a non-official endpoint is only a local test double: SANDBOX environment and never in production
-  if (!official && (c.environment !== "SANDBOX" || process.env.NODE_ENV === "production")) throw new IntegrationError("SANDBOX_ENDPOINT_NOT_ALLOWED", "custom API base requires a SANDBOX connection outside production", false);
+  if (!official && (c.environment !== "SANDBOX" || isProduction())) throw new IntegrationError("SANDBOX_ENDPOINT_NOT_ALLOWED", "custom API base requires a SANDBOX connection outside production", false);
   safeUrl(base, c.environment === "SANDBOX");
   return `${base}/${cfg(c).apiVersion || "v21.0"}`;
 }

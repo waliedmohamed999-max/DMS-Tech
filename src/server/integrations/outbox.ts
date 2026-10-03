@@ -9,6 +9,9 @@ import { optText } from "../crm/normalize";
 import { IntegrationError } from "./http";
 import { markConnectionFailed, recordExecution } from "./registry";
 import { sanitizeError } from "./secrets";
+import { appEnv, outboundAllowed } from "../system/environment";
+import { currentObs, runWithObs } from "../obs/context";
+import { log } from "../obs/log";
 
 /**
  * Transactional outbox (docs/INTEGRATIONS.md#outbox).
@@ -26,7 +29,7 @@ export const registerOutboxHandler = (eventType: string, h: Handler) => handlers
 /** Enqueue inside the caller's transaction. Returns the row (existing one if the key was already queued). */
 export async function enqueue(tx: Tx, organizationId: string, item: OutboxItem) {
   await tx.integrationOutbox.createMany({
-    data: [{ organizationId, provider: item.provider, eventType: item.eventType, idempotencyKey: item.idempotencyKey, connectionId: item.connectionId ?? null, entityType: item.entityType ?? null, entityId: item.entityId ?? null, payload: item.payload as Prisma.InputJsonValue, maxAttempts: item.maxAttempts ?? 6, nextAttemptAt: item.notBefore ?? new Date() }],
+    data: [{ organizationId, correlationId: currentObs()?.correlationId ?? currentObs()?.requestId ?? null, provider: item.provider, eventType: item.eventType, idempotencyKey: item.idempotencyKey, connectionId: item.connectionId ?? null, entityType: item.entityType ?? null, entityId: item.entityId ?? null, payload: item.payload as Prisma.InputJsonValue, maxAttempts: item.maxAttempts ?? 6, nextAttemptAt: item.notBefore ?? new Date() }],
     skipDuplicates: true
   });
   return tx.integrationOutbox.findUniqueOrThrow({ where: { organizationId_idempotencyKey: { organizationId, idempotencyKey: item.idempotencyKey } } });
@@ -54,7 +57,8 @@ export async function processOutbox(opts: { organizationId?: string; limit?: num
   const out = { succeeded: 0, retrying: 0, dead: 0 };
   for (const { id } of claimed) {
     const item = await prisma.integrationOutbox.findUniqueOrThrow({ where: { id } });
-    const r = await deliver(item, now);
+    // delivery (and its logs) run under the correlation id captured when the item was enqueued
+    const r = await runWithObs({ module: "integrations", operation: item.eventType, correlationId: item.correlationId ?? undefined, organizationId: item.organizationId }, () => deliver(item, now));
     out[r]++;
   }
   return out;
@@ -67,6 +71,11 @@ async function deliver(item: IntegrationOutbox, now: Date): Promise<"succeeded" 
   let error: IntegrationError | null = null;
   try {
     if (!h) throw new IntegrationError("NO_HANDLER", `no handler for ${item.eventType}`, false);
+    // Phase 10 environment separation: staging / development never deliver through PRODUCTION connections
+    if (item.connectionId) {
+      const conn = await prisma.integrationConnection.findUnique({ where: { id: item.connectionId }, select: { environment: true } });
+      if (conn && !outboundAllowed(conn.environment)) throw new IntegrationError("ENVIRONMENT_BLOCKED", `${appEnv()} may not deliver through a ${conn.environment} connection`, false);
+    }
     result = await h(item);
   } catch (e) {
     error = e instanceof IntegrationError ? e : new IntegrationError("UNEXPECTED_ERROR", (e as Error)?.message ?? String(e), true);
@@ -78,6 +87,7 @@ async function deliver(item: IntegrationOutbox, now: Date): Promise<"succeeded" 
       await tx.integrationOutbox.update({ where: { id: item.id }, data: { status: "SUCCEEDED", completedAt: new Date(), lockedAt: null, lockedBy: null, lastErrorCode: null, lastError: null } });
       return "succeeded" as const;
     }
+    log.warn("outbox_delivery_failed", { outboxId: item.id, provider: item.provider, eventType: item.eventType, code: error.code, attempts: item.attempts });
     if (error.code === "AUTH_FAILED" && item.connectionId) await markConnectionFailed(tx, uow, item.connectionId, error.code, error.message);
     const dead = !error.retryable || item.attempts >= item.maxAttempts;
     await tx.integrationOutbox.update({

@@ -1,0 +1,16 @@
+# Nightly database backup → verification (real pg_restore into a temporary DB on VERIFY_DATABASE_URL) → retention.
+# Any failure exits non-zero (systemd marks the unit failed) AND is recorded in BackupRecord → System Health alert.
+[Unit]
+Description=DMS Business OS database backup + verification
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=dms-os
+Group=dms-os
+WorkingDirectory=/srv/dms-os/current
+EnvironmentFile=/etc/dms-os/app.env
+ExecStart=/usr/bin/npm run db:backup
+ExecStart=/usr/bin/npm run db:verify-backup
+ExecStart=/usr/bin/npm run backup:prune -- --apply
+# local document storage only: add `ExecStartPost=/usr/bin/npm run storage:backup` (S3 relies on bucket versioning / replication)

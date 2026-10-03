@@ -10,6 +10,23 @@
 These numbers are only true once backups run on schedule, verification passes and a restore drill has been
 performed. Record each drill (date, duration, result) in the operations log.
 
+### Measured so far (Phase 10 — staging rehearsal, not production)
+
+| Drill | Date | Result |
+|---|---|---|
+| `pg_dump` backup over TLS (`verify-full`) | 2026-10-03 | 0.69–0.79 MB in ≤ 9 s |
+| `db:verify-backup` | 2026-10-03 | Real `pg_restore` into a temp DB. Migrations, key tables and business invariants checked. 18 s |
+| Full restore drill (`scripts/staging/restore-drill.sh`) | 2026-10-03 | Writes stopped → restored + ready + smoke 12/12 in **29.5 s**. The change made after the backup was absent, as expected |
+| Application rollback drill | 2026-10-03 | Previous build serving in 13.6 s (see DEPLOYMENT-RUNBOOK) |
+| Document storage loss / corruption | 2026-10-03 | Detected by `storage:verify`. Corrupted bytes are never served (409). Restored from `storage:backup` |
+
+What this does **not** establish:
+* **RTO** for production. The data set was under 1 MB on one machine, with an operator ready and scripts prepared. A
+  realistic production RTO includes detection, decisions, provider steps and a larger restore, so keep the 4 h target
+  until a drill on production-sized data and infrastructure measures something better.
+* **RPO.** Nightly `pg_dump` alone means up to 24 h of loss. ≤ 5 min requires the managed provider's PITR,
+  which is not provisioned yet.
+
 ## Database backups
 
 ```

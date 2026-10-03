@@ -96,8 +96,14 @@ describe("compensation & bank", () => {
     const { u, e } = await people();
     await setBankAccount(u.hr, e.emp, { bankName: "Riyad Bank", iban: "SA03 8000 0000 6080 1016 7519", accountName: "Eyad Test", effectiveFrom: "2026-01-01" });
     const [b] = await bankAccounts(u.hr, e.emp);
-    expect(b.iban).toBe("SA03 •••• •••• 7519");
-    expect((await bankAccounts(u.emp, e.emp))[0].iban).toBe("SA03 •••• •••• 7519");
+    // Phase 10: masked from the stored last 4 digits only (no decryption for listing)
+    expect(b.iban).toBe("•••• •••• •••• 7519");
+    expect((await bankAccounts(u.emp, e.emp))[0].iban).toBe("•••• •••• •••• 7519");
+    // stored encrypted: no plaintext column value, ciphertext does not contain the IBAN
+    const row = await prisma.employeeBankAccount.findUniqueOrThrow({ where: { id: b.id } });
+    expect(row.iban).toBeNull();
+    expect(row).toMatchObject({ ibanLast4: "7519", ibanKeyVersion: 1 });
+    expect(JSON.stringify(row)).not.toContain("SA0380000000608010167519");
     await expect(bankAccounts(u.mgr, e.emp)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(bankAccounts(u.ceo, e.emp)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(revealBankAccount(u.ceo, b.id)).rejects.toMatchObject({ code: "FORBIDDEN" });

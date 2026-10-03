@@ -25,7 +25,9 @@ export async function runAction<T>(fn: (ctx: Ctx) => Promise<T>, opts: { revalid
   if (session.user.mustChangePassword && !opts.allowMustChange) return { ok: false, error: "FORBIDDEN" };
   const h = await headers();
   const ctx = toCtx(session, { ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null, userAgent: h.get("user-agent") });
-  return runWithObs({ actorId: ctx.userId, organizationId: ctx.organizationId, module: "action" }, () => execute(ctx, fn, opts));
+  const rid = h.get("x-request-id");
+  const requestId = rid && /^[A-Za-z0-9-]{8,64}$/.test(rid) ? rid : undefined;
+  return runWithObs({ requestId, correlationId: requestId, actorId: ctx.userId, organizationId: ctx.organizationId, module: "action" }, () => execute(ctx, fn, opts));
 }
 
 async function execute<T>(ctx: Ctx, fn: (ctx: Ctx) => Promise<T>, opts: { revalidate?: boolean }): Promise<ActionResult<T>> {

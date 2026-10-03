@@ -37,9 +37,14 @@ async function main() {
   gates.push({ gate: "schema_drift", ok: mode === "preflight" ? !drift || pending : !drift, detail: drift ? (pending ? "differences = pending migrations" : "DATABASE DIFFERS FROM schema.prisma (manual change?)") : "none" });
 
   if (mode === "preflight") {
-    const last = await prisma.backupRecord.findFirst({ where: { kind: "database", status: { in: ["COMPLETED", "VERIFIED"] } }, orderBy: { startedAt: "desc" } }).catch(() => null);
-    const fresh = last && Date.now() - last.startedAt.getTime() < 24 * 3600_000;
-    gates.push({ gate: "recent_backup", ok: Boolean(fresh) || process.env.NODE_ENV !== "production", warnOnly: process.env.NODE_ENV !== "production", detail: last ? `${last.status} ${last.startedAt.toISOString()}` : "none — run npm run db:backup first" });
+    // first deployment: an empty database has nothing to back up (detected, not a manual exception)
+    const tables = await prisma.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM pg_tables WHERE schemaname = 'public'`.catch(() => [{ n: -1 }]);
+    if (tables[0]?.n === 0) gates.push({ gate: "recent_backup", ok: true, detail: "empty database — first deployment, nothing to back up" });
+    else {
+      const last = await prisma.backupRecord.findFirst({ where: { kind: "database", status: { in: ["COMPLETED", "VERIFIED"] } }, orderBy: { startedAt: "desc" } }).catch(() => null);
+      const fresh = last && Date.now() - last.startedAt.getTime() < 24 * 3600_000;
+      gates.push({ gate: "recent_backup", ok: Boolean(fresh) || process.env.NODE_ENV !== "production", warnOnly: process.env.NODE_ENV !== "production", detail: last ? `${last.status} ${last.startedAt.toISOString()}` : "none — run npm run db:backup first" });
+    }
   } else {
     const base = (process.env.BASE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/+$/, "");
     if (!base) gates.push({ gate: "endpoints", ok: false, detail: "set BASE_URL" });

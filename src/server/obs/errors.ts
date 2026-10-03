@@ -66,7 +66,7 @@ export const errorReporterStatus = () => ({
   name: reporter.name,
   configured: reporter.configured,
   // SENTRY_DSN / OTEL endpoint set without an installed adapter is reported honestly, never as "connected"
-  requestedButMissing: !reporter.configured && Boolean(process.env.SENTRY_DSN || process.env.OTEL_EXPORTER_OTLP_ENDPOINT)
+  requestedButMissing: !reporter.configured && Boolean(process.env.OTEL_EXPORTER_OTLP_ENDPOINT)
 });
 
 /** Log + report an unexpected failure; returns the reference shown to the user. */

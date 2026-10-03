@@ -7,6 +7,17 @@ import { optText, reqText } from "../crm/normalize";
 import { addDays, ymd } from "../commercial/dates";
 import { Decimal } from "@/lib/commercial/calc";
 import { employeeAccess, maskIban, may } from "./access";
+import { ibanAad, open as openField, seal } from "../security/fieldcrypto";
+
+type BankRow = { employeeId: string; iban: string | null; ibanCiphertext: string | null; ibanIv: string | null; ibanTag: string | null; ibanKeyVersion: number | null; ibanLast4: string | null };
+/** Masked IBAN without decrypting (legacy plaintext rows are masked from the plaintext until migrated). */
+export const maskedOf = (r: BankRow) => (r.ibanLast4 ? `•••• •••• •••• ${r.ibanLast4}` : r.iban ? maskIban(r.iban) : "••••");
+/** Full IBAN — callers must have authorised the reader first. */
+export function ibanOf(r: BankRow): string {
+  if (r.ibanCiphertext && r.ibanIv && r.ibanTag && r.ibanKeyVersion) return openField({ ciphertext: r.ibanCiphertext, iv: r.ibanIv, tag: r.ibanTag, keyVersion: r.ibanKeyVersion }, ibanAad(r.employeeId));
+  if (r.iban) return r.iban; // legacy row not yet migrated (go-live:check BLOCKs while any remain)
+  throw new Error("IBAN missing");
+}
 
 /**
  * Compensation & bank details — the most sensitive HR data (docs/HR.md).
@@ -88,9 +99,13 @@ export async function setBankAccount(ctx: Ctx, employeeId: string, raw: unknown)
     if (later) throw invalid("EFFECTIVE_DATE_NOT_AFTER_CURRENT");
     const open = await tx.employeeBankAccount.findFirst({ where: { employeeId, effectiveTo: null } });
     if (open) await tx.employeeBankAccount.update({ where: { id: open.id }, data: { effectiveTo: addDays(input.effectiveFrom, -1) } });
-    const b = await tx.employeeBankAccount.create({ data: { organizationId: ctx.organizationId, employeeId, ...input, createdById: ctx.userId || null } });
+    // Phase 10: the IBAN is stored encrypted (HR_FIELD_KEY); only the last 4 digits stay readable for masking
+    const sealed = seal(input.iban, ibanAad(employeeId));
+    const b = await tx.employeeBankAccount.create({
+      data: { organizationId: ctx.organizationId, employeeId, bankName: input.bankName, accountName: input.accountName, effectiveFrom: input.effectiveFrom, iban: null, ibanCiphertext: sealed.ciphertext, ibanIv: sealed.iv, ibanTag: sealed.tag, ibanKeyVersion: sealed.keyVersion, ibanLast4: input.iban.slice(-4), createdById: ctx.userId || null }
+    });
     // the audit log stores masked IBANs only
-    await uow.audit({ action: "bank.changed", entityType: "Employee", entityId: employeeId, before: open ? { bank: open.bankName, iban: maskIban(open.iban) } : null, after: { bank: b.bankName, iban: maskIban(b.iban), from: ymd(b.effectiveFrom) } });
+    await uow.audit({ action: "bank.changed", entityType: "Employee", entityId: employeeId, before: open ? { bank: open.bankName, iban: maskedOf(open) } : null, after: { bank: b.bankName, iban: maskedOf(b), from: ymd(b.effectiveFrom) } });
     return { id: b.id };
   });
 }
@@ -100,7 +115,8 @@ export async function bankAccounts(ctx: Ctx, employeeId: string) {
   const { rel } = await employeeAccess(prisma, ctx, employeeId);
   if (!may.bank(ctx, rel)) throw forbidden("hr.bank.view");
   const rows = await prisma.employeeBankAccount.findMany({ where: { employeeId }, orderBy: { effectiveFrom: "desc" } });
-  return rows.map((r) => ({ id: r.id, bankName: r.bankName, accountName: r.accountName, iban: maskIban(r.iban), effectiveFrom: r.effectiveFrom, effectiveTo: r.effectiveTo }));
+  // never decrypted for listing — masks come from the stored last 4 digits
+  return rows.map((r) => ({ id: r.id, bankName: r.bankName, accountName: r.accountName, iban: maskedOf(r), effectiveFrom: r.effectiveFrom, effectiveTo: r.effectiveTo }));
 }
 
 /** Full IBAN for payment preparation — hr.bank.manage only, every reveal audited. */
@@ -110,7 +126,9 @@ export async function revealBankAccount(ctx: Ctx, bankAccountId: string) {
   if (!b) throw invalid("UNKNOWN_BANK_ACCOUNT");
   const { rel } = await employeeAccess(prisma, ctx, b.employeeId);
   if (!rel.hr) throw forbidden("hr.bank.manage (HR scope)");
-  await prisma.auditLog.create({ data: { organizationId: ctx.organizationId, actorId: ctx.userId, action: "bank.revealed", entityType: "Employee", entityId: b.employeeId, after: { bankAccountId: b.id, iban: maskIban(b.iban) } } });
-  return { iban: b.iban };
+  // decrypted only AFTER the permission + HR-scope checks above
+  const iban = ibanOf(b);
+  await prisma.auditLog.create({ data: { organizationId: ctx.organizationId, actorId: ctx.userId, action: "bank.revealed", entityType: "Employee", entityId: b.employeeId, after: { bankAccountId: b.id, iban: maskedOf(b) } } });
+  return { iban };
 }
 

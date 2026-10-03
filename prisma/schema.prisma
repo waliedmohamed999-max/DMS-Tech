@@ -2242,7 +2242,14 @@ model EmployeeBankAccount {
   organizationId String
   employeeId     String
   bankName       String
-  iban           String
+  /// DEPRECATED (Phase 10): plaintext IBAN — null once encrypted (npm run hr:encrypt-iban). Never written by new code.
+  iban           String?
+  /// Phase 10: AES-256-GCM with HR_FIELD_KEY (separate from the integration key); last 4 digits kept for masking
+  ibanCiphertext String?
+  ibanIv         String?
+  ibanTag        String?
+  ibanKeyVersion Int?
+  ibanLast4      String?
   accountName    String
   effectiveFrom  DateTime  @db.Date
   effectiveTo    DateTime? @db.Date
@@ -3815,6 +3822,8 @@ model IntegrationOutbox {
   dismissedById  String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+  /// Phase 10: request / causal-chain correlation (trace an HTTP request → event → automation → outbox)
+  correlationId  String?
 
   @@unique([organizationId, idempotencyKey])
   @@index([status, nextAttemptAt])
@@ -4213,4 +4222,12 @@ model BackupRecord {
   verifyDetail Json?
 
   @@index([kind, startedAt])
+}
+
+/// Phase 10: which deployment environment this database belongs to (written once by bootstrap). The app refuses to be
+/// ready when APP_ENV differs — a staging app can never run against the production database (or the reverse).
+model DeploymentMarker {
+  id          Int      @id @default(1)
+  environment String
+  createdAt   DateTime @default(now())
 }

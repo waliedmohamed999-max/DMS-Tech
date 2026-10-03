@@ -379,6 +379,8 @@ export function NewPaymentButton({ clients, initialClient, initialInvoice, autoO
         + {t("a.recordPayment")}
       </button>
       <Modal open={open} onClose={close} title={t("a.recordPayment")} wide>
+        {/* Phase 10 wording review: recording only — the OS never moves money */}
+        <p className="mb-3 rounded-md border border-os-line px-3 py-2 text-xs text-os-muted">{t("recordOnlyPayment")}</p>
         <PaymentForm
           clients={clients}
           initialClient={initialClient}
@@ -568,6 +570,7 @@ export function ExpenseActions({ id, status, can, today = localToday() }: { id: 
       {error && !pay && <span className="text-[11px] text-danger">{error}</span>}
       <Modal open={pay} onClose={() => setPay(false)} title={t("a.markPaid")}>
         <div className="grid gap-3 text-sm">
+          <p className="rounded-md border border-os-line px-3 py-2 text-xs text-os-muted">{t("recordOnlyExpense")}</p>
           <Field label={t("f.paidDate")}>
             <input type="date" className="os-input" max={today} value={f.paidDate} onChange={(e) => setF({ ...f, paidDate: e.target.value })} />
           </Field>

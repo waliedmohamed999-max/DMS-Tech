@@ -4,7 +4,7 @@ import { prisma, type Tx } from "../db";
 import type { Ctx } from "../context";
 import type { Permission } from "../rbac/permissions";
 import { redact } from "../obs/redact";
-import { currentObs } from "../obs/context";
+import { currentObs, runWithObs } from "../obs/context";
 import { log } from "../obs/log";
 import { metrics, METRIC } from "../obs/metrics";
 
@@ -130,8 +130,13 @@ export async function unitOfWork<T>(ctx: Ctx, fn: (tx: Tx, uow: Uow) => Promise<
 
 const handlersFor = (type: string) => [...(subscribers.get(type) ?? []), ...(subscribers.get("*") ?? [])];
 
-/** Run every handler not yet done; record attempts, done keys and the outcome. Never throws. */
-async function dispatchOne(e: StoredEvent, done: string[], previousAttempts = 0) {
+/** Run every handler not yet done; record attempts, done keys and the outcome. Never throws.
+ *  Runs under the event's correlation id so worker retries / failure logs trace back to the originating request. */
+function dispatchOne(e: StoredEvent, done: string[], previousAttempts = 0) {
+  return runWithObs({ correlationId: e.correlationId ?? undefined }, () => dispatchHandlers(e, done, previousAttempts));
+}
+
+async function dispatchHandlers(e: StoredEvent, done: string[], previousAttempts: number) {
   const ok = new Set(done);
   const errors: string[] = [];
   for (const h of handlersFor(e.type)) {

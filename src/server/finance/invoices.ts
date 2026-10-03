@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { assertInvoiceIssuingAllowed } from "./zatca";
 import { z } from "zod";
 import type { InvoiceStatus, Prisma } from "@/generated/prisma/client";
 import { prisma, type Tx } from "../db";
@@ -271,6 +272,8 @@ function hashOf(inv: { number: string | null; clientId: string; currency: string
 
 export async function issueInvoice(ctx: Ctx, id: string) {
   requirePermission(ctx, "finance.invoices.issue");
+  // Phase 10: production issuing waits for an explicit ZATCA decision (docs/ZATCA-DECISION.md)
+  assertInvoiceIssuingAllowed();
   return unitOfWork(ctx, async (tx, uow) => {
     const inv = await lockInvoice(tx, ctx, id);
     if (inv.status !== "DRAFT") throw conflict(`INVOICE_NOT_DRAFT:${inv.status}`);

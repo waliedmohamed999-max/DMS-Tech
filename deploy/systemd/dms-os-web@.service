@@ -1,0 +1,26 @@
+# DMS Business OS — web instance (Phase 10). Instance = port, e.g. `systemctl enable --now dms-os-web@3100 dms-os-web@3101`.
+# /etc/dms-os/<env>.env holds the environment (see deploy/env/*.env.example) and is readable by root + dms-os only.
+[Unit]
+Description=DMS Business OS web (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dms-os
+Group=dms-os
+WorkingDirectory=/srv/dms-os/current
+EnvironmentFile=/etc/dms-os/app.env
+ExecStart=/usr/bin/npx next start -p %i
+Restart=always
+RestartSec=5
+# SIGTERM → Next.js drains; hard stop after 30 s
+KillSignal=SIGTERM
+TimeoutStopSec=30
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/dms-os /var/log/dms-os
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

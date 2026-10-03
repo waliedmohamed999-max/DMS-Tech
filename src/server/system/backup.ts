@@ -56,7 +56,7 @@ export function backupDir(env: Record<string, string | undefined> = process.env)
   const dir = path.resolve(env.BACKUP_DIR ?? "backups");
   const cwd = process.cwd();
   for (const forbidden of ["public", "src", ".next", "prisma"]) if (dir === path.join(cwd, forbidden) || dir.startsWith(path.join(cwd, forbidden) + path.sep)) throw new Error(`BACKUP_DIR_UNSAFE: ${forbidden}/ is not a backup location`);
-  if (env.NODE_ENV === "production" && !env.BACKUP_DIR) throw new Error("BACKUP_DIR_REQUIRED: set BACKUP_DIR to a dedicated, access-controlled location in production");
+  if ((env.NODE_ENV === "production" || env.APP_ENV === "staging" || env.APP_ENV === "production") && !env.BACKUP_DIR) throw new Error("BACKUP_DIR_REQUIRED: set BACKUP_DIR to a dedicated, access-controlled location in production");
   mkdirSync(dir, { recursive: true });
   return dir;
 }
@@ -86,7 +86,7 @@ export async function createBackup(url: string, opts: { dir?: string; engine?: "
   const dir = opts.dir ?? backupDir();
   const stamp = (opts.now ?? new Date()).toISOString().replace(/[:.]/g, "-");
   const pgDump = findTool("pg_dump");
-  const engine = opts.engine ?? (process.env.BACKUP_ENGINE as "pg_dump" | "logical" | undefined) ?? (pgDump ? "pg_dump" : process.env.NODE_ENV === "production" ? "pg_dump" : "logical");
+  const engine = opts.engine ?? (process.env.BACKUP_ENGINE as "pg_dump" | "logical" | undefined) ?? (pgDump ? "pg_dump" : process.env.NODE_ENV === "production" || process.env.APP_ENV === "staging" || process.env.APP_ENV === "production" ? "pg_dump" : "logical");
   const c = await client(url);
   let meta: Awaited<ReturnType<typeof snapshotMeta>>;
   let file: string;
@@ -278,7 +278,7 @@ export async function verifyBackup(file: string, opts: { serverUrl: string; appD
       restored = await logicalLoad(file, tempUrl);
     } else {
       const t = parseDbUrl(tempUrl);
-      await run(findTool("pg_restore")!, ["--no-owner", "--no-acl", "-h", t.host, "-p", t.port, "-U", t.user, "-d", tempDb, file], t.password);
+      await run(findTool("pg_restore")!, ["--no-owner", "--no-acl", "--no-comments", "-h", t.host, "-p", t.port, "-U", t.user, "-d", tempDb, file], t.password);
     }
     steps.push({ step: "restore", ok: true, detail: logical ? `${Object.values(restored).reduce((x, y) => x + y, 0)} rows` : "pg_restore" });
     const c = await client(tempUrl);
@@ -296,7 +296,23 @@ export async function verifyBackup(file: string, opts: { serverUrl: string; appD
       steps.push({ step: "row_counts", ok: true, detail: `${Object.keys(meta.rowCounts ?? {}).length} key tables match` });
       const orgs = Number((await c.query(`SELECT count(*)::int AS n FROM "Organization"`)).rows[0].n);
       if (!orgs && (meta.rowCounts?.Organization ?? 0) > 0) return fail("integrity", "no organization restored");
-      steps.push({ step: "integrity", ok: true });
+      // critical business invariants of the RESTORED data (a structurally valid dump of inconsistent data is not a good backup)
+      const inv = async (sql: string) => {
+        try {
+          return Number((await c.query(sql)).rows[0].n);
+        } catch {
+          return 0; // table absent in an older backup
+        }
+      };
+      const broken = {
+        paidInvoicesWithBalance: await inv(`SELECT count(*)::int AS n FROM "Invoice" WHERE "status" = 'PAID' AND "balanceDue" <> 0`),
+        paymentsAllocationMismatch: await inv(`SELECT count(*)::int AS n FROM "Payment" p WHERE p."reversedAt" IS NULL AND p."amount" <> COALESCE((SELECT sum(a."amount") FROM "PaymentAllocation" a WHERE a."paymentId" = p."id"), 0)`),
+        invoiceTotalsMismatch: await inv(`SELECT count(*)::int AS n FROM "Invoice" WHERE "total" <> "subtotal" - "discountTotal" + "taxTotal" OR "balanceDue" <> "total" - "paidAmount"`),
+        bankRowsWithoutIban: await inv(`SELECT count(*)::int AS n FROM "EmployeeBankAccount" WHERE "iban" IS NULL AND "ibanCiphertext" IS NULL`)
+      };
+      const bad = Object.entries(broken).filter(([, n]) => n > 0);
+      if (bad.length) return fail("integrity", bad.map(([k, n]) => `${k}=${n}`).join(", "));
+      steps.push({ step: "integrity", ok: true, detail: "organization present; invoices / payments / bank invariants hold" });
     } finally {
       await c.end();
     }
@@ -328,6 +344,16 @@ export async function restoreBackup(file: string, opts: { targetUrl: string; app
   }
   const tool = findTool("pg_restore");
   if (!tool) throw new Error("PG_RESTORE_NOT_FOUND");
-  await run(tool, ["--no-owner", "--no-acl", "-h", t.host, "-p", t.port, "-U", t.user, "-d", t.database, file], t.password);
-  return {};
+  // --no-comments: COMMENT ON EXTENSION needs the extension owner; the application role restores everything else
+  await run(tool, ["--no-owner", "--no-acl", "--no-comments", "-h", t.host, "-p", t.port, "-U", t.user, "-d", t.database, file], t.password);
+  // report what was actually restored (exact row counts per public table)
+  const r = await client(opts.targetUrl);
+  try {
+    const counts: Record<string, number> = {};
+    for (const { tablename } of (await r.query(`SELECT tablename FROM pg_tables WHERE schemaname = 'public'`)).rows as { tablename: string }[])
+      counts[tablename] = Number((await r.query(`SELECT count(*)::bigint AS n FROM "public"."${tablename.replace(/"/g, '""')}"`)).rows[0].n);
+    return counts;
+  } finally {
+    await r.end();
+  }
 }

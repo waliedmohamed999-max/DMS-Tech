@@ -254,7 +254,7 @@ describe("jobs, leases, health", () => {
     expect(cfg.ok).toBe(false);
     expect(cfg.issues.filter((i) => i.level === "critical").map((i) => `${i.key}:${i.code}`)).toEqual(expect.arrayContaining(["NEXT_PUBLIC_SITE_URL:MISSING", "ALLOW_DEMO_SEED:FORBIDDEN_IN_PRODUCTION", "INTEGRATION_MASTER_KEY:INVALID_LENGTH", "S3_BUCKET:MISSING"]));
     expect(JSON.stringify(cfg)).not.toContain("postgresql://a/b");
-    expect(validateConfig({ NODE_ENV: "production", DATABASE_URL: "postgresql://a/b", NEXT_PUBLIC_SITE_URL: "https://os.example.com", DOCUMENT_STORAGE_DIR: "/srv/docs" }).ok).toBe(true);
+    expect(validateConfig({ NODE_ENV: "production", APP_ENV: "production", DATABASE_URL: "postgresql://a/b", NEXT_PUBLIC_SITE_URL: "https://os.example.com", DOCUMENT_STORAGE_DIR: "/srv/docs", HR_FIELD_KEY: Buffer.alloc(32, 2).toString("base64") }).ok).toBe(true);
     // a broken optional integration (WhatsApp in ERROR, NOVA misconfigured) never makes the app unready
     process.env.DOCUMENT_STORAGE_DIR = storageDir;
     const prevNova = process.env.NOVA_URL;
@@ -272,7 +272,7 @@ describe("jobs, leases, health", () => {
 describe("logging & errors", () => {
   it("17–19. logs redact secrets, payroll / bank data and document contents; error responses hide internals", () => {
     const lines: string[] = [];
-    setLogSink((l) => lines.push(l));
+    setLogSink((l) => lines.push(l), true);
     try {
       runWithObs({ requestId: "req-123", actorId: "u1", organizationId: "o1", module: "test", operation: "op" }, () => {
         log.info("probe", {
@@ -297,7 +297,7 @@ describe("logging & errors", () => {
     const sqlish = Object.assign(new Error('relation "User" does not exist — SELECT passwordHash FROM "User"'), { code: "42P01" });
     expect(classifyError(sqlish)).toMatchObject({ category: "INTERNAL_ERROR", expected: false });
     const silent: string[] = [];
-    setLogSink((l) => silent.push(l));
+    setLogSink((l) => silent.push(l), true);
     const body = runWithObs({ requestId: "req-err" }, () => apiErrorBody(sqlish, "test"));
     setLogSink(null);
     expect(body).toEqual({ status: 500, body: { error: "INTERNAL_ERROR", code: "INTERNAL_ERROR", ref: "req-err" } });
@@ -366,7 +366,9 @@ describe("production protection & security", () => {
     expect(() => assertProductionAccountSafe("owner@company.sa", DEMO_PASSWORD, prod)).toThrow(/demo password/);
     expect(() => assertProductionAccountSafe("admin@dms.test", DEMO_PASSWORD, { NODE_ENV: "development" })).not.toThrow();
     const prev = process.env.NODE_ENV;
+    const prevApp = process.env.APP_ENV;
     (process.env as Record<string, string>).NODE_ENV = "production";
+    process.env.APP_ENV = "production"; // Phase 10: deployment environment is APP_ENV (vitest otherwise resolves to "test")
     try {
       await expect(ensureSuperAdmin(orgId, { email: "admin@dms.test", name: "Demo", password: "Strong-Passw0rd!x" })).rejects.toThrow(/demo e-mail/);
       const real = await ensureSuperAdmin(orgId, { email: "it@company.sa", name: "IT", password: "Very-Strong-Passw0rd!2026" });
@@ -377,6 +379,8 @@ describe("production protection & security", () => {
       expect((await checkDemoAccounts()).status).toBe("fail");
     } finally {
       (process.env as Record<string, string>).NODE_ENV = prev ?? "test";
+      if (prevApp === undefined) delete process.env.APP_ENV;
+      else process.env.APP_ENV = prevApp;
     }
   }, 120_000);
 

@@ -1,0 +1,9 @@
+[Unit]
+Description=DMS Business OS document storage verification
+
+[Service]
+Type=oneshot
+User=dms-os
+WorkingDirectory=/srv/dms-os/current
+EnvironmentFile=/etc/dms-os/app.env
+ExecStart=/usr/bin/npm run storage:verify

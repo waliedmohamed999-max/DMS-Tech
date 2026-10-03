@@ -26,9 +26,27 @@ export function validateConfig(env: Env = process.env): ConfigReport {
   if (!env.DATABASE_URL) critical("DATABASE_URL", "MISSING");
   else if (!/^postgres(ql)?:\/\//.test(env.DATABASE_URL)) critical("DATABASE_URL", "NOT_POSTGRES");
 
+  // Phase 10: a production build must say which deployment it is
+  const appEnvRaw = env.APP_ENV?.trim().toLowerCase();
+  if (appEnvRaw && !["development", "test", "staging", "production"].includes(appEnvRaw)) critical("APP_ENV", "INVALID");
+  if (production && !appEnvRaw) prodOnly("APP_ENV", "REQUIRED_FOR_PRODUCTION_BUILD");
+
   const site = env.NEXT_PUBLIC_SITE_URL;
   if (!site) prodOnly("NEXT_PUBLIC_SITE_URL", "MISSING");
   else if (!/^https:\/\//.test(site)) prodOnly("NEXT_PUBLIC_SITE_URL", "NOT_HTTPS");
+  else {
+    let host = "";
+    try {
+      host = new URL(site).hostname;
+    } catch {
+      critical("NEXT_PUBLIC_SITE_URL", "INVALID_URL");
+    }
+    // no localhost / private fallback for a real deployment
+    if (host && /^(localhost|127\.|0\.0\.0\.0|\[?::1\]?$)/.test(host)) prodOnly("NEXT_PUBLIC_SITE_URL", "LOCALHOST_NOT_ALLOWED");
+  }
+  if (production && !env.HR_FIELD_KEY) prodOnly("HR_FIELD_KEY", "MISSING");
+  else if (env.HR_FIELD_KEY && Buffer.from(env.HR_FIELD_KEY, "base64").length !== 32) critical("HR_FIELD_KEY", "INVALID_LENGTH");
+  if (env.HR_FIELD_KEY && env.INTEGRATION_MASTER_KEY && env.HR_FIELD_KEY.trim() === env.INTEGRATION_MASTER_KEY.trim()) critical("HR_FIELD_KEY", "MUST_DIFFER_FROM_INTEGRATION_MASTER_KEY");
 
   const storage = (env.DOCUMENT_STORAGE ?? "local").trim().toLowerCase();
   if (!["local", "s3"].includes(storage)) critical("DOCUMENT_STORAGE", "UNSUPPORTED_DRIVER");
@@ -47,9 +65,10 @@ export function validateConfig(env: Env = process.env): ConfigReport {
   } else warn("INTEGRATION_MASTER_KEY", "NOT_SET_SECRETS_ENV_ONLY");
 
   if (env.NOVA_URL && !/^https?:\/\//.test(env.NOVA_URL)) warn("NOVA_URL", "INVALID_URL");
+  if (env.ALLOW_NON_PRODUCTION_OUTBOUND === "1") warn("ALLOW_NON_PRODUCTION_OUTBOUND", "NON_PRODUCTION_MAY_USE_PRODUCTION_CONNECTIONS");
   if (env.LOG_LEVEL && !["debug", "info", "warn", "error", "silent"].includes(env.LOG_LEVEL)) warn("LOG_LEVEL", "INVALID");
   if (env.REQUIRE_SCAN_BEFORE_DOWNLOAD === "true" && !env.DOCUMENT_SCANNER) warn("REQUIRE_SCAN_BEFORE_DOWNLOAD", "NO_SCANNER_ALL_DOWNLOADS_BLOCKED");
-  if (env.SENTRY_DSN && !env.ERROR_REPORTER) warn("SENTRY_DSN", "NO_ADAPTER_INSTALLED");
+  if (env.SENTRY_DSN && !/^https:\/\/[^@\s]+@[^/\s]+\/\S+$/.test(env.SENTRY_DSN)) critical("SENTRY_DSN", "INVALID");
 
   if (production) {
     if (env.ALLOW_DEMO_SEED) prodOnly("ALLOW_DEMO_SEED", "FORBIDDEN_IN_PRODUCTION");
@@ -68,9 +87,11 @@ export function assertStartupConfig(env: Env = process.env) {
 }
 
 /** Node runtime only (instrumentation): log and exit(1) on a critical production configuration error. */
-export function refuseInvalidStartup() {
+export async function refuseInvalidStartup() {
   try {
     assertStartupConfig();
+    const { configureObservability } = await import("../obs/reporters");
+    configureObservability();
   } catch (e) {
     console.error(JSON.stringify({ ts: new Date().toISOString(), level: "error", msg: "startup_refused", error: (e as Error).message }));
     process.exit(1);

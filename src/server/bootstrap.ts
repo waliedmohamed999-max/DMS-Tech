@@ -15,6 +15,7 @@ import { ensureAssetCategories } from "./ops/assets";
 import { ensureSlaPolicies } from "./ops/support";
 import { ensureKnowledgeCategories } from "./ops/knowledge";
 import { ensureRegistry } from "./integrations/registry";
+import { appEnv, ensureDeploymentMarker } from "./system/environment";
 
 /**
  * Idempotent organization bootstrap: creates the organization and its system roles,
@@ -59,6 +60,8 @@ export async function ensureOrganization(input: { slug: string; name: string; na
   await ensureSlaPolicies(org.id);
   await ensureKnowledgeCategories(org.id);
   await ensureRegistry(org.id);
+  // Phase 10: the database remembers which environment it belongs to (immutable)
+  await ensureDeploymentMarker();
   return org;
 }
 
@@ -68,7 +71,8 @@ export const DEMO_PASSWORD = "DmsDemo2026!";
 
 /** Phase 9: production accounts may never use the shared demo domain / password. */
 export function assertProductionAccountSafe(email: string, password: string | null, env: Record<string, string | undefined> = process.env) {
-  if (env.NODE_ENV !== "production") return;
+  // production safety applies to the production deployment (and to any production build without an explicit APP_ENV)
+  if (appEnv(env) !== "production") return;
   if (email.trim().toLowerCase().endsWith(DEMO_EMAIL_DOMAIN)) throw new Error("Refused: demo e-mail domain in production");
   if (password !== null && password === DEMO_PASSWORD) throw new Error("Refused: shared demo password in production");
 }
@@ -91,7 +95,7 @@ export async function ensureSuperAdmin(orgId: string, input: { email: string; na
       email,
       name: input.name,
       passwordHash: await hashPassword(input.password),
-      mustChangePassword: input.temporary ?? process.env.NODE_ENV === "production",
+      mustChangePassword: input.temporary ?? (appEnv() === "production" || appEnv() === "staging"),
       roles: { create: { roleId: role.id } }
     }
   });

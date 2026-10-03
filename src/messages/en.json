@@ -2589,8 +2589,11 @@
         "PRICE_INVALID": "Check the unit price.",
         "DISCOUNT_INVALID": "Check the discount.",
         "DISCOUNT_PERCENT_OVER_100": "A discount cannot exceed 100%.",
-        "DISCOUNT_EXCEEDS_LINE": "The discount exceeds the line amount."
-      }
+        "DISCOUNT_EXCEEDS_LINE": "The discount exceeds the line amount.",
+        "ZATCA_NOT_READY": "Invoices cannot be issued in production until the ZATCA e-invoicing decision is recorded (see the go-live checklist)."
+      },
+      "recordOnlyPayment": "Records a payment that was received outside the system (bank transfer, cash, card terminal). The Business OS never moves money and has no bank connection.",
+      "recordOnlyExpense": "Records that this expense was paid outside the system. No money is transferred from here."
     },
     "hr": {
       "title": "People",
@@ -3194,7 +3197,10 @@
         "RATING_AND_SUMMARY_REQUIRED": "Completing a review needs a rating and summary.",
         "REVIEW_COMPLETED": "Completed reviews are final.",
         "REVIEW_INVALID_TRANSITION": "Not allowed in the current review status.",
-        "REVIEW_NOT_OF_EMPLOYEE": "Review does not belong to this employee."
+        "REVIEW_NOT_OF_EMPLOYEE": "Review does not belong to this employee.",
+        "FIELD_KEY_NOT_CONFIGURED": "Bank details cannot be saved: the field encryption key is not configured.",
+        "FIELD_DECRYPTION_FAILED": "The bank details could not be decrypted (wrong key or altered data).",
+        "FIELD_KEY_UNAVAILABLE": "The key for this bank record version is not available."
       }
     },
     "ops": {
@@ -4489,7 +4495,8 @@
           "migrations": "Migrations",
           "document_storage": "Document storage",
           "demo_accounts": "Demo accounts",
-          "worker": "Background worker"
+          "worker": "Background worker",
+          "environment": "Environment (database / storage)"
         },
         "cs": {
           "ok": "OK",
@@ -4576,7 +4583,8 @@
         "RATE_LIMITED": "Too many attempts — wait a few minutes.",
         "DEPENDENCY_UNAVAILABLE": "A required service is unavailable — try again shortly.",
         "SCAN_REQUIRED": "This file has not passed a virus scan and cannot be downloaded (company policy).",
-        "RULE_VERSION_IMMUTABLE": "Rule versions cannot be changed."
+        "RULE_VERSION_IMMUTABLE": "Rule versions cannot be changed.",
+        "ENVIRONMENT_BLOCKED": "This environment may not deliver through a production connection."
       }
     }
   }
