@@ -1,0 +1,12 @@
+# never in an image: secrets, local data, build output, VCS
+.env
+.env.*
+.local
+.next
+node_modules
+src/generated
+.git
+backups
+*.log
+tsconfig.tsbuildinfo
+_prototype

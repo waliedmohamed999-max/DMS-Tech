@@ -96,3 +96,13 @@ safe (shared leases).
   * ZATCA guards are gone: an uncleared standard invoice can be marked sent, a cleared one voided.
 
   Do not roll back while ZATCA is live in production or while the scanner policy is relied on. Fix forward instead.
+
+## Phase 12 notes (hosted foundation)
+
+* Hosted target, roles, schedule and the provisioning commands: [PRODUCTION-ARCHITECTURE.md](PRODUCTION-ARCHITECTURE.md).
+* Container image: `Dockerfile` (web = default CMD, worker = `node node_modules/tsx/dist/cli.mjs scripts/worker.ts --loop`).
+* `package-lock.json` was regenerated on Linux (8 missing optional wasm entries) — `npm ci` failed on every Linux host
+  before. Regenerate the lock on Linux (or in the container) after dependency changes made on Windows.
+* Run web / worker with the **runtime** role (`scripts/hosted/runtime-role.sql`), migrations with the owner role.
+* Verify a managed database with `npx tsx scripts/hosted/verify-db.ts`; storage / scanner with `tests/live-s3.test.ts`
+  and `tests/live-clamav.test.ts` (skipped unless their LIVE_* variables are set).
