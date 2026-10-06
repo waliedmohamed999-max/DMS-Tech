@@ -84,6 +84,7 @@ jobs:
           npm run cpanel:package
           cp docs/CPANEL_DEPLOYMENT.md dist/cpanel/
           ( cd dist/cpanel && sha256sum -c SHA256SUMS )
+          node -e 'const m=require("./dist/cpanel/DEPLOY_MANIFEST.json");const mb=b=>(b/1048576).toFixed(1)+" MB";console.log("::notice title=Release "+m.version+" "+m.commit.slice(0,7)+"::app "+mb(m.archives.app.bytes)+", node_modules "+mb(m.archives.node_modules.bytes)+", build "+m.nextBuildId+", "+m.migrations.length+" migrations, schema engines: "+m.prismaSchemaEngines.join(" ")+", built on "+m.build.platform+" glibc "+m.build.glibc+" node "+m.build.node)'
 
       - name: Extract into a clean CloudLinux-style layout
         run: |
@@ -97,7 +98,10 @@ jobs:
 
       - name: Verify the extracted release (npm run cpanel:verify)
         working-directory: ${{ runner.temp }}/release/app
-        run: node scripts/cpanel-verify.mjs
+        run: |
+          set -o pipefail
+          node scripts/cpanel-verify.mjs | tee "$RUNNER_TEMP/verify.txt"
+          echo "::notice title=cpanel:verify::$(grep -c '✔' "$RUNNER_TEMP/verify.txt") passed, $(grep -c '⚠' "$RUNNER_TEMP/verify.txt" || true) warnings, $(grep -c '✖' "$RUNNER_TEMP/verify.txt" || true) failed. $(grep '⚠' "$RUNNER_TEMP/verify.txt" | tr '\n' ' ')"
 
       - name: Rehearse first deployment (migrate → bootstrap → start → smoke)
         working-directory: ${{ runner.temp }}/release/app
@@ -123,12 +127,14 @@ jobs:
 
           PORT=3000 node app.js > "$RUNNER_TEMP/app-direct.log" 2>&1 & APP=$!
           wait_listening "$RUNNER_TEMP/app-direct.log"
-          node "$GITHUB_WORKSPACE/.github/scripts/smoke-release.mjs" http://127.0.0.1:3000 --full || { cat "$RUNNER_TEMP/app-direct.log"; exit 1; }
+          node "$GITHUB_WORKSPACE/.github/scripts/smoke-release.mjs" http://127.0.0.1:3000 --full | tee "$RUNNER_TEMP/smoke-direct.txt" || { cat "$RUNNER_TEMP/app-direct.log"; exit 1; }
+          echo "::notice title=Smoke (app.js direct, full)::$(tail -1 "$RUNNER_TEMP/smoke-direct.txt") — readiness: $(curl -s http://127.0.0.1:3000/api/ready | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);console.log("ready="+j.ready+" "+j.checks.map(c=>c.name+":"+c.status).join(" "))})')"
           kill $APP; wait $APP || true
 
           EMU_PORT=3001 node -r "$GITHUB_WORKSPACE/.github/scripts/passenger-emu.cjs" app.js > "$RUNNER_TEMP/app-passenger.log" 2>&1 & APP=$!
           wait_listening "$RUNNER_TEMP/app-passenger.log"
-          node "$GITHUB_WORKSPACE/.github/scripts/smoke-release.mjs" http://127.0.0.1:3001 || { cat "$RUNNER_TEMP/app-passenger.log"; exit 1; }
+          node "$GITHUB_WORKSPACE/.github/scripts/smoke-release.mjs" http://127.0.0.1:3001 | tee "$RUNNER_TEMP/smoke-passenger.txt" || { cat "$RUNNER_TEMP/app-passenger.log"; exit 1; }
+          echo "::notice title=Smoke (emulated Passenger)::$(tail -1 "$RUNNER_TEMP/smoke-passenger.txt") — $(grep -o '"via":"passenger"' "$RUNNER_TEMP/app-passenger.log" | head -1)"
           kill $APP; wait $APP || true
 
           echo "--- app log (direct) ---"; cat "$RUNNER_TEMP/app-direct.log"
