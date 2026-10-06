@@ -72,7 +72,13 @@ jobs:
         # No DATABASE_URL: the build never connects (deploy-cpanel.mjs uses an unreachable placeholder).
         env:
           NEXT_BUILD_CPUS: "4"
-        run: npm run cpanel:build
+        # one retry: next/font downloads the Google fonts during the build, so a transient network error can fail it
+        run: |
+          npm run cpanel:build || {
+            echo "::warning title=Build retried::first attempt failed (often a transient font download) — retrying once"
+            sleep 20
+            npm run cpanel:build
+          }
 
       - name: Remove devDependencies
         run: |
