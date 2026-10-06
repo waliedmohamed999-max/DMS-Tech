@@ -2,7 +2,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 /**
- * Safe build metadata (written by `scripts/build-info.ts` before `next build` into .build-info.json).
+ * Safe build metadata (written by `scripts/build-info.mjs` before `next build` into .build-info.json).
  * Contains version, commit SHA, build time and the migration list shipped with the build — never env values.
  */
 export type BuildInfo = { version: string; commit: string | null; builtAt: string | null; environment: string; migrations: string[] };

@@ -1,11 +1,14 @@
 /**
  * Writes .build-info.json (version, commit, build time, shipped migrations) — run automatically before `next build`.
  * Contains no environment values.
+ *
+ * Plain Node.js (no tsx/ts-node) so the production build path works on hosts that install without devDependencies
+ * (cPanel / CloudLinux Node.js Selector — docs/CPANEL_DEPLOYMENT.md). Same behaviour as the former build-info.ts.
  */
 import { execSync } from "node:child_process";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 
-const pkg = JSON.parse(readFileSync("package.json", "utf8")) as { version: string };
+const pkg = JSON.parse(readFileSync("package.json", "utf8"));
 let commit = process.env.GIT_COMMIT ?? process.env.VERCEL_GIT_COMMIT_SHA ?? null;
 if (!commit) {
   try {

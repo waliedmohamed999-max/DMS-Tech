@@ -11,3 +11,17 @@ src/generated
 # Phase 9: generated build metadata, local backups
 .build-info.json
 /backups
+
+# cPanel deployment: every env file except the name-only templates, logs, keys, dumps
+.env.*
+!.env.example
+*.log
+/logs/
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+*.dump
+*.sql.gz
+*.tar.gz
+/tmp/
