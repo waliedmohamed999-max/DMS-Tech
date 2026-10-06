@@ -2,9 +2,9 @@
 export const site = {
   name: "DMS Tech",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://dms1t.com",
-  email: "Info@dms1t.com",
-  phoneDisplay: "0509095816",
-  whatsapp: "966509095816",
+  email: "info@dmstech.sa",
+  phoneDisplay: "0550881255",
+  whatsapp: "966550881255",
   socialHandle: "DMS1T",
   socials: {
     instagram: "https://instagram.com/dms1t",

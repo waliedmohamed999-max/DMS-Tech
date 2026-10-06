@@ -71,7 +71,7 @@ async function main() {
   const org = await ensureOrganization({ slug: "dms-tech", name: "DMS Tech", nameAr: "دي إم إس تك" });
   await prisma.organization.update({
     where: { id: org.id },
-    data: { legalName: "DMS Tech", email: "Info@dms1t.com", phone: "+966509095816", city: "Riyadh" }
+    data: { legalName: "DMS Tech", email: "info@dmstech.sa", phone: "+966550881255", city: "Riyadh" }
   });
 
   const admin = await ensureSuperAdmin(org.id, { email: "admin@dms.test", name: "System Admin", password: DEMO_PASSWORD });

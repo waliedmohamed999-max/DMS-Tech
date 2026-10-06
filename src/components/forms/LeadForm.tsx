@@ -4,10 +4,12 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Icon } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
+import { site } from "@/content/site";
 
 type Status = "idle" | "sending" | "success" | "error";
 
-const WHATSAPP = "966509095816";
+// single source of truth for the company number (src/content/site.ts)
+const WHATSAPP = site.whatsapp;
 const phoneRe = /^\+?[0-9\s-]{8,16}$/;
 const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
