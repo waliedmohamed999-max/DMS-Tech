@@ -70,8 +70,17 @@ export default function CaseCarousel({ items, label, cta }: { items: Item[]; lab
             <Card item={items[at(i - 1)]} tint={at(i - 1)} label={label} cta={cta} rtl={rtl} faded />
           </button>
         </div>
-        <div key={i} className="motion-safe:animate-[fadeIn_.4s_ease]">
-          <Card item={items[i]} tint={i} label={label} cta={cta} rtl={rtl} />
+        {/* all cases share one grid cell and only the current one is visible: the carousel keeps the height of the
+            tallest card, so the auto-advance never resizes the section (no page jump on mobile, where cards stack) */}
+        <div className="grid">
+          {items.map((it, k) => {
+            const on = k === i;
+            return (
+              <div key={on ? `on-${i}` : `off-${k}`} className={`col-start-1 row-start-1 grid ${on ? "motion-safe:animate-[fadeIn_.4s_ease]" : "invisible"}`} aria-hidden={!on} inert={!on}>
+                <Card item={it} tint={k} label={label} cta={cta} rtl={rtl} />
+              </div>
+            );
+          })}
         </div>
         <div className="hidden lg:flex lg:w-0 lg:flex-1">
           <button type="button" onClick={() => setI(at(i + 1))} aria-label="next" className="shrink-0">

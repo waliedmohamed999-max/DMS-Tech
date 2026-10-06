@@ -109,38 +109,50 @@ export default function FeatureShowcase({ features }: { features: Feature[] }) {
                 {c.modeValue} <Icon name="ChevronDown" size={13} className="text-graphite" />
               </span>
             </div>
-            <div key={active} className="m-3 overflow-hidden rounded-lg border border-mist bg-white motion-safe:animate-[fadeIn_.35s_ease]">
-              <div className="flex items-center gap-2 border-b border-mist px-3 py-2.5">
-                <Icon name="LayoutDashboard" size={14} className="text-iron" />
-                <span className="font-medium text-ink">{table.title}</span>
-                <span className="rounded bg-cloud px-1.5 py-0.5 font-mono text-[11px] text-iron">{table.tag}</span>
-              </div>
-              <table className="w-full text-start">
-                <thead>
-                  <tr className="border-b border-mist text-[10.5px] uppercase tracking-wider text-graphite">
-                    {table.cols.map((col) => (
-                      <th key={col} className="px-3 py-2 text-start font-semibold">
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {table.rows.map((r, ri) => (
-                    <tr
-                      key={r[0]}
-                      className="border-b border-mist last:border-0 motion-safe:animate-[fadeIn_.4s_ease_both]"
-                      style={{ animationDelay: `${1.1 + ri * 0.18}s` }}
-                    >
-                      {r.map((cell, k) => (
-                        <td key={k} className={`px-3 py-2.5 ${k === 0 ? "font-medium text-ink" : "text-iron"}`}>
-                          {k === 2 ? <span className="rounded-full bg-lilac px-2 py-0.5 text-[11.5px] font-medium text-iris">{cell}</span> : cell}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {/* every table shares one grid cell and only the active one is visible: the panel keeps the height of the
+                tallest table, so the auto-rotation never resizes the section (no page jump on narrow screens) */}
+            <div className="m-3 grid">
+              {c.tables.map((tb, ti) => {
+                const on = ti === active;
+                return (
+                  <div
+                    key={on ? `on-${active}` : `off-${ti}`}
+                    className={`col-start-1 row-start-1 overflow-hidden rounded-lg border border-mist bg-white ${on ? "motion-safe:animate-[fadeIn_.35s_ease]" : "invisible"}`}
+                  >
+                    <div className="flex items-center gap-2 border-b border-mist px-3 py-2.5">
+                      <Icon name="LayoutDashboard" size={14} className="text-iron" />
+                      <span className="font-medium text-ink">{tb.title}</span>
+                      <span className="rounded bg-cloud px-1.5 py-0.5 font-mono text-[11px] text-iron">{tb.tag}</span>
+                    </div>
+                    <table className="w-full text-start">
+                      <thead>
+                        <tr className="border-b border-mist text-[10.5px] uppercase tracking-wider text-graphite">
+                          {tb.cols.map((col) => (
+                            <th key={col} className="px-3 py-2 text-start font-semibold">
+                              {col}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tb.rows.map((r, ri) => (
+                          <tr
+                            key={r[0]}
+                            className={`border-b border-mist last:border-0 ${on ? "motion-safe:animate-[fadeIn_.4s_ease_both]" : ""}`}
+                            style={on ? { animationDelay: `${1.1 + ri * 0.18}s` } : undefined}
+                          >
+                            {r.map((cell, k) => (
+                              <td key={k} className={`px-3 py-2.5 ${k === 0 ? "font-medium text-ink" : "text-iron"}`}>
+                                {k === 2 ? <span className="rounded-full bg-lilac px-2 py-0.5 text-[11.5px] font-medium text-iris">{cell}</span> : cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

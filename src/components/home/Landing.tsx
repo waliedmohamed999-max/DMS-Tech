@@ -217,7 +217,7 @@ export function JourneyBand({
         <div className="mt-14 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
           <div className="flex w-max animate-marquee gap-6 px-6 [--marquee-shift:-50%] [animation-duration:60s] hover:[animation-play-state:paused] rtl:[--marquee-shift:50%]">
             {[...steps, ...steps].map((s, i) => (
-              <article key={i} className="flex w-[340px] shrink-0 flex-col gap-5 rounded-card border border-white/25 bg-white/15 p-7 text-white backdrop-blur-md">
+              <article key={i} className="flex w-[340px] shrink-0 flex-col gap-5 rounded-card border border-white/25 bg-white/15 p-7 text-white md:backdrop-blur-md">
                 <div className="flex items-center justify-between">
                   <span className="text-xl font-bold tracking-[-0.3px]">{s.tab}</span>
                   <span className="font-mono text-sm text-white/70">{String((i % steps.length) + 1).padStart(2, "0")}</span>

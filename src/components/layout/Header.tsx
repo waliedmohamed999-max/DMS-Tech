@@ -84,7 +84,7 @@ export default function Header({ services }: { services: NavService[] }) {
   );
 
   return (
-    <header className={`sticky top-0 z-50 border-b backdrop-blur transition-colors duration-300 ${dark ? "border-transparent bg-obsidian text-white" : "border-mist bg-white/95 text-ink shadow-card"}`}>
+    <header className={`sticky top-0 z-50 border-b transition-colors md:backdrop-blur duration-300 ${dark ? "border-transparent bg-obsidian text-white" : "border-mist bg-white/95 text-ink shadow-card"}`}>
       <div className="container-site flex h-[72px] items-center gap-6">
         <Link href="/" aria-label="DMS Tech" className="shrink-0">
           <Image src="/images/logo-dark.png" alt="DMS Tech" width={1200} height={437} priority className={`h-10 w-auto xl:h-12 ${dark ? "" : "hidden"}`} />

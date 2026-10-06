@@ -9,6 +9,7 @@ import { getServices } from "@/lib/content";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { WhatsAppFloat } from "@/components/layout/Chrome";
+import { PauseOffscreenMotion } from "@/components/layout/PauseOffscreenMotion";
 import "../globals.css";
 
 
@@ -70,6 +71,7 @@ export default async function LocaleLayout({
           <main>{children}</main>
           <Footer services={services} />
           <WhatsAppFloat />
+          <PauseOffscreenMotion />
         </NextIntlClientProvider>
       </body>
     </html>

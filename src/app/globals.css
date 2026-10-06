@@ -176,6 +176,23 @@
   }
 }
 
+/* off-screen sections (src/components/layout/PauseOffscreenMotion.tsx): decorative loops stop costing frames */
+[data-motion-paused],
+[data-motion-paused] * {
+  animation-play-state: paused !important;
+}
+/* visitors who ask the OS for less motion get a still page */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer base {
   html { scroll-behavior: smooth; scroll-padding-top: 88px; -webkit-text-size-adjust: 100%; }
   body { @apply bg-white text-ink font-sans antialiased overflow-x-clip; font-size: 16px; line-height: 1.5; }
