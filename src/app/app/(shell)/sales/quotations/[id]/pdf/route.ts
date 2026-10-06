@@ -13,6 +13,8 @@ import { isAppError } from "@/server/errors";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.redirect(new URL("/app/login", req.url));
+  // a temporary password must be replaced before anything else is allowed (same rule as pages and actions)
+  if (session.user.mustChangePassword) return NextResponse.redirect(new URL("/app/me?force=1", req.url));
   const ctx = await requireCtx();
   const { id } = await params;
   const v = Number(req.nextUrl.searchParams.get("v")) || undefined;

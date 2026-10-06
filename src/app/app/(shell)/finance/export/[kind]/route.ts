@@ -8,6 +8,8 @@ import { prisma } from "@/server/db";
 export async function GET(req: NextRequest, { params }: { params: Promise<{ kind: string }> }) {
   const session = await getSession();
   if (!session) return NextResponse.redirect(new URL("/app/login", req.url));
+  // a temporary password must be replaced before anything else is allowed (same rule as pages and actions)
+  if (session.user.mustChangePassword) return NextResponse.redirect(new URL("/app/me?force=1", req.url));
   const ctx = await requireCtx();
   const { kind } = await params;
   if (!["invoices", "payments", "expenses", "aging"].includes(kind)) return new NextResponse("NOT_FOUND", { status: 404 });

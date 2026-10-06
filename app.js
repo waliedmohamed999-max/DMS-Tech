@@ -67,10 +67,45 @@ try {
 const app = next({ dev: false, dir: __dirname, hostname: "localhost", port });
 const handle = app.getRequestHandler();
 
+// Under Passenger, Apache is the edge proxy. Passenger's "secure headers" (prefix "!~") cannot be sent by clients —
+// Passenger rejects any request that tries — so they are the only trustworthy client address / scheme.
+// This does here what deploy/nginx/dms-os.conf does elsewhere: client-supplied forwarding headers are discarded and
+// replaced (the app trusts the FIRST X-Forwarded-For entry for rate limits and audit — a spoofed value would let one
+// client pose as many and bypass per-IP login / lead limits).
+const { isIP } = require("node:net");
+const siteOrigin = (() => {
+  try {
+    const u = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "");
+    return u.protocol === "https:" ? u.origin : null;
+  } catch {
+    return null;
+  }
+})();
+function fromPassenger(req, res) {
+  const proto = req.headers["!~passenger-proto"];
+  // plain HTTP → canonical HTTPS URL (never the client's Host header). ACME / AutoSSL validation stays on HTTP.
+  if (proto === "http" && siteOrigin && !(req.url ?? "").startsWith("/.well-known/")) {
+    res.statusCode = 308;
+    res.setHeader("Location", siteOrigin + (req.url ?? "/"));
+    res.setHeader("Cache-Control", "no-store");
+    res.end();
+    return false;
+  }
+  const client = String(req.headers["!~passenger-client-address"] ?? "").trim();
+  for (const h of ["x-forwarded-for", "x-real-ip", "x-forwarded-host"]) delete req.headers[h];
+  if (isIP(client)) {
+    req.headers["x-forwarded-for"] = client;
+    req.headers["x-real-ip"] = client;
+  }
+  if (proto === "https" || proto === "http") req.headers["x-forwarded-proto"] = proto;
+  return true;
+}
+
 app
   .prepare()
   .then(() => {
     const server = http.createServer((req, res) => {
+      if (underPassenger && !fromPassenger(req, res)) return;
       Promise.resolve(handle(req, res)).catch((e) => {
         log("error", "request_failed", { method: req.method, path: (req.url ?? "").split("?")[0], ...errInfo(e) });
         if (!res.headersSent) {

@@ -7,7 +7,10 @@ import { enforceLimit } from "@/server/security/limits";
 
 /** New document (multipart). Validation, storage and authorisation happen in the documents service. */
 export async function POST(req: NextRequest) {
-  if (!(await getSession())) return NextResponse.json({ ok: false, error: "UNAUTHENTICATED" }, { status: 401 });
+  const session = await getSession();
+  if (!session) return NextResponse.json({ ok: false, error: "UNAUTHENTICATED" }, { status: 401 });
+  // a temporary password must be replaced before anything else is allowed (same rule as pages and actions)
+  if (session.user.mustChangePassword) return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   if (!sameOrigin(req)) return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   const ctx = await requireCtx();
   try {
