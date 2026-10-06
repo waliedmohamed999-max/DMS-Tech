@@ -1,0 +1,151 @@
+# Builds a prebuilt production release for cPanel / CloudLinux / Phusion Passenger (docs/CPANEL_DEPLOYMENT.md).
+# BUILD ONLY — this workflow never deploys, never connects to the production database and uses no repository secrets.
+# The release is rehearsed end-to-end on the runner: extracted into a clean CloudLinux-style layout, migrated and
+# bootstrapped against a throwaway PostgreSQL service, started with app.js (direct + emulated Passenger), smoke-tested.
+name: cPanel prebuilt release
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, "deploy/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cpanel-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, package and rehearse
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # build time: the only value compiled into the bundles
+      NEXT_PUBLIC_SITE_URL: https://dmstech.sa
+      # build metadata without relying on git on the server
+      GIT_COMMIT: ${{ github.sha }}
+      # Prisma's migration engine is native: ship the RHEL-family builds CloudLinux 8/9 need (+ the runner's own)
+      PRISMA_CLI_BINARY_TARGETS: debian-openssl-3.0.x,rhel-openssl-1.1.x,rhel-openssl-3.0.x
+    services:
+      # throwaway database for the rehearsal only — never a production connection
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-throwaway
+          POSTGRES_DB: dms_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci -d dms_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.20.2   # same as the cPanel Node.js Selector (bundles npm 10.8.2)
+          cache: npm
+
+      - name: Install (clean, from the lockfile)
+        run: |
+          node -v && npm -v
+          npm ci --no-audit --no-fund
+          git diff --exit-code package-lock.json   # the lockfile must already be what npm 10 writes
+
+      - name: Prisma Client
+        run: npm run prisma:generate
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Production build (npm run cpanel:build)
+        # same path as on the server: build metadata → prisma generate → next build → CSP manifest → output checks.
+        # No DATABASE_URL: the build never connects (deploy-cpanel.mjs uses an unreachable placeholder).
+        env:
+          NEXT_BUILD_CPUS: "4"
+        run: npm run cpanel:build
+
+      - name: Remove devDependencies
+        run: |
+          npm prune --omit=dev --no-audit --no-fund
+          git diff --exit-code package-lock.json
+
+      - name: Package release (two archives + manifest, sensitive-file scan)
+        run: |
+          npm run cpanel:package
+          cp docs/CPANEL_DEPLOYMENT.md dist/cpanel/
+          ( cd dist/cpanel && sha256sum -c SHA256SUMS )
+
+      - name: Extract into a clean CloudLinux-style layout
+        run: |
+          REL="$RUNNER_TEMP/release"
+          mkdir -p "$REL/app" "$REL/venv/lib"
+          tar -xzf dist/cpanel/dms-tech-app-*.tar.gz -C "$REL/app"
+          tar -xzf dist/cpanel/dms-tech-node_modules-*.tar.gz -C "$REL/venv/lib"
+          # the Selector's layout: node_modules in the app root is a symlink into the virtual environment
+          ln -s "$REL/venv/lib/node_modules" "$REL/app/node_modules"
+          ls -la "$REL/app"
+
+      - name: Verify the extracted release (npm run cpanel:verify)
+        working-directory: ${{ runner.temp }}/release/app
+        run: node scripts/cpanel-verify.mjs
+
+      - name: Rehearse first deployment (migrate → bootstrap → start → smoke)
+        working-directory: ${{ runner.temp }}/release/app
+        env:
+          NODE_ENV: production
+          APP_ENV: production
+          DATABASE_URL: postgresql://ci:ci-throwaway@localhost:5432/dms_ci
+          DOCUMENT_STORAGE: local
+        run: |
+          set -euo pipefail
+          # per-run throwaway keys and admin credentials (masked; nothing here is a repository secret)
+          export HR_FIELD_KEY="$(openssl rand -base64 32)"
+          export INTEGRATION_MASTER_KEY="$(openssl rand -base64 32)"
+          export SMOKE_PASSWORD="Ci-$(openssl rand -hex 16)!"
+          echo "::add-mask::$HR_FIELD_KEY"; echo "::add-mask::$INTEGRATION_MASTER_KEY"; echo "::add-mask::$SMOKE_PASSWORD"
+          export SMOKE_EMAIL="ci.admin@example.com"
+          export DOCUMENT_STORAGE_DIR="$RUNNER_TEMP/documents"
+
+          npm run cpanel:migrate
+          OS_ADMIN_EMAIL="$SMOKE_EMAIL" OS_ADMIN_NAME="CI Admin" OS_ADMIN_PASSWORD="$SMOKE_PASSWORD" npm run cpanel:bootstrap
+
+          wait_listening() { for _ in $(seq 1 60); do grep -q '"msg":"listening"' "$1" && return 0; sleep 1; done; cat "$1"; return 1; }
+
+          PORT=3000 node app.js > "$RUNNER_TEMP/app-direct.log" 2>&1 & APP=$!
+          wait_listening "$RUNNER_TEMP/app-direct.log"
+          node "$GITHUB_WORKSPACE/.github/scripts/smoke-release.mjs" http://127.0.0.1:3000 --full || { cat "$RUNNER_TEMP/app-direct.log"; exit 1; }
+          kill $APP; wait $APP || true
+
+          EMU_PORT=3001 node -r "$GITHUB_WORKSPACE/.github/scripts/passenger-emu.cjs" app.js > "$RUNNER_TEMP/app-passenger.log" 2>&1 & APP=$!
+          wait_listening "$RUNNER_TEMP/app-passenger.log"
+          node "$GITHUB_WORKSPACE/.github/scripts/smoke-release.mjs" http://127.0.0.1:3001 || { cat "$RUNNER_TEMP/app-passenger.log"; exit 1; }
+          kill $APP; wait $APP || true
+
+          echo "--- app log (direct) ---"; cat "$RUNNER_TEMP/app-direct.log"
+
+      - name: Summary
+        run: |
+          {
+            echo "## cPanel prebuilt release"
+            echo '```json'; cat dist/cpanel/DEPLOY_MANIFEST.json; echo '```'
+            echo "Install: docs/CPANEL_DEPLOYMENT.md → GitHub Actions Prebuilt Deployment. This workflow did NOT deploy."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dms-tech-cpanel-production-${{ github.sha }}
+          path: dist/cpanel/
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 0   # the archives are already gzip-compressed

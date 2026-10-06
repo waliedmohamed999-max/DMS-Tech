@@ -4,7 +4,12 @@ Production runbook for **https://dmstech.sa** on the shared cPanel account `dmst
 It covers the website and the Business OS (`/app`) — one Next.js 16 application.
 
 - Docker / VM deployments stay as documented in [PRODUCTION-ARCHITECTURE.md](PRODUCTION-ARCHITECTURE.md) and [DEPLOYMENT-RUNBOOK.md](DEPLOYMENT-RUNBOOK.md).
-- This guide works **without SSH**: Git pull, Setup Node.js App, Run NPM Install, Run JS Script and Restart.
+- This guide works **without SSH**.
+
+There are two ways to deploy:
+
+- **Recommended: [GitHub Actions Prebuilt Deployment](#10-github-actions-prebuilt-deployment).** GitHub builds a release and you upload it. The server does not need to run "Run NPM Install" or `next build`.
+- **Fallback: build on the server (§3–§6).** Git pull, Run NPM Install, then `cpanel:build`. Use it only if the server can install and build reliably.
 
 ---
 
@@ -226,3 +231,138 @@ Set `REQUIRE_WORKER=1` only once the cron job is running. After that, `/api/read
 - Production startup refuses development-only flags and missing keys (`src/server/system/config.ts`).
 - `app.js` forces `NODE_ENV=production` and logs a warning if it was set to anything else. The development server can never run here.
 - Server Actions keep Next.js' Origin/Host check. Passenger forwards the original `Host`, so `https://dmstech.sa` works as-is.
+
+---
+
+## 10. GitHub Actions Prebuilt Deployment
+
+The workflow [`.github/workflows/cpanel-build.yml`](../.github/workflows/cpanel-build.yml) builds the release on Linux with Node.js 20.20.2, the same version as the server.
+
+**When it runs:** on manual dispatch (*Run workflow*) and on every push to `main` or `deploy/**`. It **only builds**. It never deploys, never connects to the production database, and uses no repository secrets.
+
+**What it does, in order:**
+1. `npm ci`
+2. `prisma generate`
+3. `typecheck`
+4. `lint`
+5. `npm run cpanel:build`, with `NEXT_PUBLIC_SITE_URL=https://dmstech.sa` and `GIT_COMMIT=<sha>`
+6. `npm prune --omit=dev`
+7. `npm run cpanel:package`
+8. **Rehearsal of the release:**
+   - Extract it into a clean CloudLinux-style layout, with `node_modules` as a symlink into a virtual environment.
+   - Run `cpanel:verify`.
+   - Against a throwaway PostgreSQL: `cpanel:migrate`, then `cpanel:bootstrap`.
+   - Start `app.js` both directly and under an emulated Passenger.
+   - HTTP smoke test: pages, static assets, `public/`, `/api/health`, `/api/ready` (must be ready), sign-in, 404, and security headers.
+
+### What the artifact contains
+
+The artifact is `dms-tech-cpanel-production-<commit sha>`, kept for 90 days. Download it from the workflow run, then unzip it. Inside:
+
+| File | Extract into | Contents |
+| --- | --- | --- |
+| `dms-tech-app-<version>-<sha7>.tar.gz` | the **application root**, `/home/dmstechc/repositories/DMS-Tech` | See the list below. |
+| `dms-tech-node_modules-<version>-<sha7>.tar.gz` | the **virtual environment**, `/home/dmstechc/nodevenv/repositories/DMS-Tech/20/lib` (it creates `node_modules/`) | Production dependencies for Linux x64. Includes the native `@node-rs/argon2`, `@swc/core` and `sharp`, plus Prisma's migration engines for `rhel-openssl-1.1.x`, `rhel-openssl-3.0.x` and `debian-openssl-3.0.x`. |
+| `DEPLOY_MANIFEST.json` | — (keep it) | Version, commit, build time, Next.js build id, migration list, and the sha256 and size of each archive. |
+| `SHA256SUMS` | — | Archive checksums. |
+| `CPANEL_DEPLOYMENT.md` | — | This runbook. |
+
+The application archive contains:
+- `app.js`
+- `.next/` (without cache or traces)
+- `.build-info.json`
+- `package.json`, `package-lock.json`
+- `next.config.mjs`, `security-headers.mjs`, `tsconfig.json`, `prisma.config.ts`
+- `public/`, `assets/` (PDF fonts and logo), `prisma/` (schema and migrations)
+- `src/` and `scripts/`. These are needed for `next.config.mjs` (next-intl), and for the operational scripts (migrate, bootstrap, worker), which run from source.
+
+**Why two archives.** The CloudLinux Node.js Selector does not allow a real `node_modules` folder in the application root. `node_modules` there must stay the Selector's symlink into the virtual environment, so the dependencies are extracted into the virtual environment itself.
+
+**Sensitive files.** `npm run cpanel:package` lists both archives and **fails the workflow** if either contains any of these:
+- `.env` / `.env.*` (templates excepted)
+- keys or certificates
+- logs, dumps, backups or temporary files
+- SQL outside the migrations
+- `.git` or `.local`
+- private-key blocks inside sources
+
+User documents are never in the release: they live in `DOCUMENT_STORAGE_DIR`, outside the application root.
+
+### Build-time and runtime variables
+
+- **Build:** only `NEXT_PUBLIC_SITE_URL` (`https://dmstech.sa`) and `GIT_COMMIT`. Both are set in the workflow and neither is secret.
+  - `DATABASE_URL` is not provided; the build never connects to a database.
+  - `src/server/system/config.ts` is enforced only when the **server starts**, not during the build.
+- **Runtime:** every other variable stays in **cPanel → Setup Node.js App → Environment variables**, exactly as in §3. The release does not contain or replace any of them.
+- **Database connection:** use Supabase's **Session pooler** connection string (with `?sslmode=require`) as `DATABASE_URL`. Prisma migrations require a session-mode connection.
+
+### Installing a release (cPanel only, no SSH)
+
+**First time only:**
+- In File Manager, open *Settings* and enable **Show Hidden Files**, so that `.next` is visible.
+- Create `/home/dmstechc/dms-releases/` to keep every release you upload. These folders are your rollback copies.
+
+1. **Build.** In GitHub, open *Actions* → **cPanel prebuilt release** → *Run workflow* on `main`. Or use the run that the push to `main` started.
+2. **Confirm the build succeeded.** Every step must be green, including "Rehearse first deployment". The run summary shows the manifest.
+3. **Download** the artifact `dms-tech-cpanel-production-<sha>` and unzip it on your computer.
+   - Optional: check the files against `SHA256SUMS` (Windows: `certutil -hashfile <file> SHA256`).
+4. **Upload** both `.tar.gz` files and `DEPLOY_MANIFEST.json` to `/home/dmstechc/dms-releases/<version>-<sha7>/`.
+5. **Stop the application:** Setup Node.js App → **Stop App**.
+6. **Back up the current release** in File Manager. These are renames, so nothing is lost:
+   - In the application root, rename `.next` to `.next.prev`, and `.build-info.json` to `.build-info.json.prev`.
+   - In `/home/dmstechc/nodevenv/repositories/DMS-Tech/20/lib/`, rename `node_modules` to `node_modules.prev`.
+   - **First switch from a server-built installation:** also compress the application root without `node_modules` (*Compress* → Zip) into `/home/dmstechc/dms-releases/backup-<date>.zip`.
+7. **Extract the application archive.** Select `dms-tech-app-….tar.gz` → *Extract* → `/home/dmstechc/repositories/DMS-Tech`.
+   - This creates a fresh `.next` and overwrites the application files with the release's.
+   - It does not touch the `node_modules` symlink, `.git`, any `.env*` file, or the document storage.
+8. **Extract the dependencies.** Select `dms-tech-node_modules-….tar.gz` → *Extract* → `/home/dmstechc/nodevenv/repositories/DMS-Tech/20/lib`. The result must be `…/20/lib/node_modules/`.
+   - Do **not** click **Run NPM Install** afterwards.
+   - Do **not** run `cpanel:build`.
+9. **Do not delete or change environment variables.** They are not part of the release.
+10. **Do not touch** `/home/dmstechc/dms-data/` (document storage).
+11. **Verify:** Setup Node.js App → *Run JS Script* → `cpanel:verify`. It must end with `✔ release verified`.
+    - It checks that the files match the build, that the dependencies match the lockfile, and that the native modules load **on this server**.
+    - A `sharp` warning means image optimisation is not available on this server's glibc. Pages still work.
+12. **Migrations, only if the release adds them.** Compare `migrations` in `DEPLOY_MANIFEST.json` with the previous release's manifest. If there are new ones:
+    1. Take a Supabase backup (Dashboard → Database → Backups, or confirm PITR is on).
+    2. Run JS Script → `cpanel:migrate`. This runs `prisma migrate deploy`: it only applies pending migrations and never resets.
+13. **Start the application:** **Start App** (or **Restart**).
+14. **Check the health endpoints:**
+    - `https://dmstech.sa/api/health`: `commit` must equal the first 12 characters of `commit` in the manifest.
+    - `https://dmstech.sa/api/ready`: must return `"ready": true`.
+    - Then check `https://dmstech.sa` and `/app/login`.
+15. **Clean up** after a day of normal operation: delete `.next.prev`, `.build-info.json.prev` and `node_modules.prev`. Keep the release folder in `dms-releases/` for rollback.
+
+**Very first deployment to an empty database:** after step 12 (`cpanel:migrate` is required here), create the organization and first Super Admin as in §7. Use the script `cpanel:bootstrap` instead of `os:bootstrap`, because it does not depend on `node_modules/.bin`.
+
+**Git and the application root.** The application root is also the cPanel Git clone. With prebuilt releases, **stop using "Update from Remote"**: the release already carries the matching sources. If you pull anyway, Git may report local changes after a release is extracted.
+
+A cleaner long-term setup is to point the Node.js application at a dedicated folder, such as `/home/dmstechc/apps/dms-tech`, that is not a Git clone. That is a later infrastructure change, not required now.
+
+**If you change the Node.js version in the Selector,** the virtual environment path changes (`…/20/` → `…/22/`). Extract the dependencies archive again into the new path and run `cpanel:verify`.
+
+### Rollback
+
+Every release folder in `dms-releases/` is tied to a commit, a version and a build time (`DEPLOY_MANIFEST.json`, `.build-info.json`, and `/api/health`).
+
+**Fast rollback, using the renamed copies from step 6:**
+1. **Stop App**.
+2. Rename `.next` to `.next.failed` and `.next.prev` to `.next`. Do the same for `.build-info.json`.
+3. In the virtual environment, rename `node_modules` to `node_modules.failed` and `node_modules.prev` to `node_modules`.
+4. Re-extract the **previous** release's application archive from `dms-releases/<previous>/`. This restores the matching `src/`, `scripts/`, `prisma/` and the rest.
+5. Run JS Script → `cpanel:verify`.
+6. **Start App**, then check `/api/health`. It must show the previous commit.
+
+**Rollback to any older release:**
+1. **Stop App**.
+2. Move `.next` aside.
+3. Extract that release's two archives from `dms-releases/<release>/` (steps 7–8).
+4. Run `cpanel:verify`, then **Start App**.
+
+**Database.** Migrations are forward-only. Rolling back the code is safe when the failed release added **no** migrations.
+
+If it did add migrations, the older code may not match the newer schema. In that case, do not roll back the code alone. Choose one of these explicitly:
+- Fix forward with a new release.
+- Restore the Supabase backup taken in step 12. Data written since that backup is lost.
+
+Never run `db:migrate` (`migrate dev`), `db:seed` or any reset against production.

@@ -25,3 +25,6 @@ id_ed25519*
 *.sql.gz
 *.tar.gz
 /tmp/
+
+# prebuilt cPanel release archives (scripts/cpanel-artifact.mjs)
+/dist/
