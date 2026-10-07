@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { projectsCopy } from "@/content/projects-copy";
 
 export type NavService = { slug: string; icon: IconName; title: string; summary: string };
 
@@ -55,8 +56,10 @@ export default function Header({ services }: { services: NavService[] }) {
     { href: "/about#process", icon: "Route", title: t("process"), desc: t("processDesc") },
     { href: "/nova-ai", icon: "Sparkles", title: t("nova"), desc: t("novaDesc") }
   ];
+  const lang = locale === "ar" ? "ar" : "en";
   const clientLinks: typeof aboutLinks = [
-    { href: "/clients", icon: "Layers", title: t("industries"), desc: t("industriesDesc") },
+    { href: "/clients#projects", icon: "Briefcase", title: projectsCopy.navTitle[lang], desc: projectsCopy.navDesc[lang] },
+    { href: "/clients#industries", icon: "Layers", title: t("industries"), desc: t("industriesDesc") },
     { href: "/clients#platforms", icon: "Plug", title: t("platforms"), desc: t("platformsDesc") }
   ];
 

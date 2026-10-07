@@ -5,6 +5,8 @@ import { services } from "@/content/services";
 import { industries, integrations } from "@/content/industries";
 import { aiCards, capabilities, nova, phases, promises, trustCards, values } from "@/content/company";
 import { jobs, posts } from "@/content/posts";
+import { clientProjects } from "@/content/projects";
+import { projectsCopy } from "@/content/projects-copy";
 
 /**
  * Content repository — the only place pages read content from.
@@ -74,4 +76,21 @@ export const getPostSlugs = async () => posts.map((p) => p.slug);
 
 export async function getJobs(locale: Locale) {
   return localize(jobs, locale);
+}
+
+export async function getProjects(locale: Locale) {
+  return localize(clientProjects, locale);
+}
+
+export async function getProject(slug: string, locale: Locale) {
+  const p = clientProjects.find((x) => x.slug === slug);
+  return p ? localize(p, locale) : null;
+}
+
+export async function getProjectSlugs() {
+  return clientProjects.map((p) => p.slug);
+}
+
+export async function getProjectsCopy(locale: Locale) {
+  return localize(projectsCopy, locale);
 }

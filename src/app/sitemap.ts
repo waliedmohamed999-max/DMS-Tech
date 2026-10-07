@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 import { routing } from "@/i18n/routing";
 import { site } from "@/content/site";
-import { getPostSlugs, getServiceSlugs } from "@/lib/content";
+import { getPostSlugs, getProjectSlugs, getServiceSlugs } from "@/lib/content";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [services, posts] = await Promise.all([getServiceSlugs(), getPostSlugs()]);
+  const [services, posts, projects] = await Promise.all([getServiceSlugs(), getPostSlugs(), getProjectSlugs()]);
   const paths = [
     "",
     "/services",
@@ -12,6 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/nova-ai",
     "/about",
     "/clients",
+    ...projects.map((p) => `/clients/${p}`),
     "/careers",
     "/blog",
     ...posts.map((p) => `/blog/${p}`),

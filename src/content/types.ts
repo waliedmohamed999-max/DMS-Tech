@@ -32,6 +32,20 @@ export type Service = {
 
 export type Industry = { slug: string; icon: IconName; image: string; title: L; description: L; quote: L; /** simple-icons slugs */ apps: string[] };
 
+/** A delivered client project (src/content/projects.ts). Optional texts are null when not published. */
+export type ClientProject = {
+  slug: string;
+  name: L;
+  category: L | null;
+  description: L | null;
+  /** live website of the project */
+  link: string | null;
+  cover: string;
+  /** "cover" fills the card (photos), "contain" shows the whole image (logos) */
+  coverFit: "cover" | "contain";
+  gallery: { src: string; width: number; height: number }[];
+};
+
 export type ProcessPhase = {
   slug: string;
   icon: IconName;

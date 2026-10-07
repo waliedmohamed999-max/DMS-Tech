@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
-import { getCompany, getIndustries, getIntegrations } from "@/lib/content";
+import { getCompany, getIndustries, getIntegrations, getProjects, getProjectsCopy } from "@/lib/content";
 import { PageHero, SectionHeading } from "@/components/ui/Section";
 import { Icon } from "@/components/ui/Icon";
 import { FinalCta, IntegrationsWall } from "@/components/home/Sections";
+import { ProjectCard } from "@/components/clients/ProjectCard";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -17,20 +18,37 @@ export default async function ClientsPage({ params }: { params: Promise<{ locale
   const { locale: raw } = await params;
   const locale = raw as Locale;
   setRequestLocale(locale);
-  const [t, home, nav, industries, integrations, company] = await Promise.all([
+  const [t, home, nav, industries, integrations, company, projects, pc] = await Promise.all([
     getTranslations("pages"),
     getTranslations("home"),
     getTranslations("nav"),
     getIndustries(locale),
     getIntegrations(),
-    getCompany(locale)
+    getCompany(locale),
+    getProjects(locale),
+    getProjectsCopy(locale)
   ]);
 
   return (
     <>
       <PageHero eyebrow={nav("industries")} title={t("clientsTitle")} sub={t("clientsSub")} />
 
-      <section className="section">
+      {/* projects delivered for clients (src/content/projects.ts) */}
+      <section id="projects" className="section scroll-mt-24">
+        <div className="container-site">
+          <SectionHeading eyebrow={pc.eyebrow} title={pc.title} sub={pc.sub} />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {projects.map((p) => (
+              <ProjectCard key={p.slug} project={p} details={pc.details} rtl={locale === "ar"} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="industries" className="section scroll-mt-24 pt-0 md:pt-0">
+        <div className="container-site">
+          <SectionHeading title={nav("industries")} />
+        </div>
         <div className="container-site grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {industries.map((ind) => (
             <article key={ind.slug} className="card card-hover flex flex-col overflow-hidden border border-mist">
@@ -41,7 +59,7 @@ export default async function ClientsPage({ params }: { params: Promise<{ locale
                 <span className="badge-icon -mt-12">
                   <Icon name={ind.icon} />
                 </span>
-                <h2 className="text-xl font-bold">{ind.title}</h2>
+                <h3 className="text-xl font-bold">{ind.title}</h3>
                 <p className="text-[15px] text-iron">{ind.description}</p>
                 <p className="mt-auto border-t border-mist pt-4 font-semibold">“{ind.quote}”</p>
               </div>
