@@ -2,7 +2,7 @@ import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { site, whatsappLink } from "@/content/site";
-import { chatbotNav } from "@/content/chatbot";
+import { chatbotNav } from "@/content/chatbot-nav";
 import type { ServiceView } from "@/lib/content";
 import { BrandIcon } from "@/components/ui/Brand";
 import { Icon } from "@/components/ui/Icon";

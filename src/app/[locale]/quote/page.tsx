@@ -5,7 +5,7 @@ import { getServices } from "@/lib/content";
 import { PageHero } from "@/components/ui/Section";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { LeadForm } from "@/components/forms/LeadForm";
-import { chatbotNav } from "@/content/chatbot";
+import { chatbotNav } from "@/content/chatbot-nav";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;

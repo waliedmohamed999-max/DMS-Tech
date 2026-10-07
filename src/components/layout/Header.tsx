@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { projectsCopy } from "@/content/projects-copy";
-import { chatbotNav } from "@/content/chatbot";
+import { chatbotNav } from "@/content/chatbot-nav";
 
 export type NavService = { slug: string; icon: IconName; title: string; summary: string };
 

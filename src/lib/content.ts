@@ -7,7 +7,8 @@ import { aiCards, capabilities, nova, phases, promises, trustCards, values } fro
 import { jobs, posts } from "@/content/posts";
 import { clientProjects } from "@/content/projects";
 import { projectsCopy } from "@/content/projects-copy";
-import { chatbot, chatbotNav } from "@/content/chatbot";
+import { chatbot } from "@/content/chatbot";
+import { chatbotNav } from "@/content/chatbot-nav";
 import { novaPage } from "@/content/nova-page";
 
 /**
