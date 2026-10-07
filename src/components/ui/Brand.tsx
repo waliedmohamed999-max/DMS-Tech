@@ -1,5 +1,5 @@
 import {
-  siApplepay, siClaude, siFirebase, siFlutter, siGoogleads, siGoogleanalytics, siGooglecloud, siGooglegemini,
+  siApplepay, siClaude, siFacebook, siFirebase, siFlutter, siGmail, siGoogleads, siGoogleanalytics, siGooglecloud, siGooglegemini,
   siHubspot, siInstagram, siLaravel, siMake, siMeta, siN8n, siNextdotjs, siNodedotjs, siNotion, siOdoo, siReact,
   siShopify, siSnapchat, siStripe, siSupabase, siTiktok, siWhatsapp, siWoocommerce, siX, siYoutube, siZapier, siZoho
 } from "simple-icons";
@@ -7,7 +7,7 @@ import {
 type SimpleIcon = { title: string; path: string; hex: string };
 
 const brands: Record<string, SimpleIcon> = {
-  applepay: siApplepay, claude: siClaude, firebase: siFirebase, flutter: siFlutter, googleads: siGoogleads,
+  applepay: siApplepay, claude: siClaude, facebook: siFacebook, firebase: siFirebase, gmail: siGmail, flutter: siFlutter, googleads: siGoogleads,
   googleanalytics: siGoogleanalytics, googlecloud: siGooglecloud, googlegemini: siGooglegemini, hubspot: siHubspot,
   instagram: siInstagram, laravel: siLaravel, make: siMake, meta: siMeta, n8n: siN8n, nextdotjs: siNextdotjs,
   nodedotjs: siNodedotjs, notion: siNotion, odoo: siOdoo, react: siReact, shopify: siShopify, snapchat: siSnapchat,

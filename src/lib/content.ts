@@ -8,6 +8,7 @@ import { jobs, posts } from "@/content/posts";
 import { clientProjects } from "@/content/projects";
 import { projectsCopy } from "@/content/projects-copy";
 import { chatbot, chatbotNav } from "@/content/chatbot";
+import { novaPage } from "@/content/nova-page";
 
 /**
  * Content repository — the only place pages read content from.
@@ -98,4 +99,8 @@ export async function getProjectsCopy(locale: Locale) {
 
 export async function getChatbot(locale: Locale) {
   return { ...localize(chatbot, locale), ui: localize(chatbotNav, locale) };
+}
+
+export async function getNovaPage(locale: Locale) {
+  return localize(novaPage, locale);
 }
