@@ -83,6 +83,12 @@ export default async function Footer({ services }: { services: ServiceView[] }) 
               </span>
               {locale === "ar" ? "شركة سعودية مسجّلة" : "Registered Saudi company"}
             </p>
+            <p className="text-sm text-iron">
+              {site.crLabel[locale === "ar" ? "ar" : "en"]}:{" "}
+              <span className="font-semibold tabular-nums text-ink" dir="ltr">
+                {site.crNumber}
+              </span>
+            </p>
             <p className="max-w-xs text-sm leading-relaxed text-iron">{t("about")}</p>
             <SocialLinks className="pt-1" />
           </div>

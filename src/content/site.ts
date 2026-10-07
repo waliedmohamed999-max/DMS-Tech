@@ -6,11 +6,14 @@ export const site = {
   phoneDisplay: "0550881255",
   whatsapp: "966550881255",
   socialHandle: "DMS1T",
+  /** Commercial Registration (السجل التجاري) */
+  crNumber: "7055305614",
+  crLabel: { ar: "السجل التجاري", en: "Commercial Registration" },
   socials: {
     instagram: "https://instagram.com/dms1t",
     tiktok: "https://www.tiktok.com/@dms1t",
     youtube: "https://www.youtube.com/@dms1t",
-    linkedin: "https://www.linkedin.com/company/dms1t",
+    linkedin: "https://www.linkedin.com/company/dmstech-sa",
     x: "https://x.com/dms1t"
   },
   announcement: {

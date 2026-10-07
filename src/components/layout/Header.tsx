@@ -178,7 +178,7 @@ export default function Header({ services }: { services: NavService[] }) {
         </nav>
 
         <div className="ms-auto flex items-center gap-2 xl:ms-2">
-          <LocaleSwitch label={t("language")} className={`hidden sm:inline-flex ${hov}`} />
+          <LocaleSwitch dark={dark} className="hidden sm:inline-flex" />
           <Link
             href="/quote"
             className={`hidden whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition sm:inline-flex ${dark ? "border-white/25 hover:bg-white/10" : "border-line bg-white shadow-card hover:border-graphite"}`}
@@ -218,7 +218,7 @@ export default function Header({ services }: { services: NavService[] }) {
           <Link href="/quote" className="btn btn-primary w-full">
             {t("quote")}
           </Link>
-          <LocaleSwitch label={t("language")} className="btn btn-outline w-full !text-ink" />
+          <LocaleSwitch full className="flex" />
         </div>
       </div>
     </header>
@@ -286,17 +286,33 @@ function MobileGroup({ label, items }: { label: string; items: MenuItem[] }) {
   );
 }
 
-function LocaleSwitch({ label, className }: { label: string; className?: string }) {
+const LOCALES = [
+  { code: "ar", label: "عربي", name: "العربية" },
+  { code: "en", label: "EN", name: "English" }
+] as const;
+
+/** Language toggle: both languages visible, the current one highlighted (segmented control). */
+function LocaleSwitch({ dark, full, className }: { dark?: boolean; full?: boolean; className?: string }) {
   const locale = useLocale();
   const pathname = usePathname();
   return (
-    <Link
-      href={pathname}
-      locale={locale === "ar" ? "en" : "ar"}
-      className={`items-center gap-1.5 whitespace-nowrap rounded-pill px-3 py-2 text-sm font-semibold transition ${className ?? ""}`}
+    <div
+      role="group"
+      aria-label="اللغة / Language"
+      className={`items-center gap-0.5 rounded-full p-1 text-[13px] font-semibold ring-1 transition-colors ${dark ? "bg-white/10 ring-white/15" : "bg-cloud ring-mist"} ${full ? "w-full" : ""} ${className ?? ""}`}
     >
-      <Icon name="Globe" size={17} />
-      {label}
-    </Link>
+      {LOCALES.map((l) => {
+        const item = `${full ? "flex-1 text-center" : ""} rounded-full px-3.5 py-1.5 leading-none transition`;
+        return l.code === locale ? (
+          <span key={l.code} aria-current="true" lang={l.code} className={`${item} shadow-sm ${dark ? "bg-white text-ink" : "bg-ink text-white"}`}>
+            {l.label}
+          </span>
+        ) : (
+          <Link key={l.code} href={pathname} locale={l.code} lang={l.code} hrefLang={l.code} aria-label={l.name} className={`${item} ${dark ? "text-white/70 hover:bg-white/10 hover:text-white" : "text-iron hover:bg-white hover:text-ink"}`}>
+            {l.label}
+          </Link>
+        );
+      })}
+    </div>
   );
 }
