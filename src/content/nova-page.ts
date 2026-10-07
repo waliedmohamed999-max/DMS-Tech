@@ -1,4 +1,5 @@
 import type { IconName } from "@/components/ui/Icon";
+import type { MockupKey } from "@/components/ui/ProductMockups";
 import type { L } from "./types";
 
 /**
@@ -65,6 +66,37 @@ export const novaPage = {
       brain: { ar: "عقل الشركة", en: "Company Brain" } as L,
       inbox: { ar: "صندوق واتساب", en: "WhatsApp Inbox" } as L
     },
+    /** The four pillars as an interactive tools explorer; points restate the modules listed below. */
+    tools: [
+      {
+        icon: "PenTool",
+        visual: "nova-studio",
+        title: { ar: "استوديو المحتوى", en: "Content Studio" },
+        text: { ar: "خطة محتوى أسبوعية جاهزة بأسلوب علامتك: منشورات وكاروسيل وصور، تصلك للموافقة ثم تُجدول وتُنشر على قنواتك.", en: "A weekly content plan in your brand voice: posts, carousels and images that arrive for approval, then get scheduled and published to your channels." },
+        points: [{ ar: "خطط المحتوى والتقويم", en: "Content plans & calendar" }, { ar: "الكاروسيل واستوديو الصور", en: "Carousels & image studio" }, { ar: "الموافقات قبل النشر", en: "Approvals before publishing" }, { ar: "الحملات والقوالب", en: "Campaigns & templates" }]
+      },
+      {
+        icon: "Route",
+        visual: "nova-sales",
+        title: { ar: "مكتب المبيعات", en: "Sales Desk" },
+        text: { ar: "كل عميل محتمل في مسار مبيعات واضح، مع عروض الأسعار والمتابعات والاجتماعات — ومساعد ينبّهك للصفقات المتوقفة.", en: "Every lead in a clear pipeline, with quotes, follow-ups and meetings — and an assistant that flags stalled deals." },
+        points: [{ ar: "العملاء المحتملون ومسار المبيعات", en: "Leads & pipeline" }, { ar: "عروض الأسعار", en: "Quotes" }, { ar: "المتابعات والاجتماعات", en: "Follow-ups & meetings" }, { ar: "نماذج العملاء", en: "Lead forms" }]
+      },
+      {
+        icon: "Sparkles",
+        visual: "nova-brain",
+        title: { ar: "عقل الشركة", en: "Company Brain" },
+        text: { ar: "يقرأ NOVA علامتك وعروضك وجمهورك ونتائجك السابقة قبل أن يكتب كلمة واحدة، ويتعلّم من النتائج الحقيقية كل أسبوع.", en: "NOVA reads your brand, offers, audience and past results before it writes a single word — and learns from real results every week." },
+        points: [{ ar: "هوية العلامة وصوتها", en: "Brand kit & voice" }, { ar: "الرؤى والتحليلات", en: "Insights & analytics" }, { ar: "التقارير", en: "Reports" }, { ar: "العربية والإنجليزية", en: "Arabic & English" }]
+      },
+      {
+        icon: "MessagesSquare",
+        visual: "nova-inbox",
+        title: { ar: "صندوق واتساب", en: "WhatsApp Inbox" },
+        text: { ar: "ردود جاهزة يكتبها NOVA لعملائك على واتساب، ولا يُرسل شيء دون موافقة شخص من فريقك — وكل محادثة تتحول لفرصة في مسار المبيعات.", en: "NOVA drafts replies to your customers on WhatsApp, nothing is sent without a person on your team approving it — and every chat becomes a deal in the pipeline." },
+        points: [{ ar: "صندوق الوارد", en: "Inbox" }, { ar: "ردود بانتظار موافقتك", en: "Replies awaiting approval" }, { ar: "الإشعارات", en: "Notifications" }, { ar: "سجل التدقيق والأمان", en: "Audit log & security" }]
+      }
+    ] as (Item & { points: L[]; visual: MockupKey })[],
     modules: [
       { icon: "PenTool", label: { ar: "خطط المحتوى", en: "Content plans" } },
       { icon: "Calendar", label: { ar: "التقويم", en: "Calendar" } },

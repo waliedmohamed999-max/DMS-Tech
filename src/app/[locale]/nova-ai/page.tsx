@@ -9,6 +9,7 @@ import { Icon } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { DarkSteps, Faq, SectionNav } from "@/components/ui/ProductBlocks";
+import ToolExplorer from "@/components/ui/ToolExplorer";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 /**
  * NOVA AI — product page rebuilt from the NOVA platform's own landing page (src/content/nova-page.ts), in the DMS
- * Tech design: hero + real product screen, channels, problem, workspace, AI team, NOVA Brain, how it works, plans,
+ * Tech design: hero + real product screen, channels, problem, workspace (tools explorer), AI team, NOVA Brain, how it works, plans,
  * FAQ and a final call to action. Every "start" button opens NOVA's sign-up, "sign in" its sign-in page.
  */
 export default async function NovaPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -130,59 +131,8 @@ export default async function NovaPage({ params }: { params: Promise<{ locale: s
       <section id="product" className="section scroll-mt-24 bg-cloud">
         <div className="container-site">
           <SectionHeading title={c.workspace.title} sub={c.workspace.sub} />
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="card grid gap-5 p-8">
-              <h3 className="flex items-center gap-2 text-xl font-bold">
-                <Icon name="PenTool" size={20} className="text-iris" /> {c.workspace.pillars.studio}
-              </h3>
-              <div className="grid gap-3 sm:grid-cols-2" dir="ltr">
-                {[
-                  ["In review", "bg-amber-100 text-amber-700", "Ramadan offer"],
-                  ["Scheduled", "bg-sky-100 text-sky-700", "Before & after"]
-                ].map(([badge, cls, title]) => (
-                  <div key={title} className="rounded-xl border border-mist bg-white p-4 shadow-card">
-                    <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase ${cls}`}>{badge}</span>
-                    <p className="mt-3 text-sm font-semibold text-ink">{title}</p>
-                    <span className="mt-2 block h-1.5 w-3/4 rounded-full bg-cloud" />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="card grid gap-5 p-8">
-              <h3 className="flex items-center gap-2 text-xl font-bold">
-                <Icon name="Route" size={20} className="text-iris" /> {c.workspace.pillars.sales}
-              </h3>
-              <ul className="grid gap-2" dir="ltr">
-                {[
-                  ["Nasser Consulting", "Won", "bg-emerald-100 text-emerald-700"],
-                  ["Saleh Events", "Proposal", "bg-sky-100 text-sky-700"],
-                  ["Mariam A.", "Lead", "bg-cloud text-iron"]
-                ].map(([name, stage, cls]) => (
-                  <li key={name} className="flex items-center justify-between rounded-xl border border-mist bg-white px-4 py-2.5 text-sm shadow-card">
-                    <span className="font-medium text-ink">{name}</span>
-                    <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase ${cls}`}>{stage}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="card grid content-center justify-items-center gap-4 p-8 text-center">
-              <span className="grid size-16 place-items-center rounded-2xl bg-ink text-white shadow-[0_0_0_6px_#ece9ff,0_0_0_8px_#c9bfff]">
-                <Icon name="Sparkles" size={26} />
-              </span>
-              <h3 className="text-xl font-bold">{c.workspace.pillars.brain}</h3>
-              <p className="max-w-sm text-[15px] text-iron">{c.brainSection.pillars.context.text}</p>
-            </div>
-            <div className="card grid gap-5 p-8">
-              <h3 className="flex items-center gap-2 text-xl font-bold">
-                <BrandIcon slug="whatsapp" size={20} colored /> {c.workspace.pillars.inbox}
-              </h3>
-              <div className="grid gap-2 text-sm" dir="ltr">
-                <span className="max-w-[80%] justify-self-start rounded-2xl rounded-bl-sm border border-mist bg-white px-4 py-2.5 text-ink shadow-card">Is the facial available Friday?</span>
-                <span className="max-w-[80%] justify-self-end rounded-2xl rounded-br-sm bg-[#d9fdd3] px-4 py-2.5 text-ink shadow-card">Yes — 4 pm or 6 pm. Shall I book one?</span>
-              </div>
-            </div>
-          </div>
-          <ul className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-mist bg-mist sm:grid-cols-3 lg:grid-cols-6">
+          <ToolExplorer tools={c.workspace.tools} />
+          <ul className="mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-mist bg-mist sm:grid-cols-3 lg:grid-cols-6">
             {c.workspace.modules.map((m) => (
               <li key={m.label} className="flex flex-col items-center gap-2 bg-white px-3 py-5 text-center text-[13.5px] font-medium text-ink">
                 <Icon name={m.icon} size={19} className="text-iris" />

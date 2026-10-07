@@ -34,20 +34,26 @@ export function Faq({ items }: { items: { q: string; a: string }[] }) {
 
 const STEP_COLS: Record<number, string> = { 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" };
 
-/** Numbered steps on a dark (.on-dark) section. */
+/**
+ * Numbered steps on a dark (.on-dark) section, drawn as one path: on desktop the step circles sit on a horizontal
+ * line; on phones the line runs down the start edge and each step reads as a timeline entry.
+ */
 export function DarkSteps({ steps }: { steps: { icon: IconName; title: string; text: string }[] }) {
   return (
-    <ol className={`grid gap-px overflow-hidden rounded-card border border-white/10 bg-white/10 sm:grid-cols-2 ${STEP_COLS[steps.length] ?? "lg:grid-cols-4"}`}>
+    <ol className={`relative grid gap-8 lg:gap-6 ${STEP_COLS[steps.length] ?? "lg:grid-cols-4"}`}>
+      {/* the path */}
+      <span aria-hidden className="absolute inset-x-[8%] top-7 hidden h-px bg-gradient-to-r from-transparent via-iris-light/60 to-transparent lg:block" />
+      <span aria-hidden className="absolute bottom-6 start-7 top-6 w-px bg-gradient-to-b from-iris-light/60 via-iris-light/30 to-transparent lg:hidden" />
       {steps.map((s, i) => (
-        <li key={s.title} className="grid content-start gap-3 bg-obsidian p-7">
-          <span className="flex items-center justify-between">
-            <span className="grid size-9 place-items-center rounded-icon bg-white/5 text-iris-light">
-              <Icon name={s.icon} size={17} />
+        <li key={s.title} className="relative grid grid-cols-[auto_1fr] gap-x-5 gap-y-2 lg:grid-cols-1 lg:justify-items-center lg:text-center">
+          <span className="relative row-span-2 grid size-14 place-items-center rounded-2xl bg-gradient-to-br from-iris to-iris-soft text-white shadow-[0_0_0_6px_#151718,0_0_0_7px_rgba(169,155,255,.35)] lg:row-span-1">
+            <Icon name={s.icon} size={22} />
+            <span className="absolute -end-2 -top-2 grid size-6 place-items-center rounded-full bg-white text-[11px] font-bold text-ink" dir="ltr">
+              {i + 1}
             </span>
-            <span className="font-mono text-xs text-[#8d8e8f]">{String(i + 1).padStart(2, "0")}</span>
           </span>
-          <h3 className="text-lg font-bold">{s.title}</h3>
-          <p className="text-[15px] leading-relaxed text-[#b4b5b6]">{s.text}</p>
+          <h3 className="self-end text-lg font-bold lg:mt-3">{s.title}</h3>
+          <p className="max-w-xs text-[15px] leading-relaxed text-[#b4b5b6]">{s.text}</p>
         </li>
       ))}
     </ol>

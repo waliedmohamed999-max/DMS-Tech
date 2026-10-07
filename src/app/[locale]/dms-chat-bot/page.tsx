@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
@@ -9,6 +8,8 @@ import { Icon } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { DarkSteps, Faq, SectionNav } from "@/components/ui/ProductBlocks";
+import { ChatbotHeroMockup } from "@/components/ui/ProductMockups";
+import ToolExplorer from "@/components/ui/ToolExplorer";
 import { FinalCta } from "@/components/home/Sections";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -19,7 +20,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 /**
  * DMS Chat Bot — product page (src/content/chatbot.ts), same design language as the NOVA AI page, marked "coming
- * soon": hero + product screen, features, services in detail, channels & tools, solutions, vision & method, FAQ.
+ * soon": hero + coded product screen, features, a tools explorer (each tool with its screen), channels & tools,
+ * solutions, vision & a step path, FAQ.
  * "Register your interest" opens the quote form with the product preselected.
  */
 export default async function ChatbotPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -57,10 +59,8 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
                 </a>
               </div>
             </div>
-            <div className="relative">
-              <div className="overflow-hidden rounded-card border border-white/10 bg-white shadow-sm2">
-                <Image src={c.image} alt={c.title} width={1261} height={726} priority sizes="(min-width:1024px) 640px, 94vw" className="h-auto w-full" />
-              </div>
+            <div className="relative" aria-hidden>
+              <ChatbotHeroMockup locale={locale === "ar" ? "ar" : "en"} />
               <span className="absolute -bottom-4 start-6 hidden items-center gap-2 rounded-2xl border border-mist bg-white px-4 py-2.5 text-sm font-semibold text-ink shadow-lg sm:flex">
                 <BrandIcon slug="whatsapp" size={16} colored /> WhatsApp Business Platform
               </span>
@@ -71,89 +71,84 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
       </section>
 
       {/* 2 — features */}
-      <section className="section bg-cloud">
+      <section className="section">
         <div className="container-site">
           <SectionHeading title={c.featuresTitle} sub={c.description} />
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-4">
             {c.features.map((f) => (
-              <div key={f.title} className="card card-hover grid content-start gap-4 p-7">
-                <span className="grid size-11 place-items-center rounded-icon bg-[#e7f8ee] text-fern">
+              <div key={f.title} className="card card-hover grid content-start gap-3 p-4 sm:gap-4 sm:p-7">
+                <span className="grid size-10 place-items-center rounded-xl bg-lilac text-iris sm:size-11">
                   <Icon name={f.icon} size={20} />
                 </span>
-                <h3 className="text-lg font-bold">{f.title}</h3>
-                <p className="text-[15px] leading-relaxed text-iron">{f.text}</p>
+                <h3 className="text-[15px] font-bold sm:text-lg">{f.title}</h3>
+                <p className="text-[13px] leading-relaxed text-iron sm:text-[15px]">{f.text}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 3 — services in detail */}
-      <section id="services" className="section scroll-mt-24">
+      {/* 3 — the tools, each with its screen */}
+      <section id="services" className="section scroll-mt-24 bg-cloud">
         <div className="container-site">
-          <SectionHeading title={c.servicesTitle} />
-          <div className="grid gap-6">
-            {c.services.map((s, i) => (
-              <article key={s.title} className="card grid gap-8 p-8 md:grid-cols-[1.25fr_1fr] md:p-10">
-                <div className="grid content-start gap-4">
-                  <span className="flex items-center gap-3">
-                    <span className="badge-icon">
-                      <Icon name={s.icon} />
-                    </span>
-                    <span className="font-mono text-xs text-graphite">{String(i + 1).padStart(2, "0")}</span>
-                  </span>
-                  <h3 className="text-2xl font-bold">{s.title}</h3>
-                  <p className="text-[15.5px] leading-relaxed text-iron">{s.text}</p>
-                </div>
-                <ul className="grid content-start gap-3 rounded-2xl bg-cloud p-6">
-                  {s.points.map((p) => (
-                    <li key={p} className="flex items-start gap-2.5 text-[15px] font-medium text-ink">
-                      <Icon name="CircleCheck" size={18} className="mt-0.5 shrink-0 text-fern" />
-                      {p}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
+          <SectionHeading title={c.servicesTitle} sub={c.servicesSub} />
+          <ToolExplorer tools={c.services} />
         </div>
       </section>
 
       {/* 4 — channels & tools */}
-      <section id="channels" className="section scroll-mt-24 bg-cloud">
+      <section id="channels" className="section scroll-mt-24">
         <div className="container-site">
           <SectionHeading title={c.channelsTitle} sub={c.channelsSub} />
-          <div className="grid gap-10 lg:grid-cols-2">
-            {[
-              { label: c.channelsLabel, items: c.channels },
-              { label: c.toolsLabel, items: c.tools }
-            ].map((group) => (
-              <div key={group.label} className="grid content-start gap-4">
-                <h3 className="text-lg font-bold">{group.label}</h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {group.items.map((it) => {
-                    const brand = (it as { brand?: string | null }).brand;
-                    return (
-                    <div key={it.title} className="card flex items-start gap-3 p-5">
-                      <span className="grid size-10 shrink-0 place-items-center rounded-icon bg-white text-iris shadow-card ring-1 ring-mist">
-                        {brand ? <BrandIcon slug={brand} size={19} colored /> : <Icon name={it.icon} size={18} />}
-                      </span>
-                      <span className="grid gap-1">
-                        <span className="font-semibold text-ink">{it.title}</span>
-                        <span className="text-sm leading-relaxed text-iron">{it.text}</span>
-                      </span>
-                    </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* channels: what plugs in */}
+            <div className="grid content-start gap-4 rounded-card border border-mist bg-cloud p-6">
+              <h3 className="flex items-center gap-2 text-lg font-bold">
+                <Icon name="Cable" size={18} className="text-iris" /> {c.channelsLabel}
+              </h3>
+              <ul className="grid gap-2.5">
+                {c.channels.map((it) => (
+                  <li key={it.title} className={`flex items-center gap-3 rounded-2xl border bg-white p-4 ${it.soon ? "border-dashed border-line" : "border-mist shadow-card"}`}>
+                    <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-cloud text-iris">
+                      {it.brand ? <BrandIcon slug={it.brand} size={20} colored /> : <Icon name={it.icon} size={19} />}
+                    </span>
+                    <span className="grid min-w-0 flex-1 gap-0.5">
+                      <span className="font-semibold text-ink">{it.title}</span>
+                      <span className="text-sm leading-relaxed text-iron">{it.text}</span>
+                    </span>
+                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold ${it.soon ? "bg-lilac text-iris" : "bg-mint text-fern"}`}>
+                      {it.soon ? c.ui.soon : c.channelReady}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {/* tools: what you work with */}
+            <div className="grid content-start gap-4 rounded-card border border-mist bg-cloud p-6">
+              <h3 className="flex items-center gap-2 text-lg font-bold">
+                <Icon name="LayoutDashboard" size={18} className="text-iris" /> {c.toolsLabel}
+              </h3>
+              <ul className="grid gap-2.5 sm:grid-cols-2">
+                {c.tools.map((it, i) => (
+                  <li key={it.title} className={`grid content-start gap-2 rounded-2xl border border-mist bg-white p-4 shadow-card ${i === c.tools.length - 1 && c.tools.length % 2 ? "sm:col-span-2" : ""}`}>
+                    <span className="grid size-10 place-items-center rounded-xl bg-lilac text-iris">
+                      <Icon name={it.icon} size={18} />
+                    </span>
+                    <span className="font-semibold text-ink">{it.title}</span>
+                    <span className="text-sm leading-relaxed text-iron">{it.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
+          <p className="mt-8 flex items-center justify-center gap-2 text-sm font-semibold text-graphite">
+            <BrandIcon slug="whatsapp" size={16} colored /> {c.hubLabel}
+          </p>
         </div>
       </section>
 
       {/* 5 — solutions */}
-      <section id="solutions" className="section scroll-mt-24">
+      <section id="solutions" className="section scroll-mt-24 bg-cloud">
         <div className="container-site">
           <SectionHeading title={c.solutionsTitle} sub={c.solutionsSub} />
           <div className="grid gap-10">

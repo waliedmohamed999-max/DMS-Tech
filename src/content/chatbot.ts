@@ -1,4 +1,5 @@
 import type { IconName } from "@/components/ui/Icon";
+import type { MockupKey } from "@/components/ui/ProductMockups";
 import type { L } from "./types";
 
 /**
@@ -37,10 +38,12 @@ export const chatbot = {
     { icon: "Plug", title: { ar: "تكامل مع متجرك", en: "Store integration" }, text: { ar: "ربط حقيقي مع زد وسلة لمزامنة الطلبات، أو ربط رقم واتساب Cloud API يدوياً.", en: "Real integration with Zid and Salla to sync orders, or connect a WhatsApp Cloud API number manually." } }
   ] as Item[],
 
-  servicesTitle: { ar: "خدماتنا *بالتفصيل*", en: "Our services *in detail*" } as L,
+  servicesTitle: { ar: "أدوات المنصة *بالتفصيل*", en: "The platform tools *in detail*" } as L,
+  servicesSub: { ar: "اختر أداة لترى كيف تعمل داخل المنصة.", en: "Pick a tool to see how it works inside the platform." } as L,
   services: [
     {
       icon: "Megaphone",
+      visual: "cb-campaigns",
       title: { ar: "الحملات الإعلانية عبر واتساب", en: "WhatsApp marketing campaigns" },
       text: { ar: "أرسل حملات مجزّأة حسب شرائح عملائك (جدد، عملاء متكررون، سلة متروكة) باستخدام قوالب رسائل معتمدة من Meta. تتبّع نتائج كل حملة لحظياً: عدد المُرسَل، المُسلَّم، المقروء، والمبيعات الفعلية الناتجة عنها.", en: "Send campaigns segmented by customer group (new, repeat, abandoned cart) using Meta-approved message templates. Track every campaign live: sent, delivered, read — and the actual sales it generated." },
       points: [
@@ -52,6 +55,7 @@ export const chatbot = {
     },
     {
       icon: "Bot",
+      visual: "cb-flow",
       title: { ar: "الشات بوت الذكي", en: "Smart chatbot" },
       text: { ar: "محرر تدفقات بصري بلا كود: صمّم رحلة الرد الآلي بالسحب والإفلات، اختبرها قبل النشر، وحوّل المحادثة لموظف بشري في أي لحظة تحتاج تدخلاً إنسانياً.", en: "A visual, no-code flow editor: design the automated reply journey by drag and drop, test it before publishing, and hand the conversation to a human agent whenever it needs a personal touch." },
       points: [
@@ -63,6 +67,7 @@ export const chatbot = {
     },
     {
       icon: "Inbox",
+      visual: "cb-crm",
       title: { ar: "CRM موحّد", en: "Unified CRM" },
       text: { ar: "صندوق محادثات واحد يجمع كل رسائل عملائك عبر واتساب، مع ملف عميل كامل (بيانات، مرحلة الشراء، سجل الطلبات) وأدوات فريق (تعيين المحادثات، ملاحظات داخلية، أدوار وصلاحيات).", en: "One inbox that gathers all your customers' WhatsApp messages, with a full customer profile (details, purchase stage, order history) and team tools (assigning conversations, internal notes, roles and permissions)." },
       points: [
@@ -74,6 +79,7 @@ export const chatbot = {
     },
     {
       icon: "ShoppingCart",
+      visual: "cb-store",
       title: { ar: "تكامل المتاجر", en: "Store integrations" },
       text: { ar: "ربط حقيقي مع منصتي زد وسلة يزامن طلباتك ومنتجاتك تلقائياً، ويتيح حملات استرداد السلة المتروكة بلا أي تدخل يدوي.", en: "Real integration with Zid and Salla that syncs your orders and products automatically and runs abandoned-cart recovery campaigns with no manual work." },
       points: [
@@ -84,6 +90,7 @@ export const chatbot = {
     },
     {
       icon: "ShieldCheck",
+      visual: "cb-official",
       title: { ar: "الربط الرسمي مع واتساب (Meta)", en: "Official WhatsApp connection (Meta)" },
       text: { ar: "المنصة مبنية على WhatsApp Business Platform الرسمي من Meta — موثوقية أعلى، إمكانية استخدام قوالب رسائل معتمدة، ودعم لفريق أكبر على نفس الرقم.", en: "The platform is built on Meta's official WhatsApp Business Platform — higher reliability, approved message templates, and support for a larger team on the same number." },
       points: [
@@ -92,18 +99,20 @@ export const chatbot = {
         { ar: "دعم فريق متعدد على نفس رقم واتساب", en: "Multiple team members on the same WhatsApp number" }
       ]
     }
-  ] as (Item & { points: L[] })[],
+  ] as (Item & { points: L[]; visual: MockupKey })[],
 
   channelsTitle: { ar: "القنوات والأدوات *في مكان واحد*", en: "Channels and tools *in one place*" } as L,
   channelsSub: { ar: "اربط قنواتك الحقيقية، وأدر كل تفاعل مع عملائك من نفس لوحة التحكم.", en: "Connect your real channels and manage every customer interaction from the same dashboard." } as L,
   channelsLabel: { ar: "القنوات", en: "Channels" } as L,
   toolsLabel: { ar: "الأدوات", en: "Tools" } as L,
+  channelReady: { ar: "تكامل رسمي", en: "Official" } as L,
+  hubLabel: { ar: "كل قنواتك تصبّ في لوحة واحدة", en: "Every channel flows into one dashboard" } as L,
   channels: [
     { icon: "MessagesSquare", brand: "whatsapp", title: { ar: "واتساب API", en: "WhatsApp API" }, text: { ar: "ربط رسمي مع WhatsApp Business Platform تحت علامتك التجارية.", en: "Official connection to the WhatsApp Business Platform under your brand." } },
     { icon: "ShoppingBag", brand: null, title: { ar: "زد (Zid)", en: "Zid" }, text: { ar: "مزامنة تلقائية لطلبات ومنتجات متجرك على منصة زد.", en: "Automatic sync of your Zid store's orders and products." } },
     { icon: "ShoppingCart", brand: null, title: { ar: "سلة (Salla)", en: "Salla" }, text: { ar: "مزامنة تلقائية لطلبات ومنتجات متجرك على منصة سلة.", en: "Automatic sync of your Salla store's orders and products." } },
-    { icon: "Sparkles", brand: null, title: { ar: "قنوات جديدة قريباً", en: "More channels soon" }, text: { ar: "نعمل على إضافة قنوات وتكاملات جديدة — ترقّب التحديثات.", en: "New channels and integrations are on the way — stay tuned." } }
-  ] as (Item & { brand: string | null })[],
+    { icon: "Sparkles", brand: null, soon: true, title: { ar: "قنوات جديدة قريباً", en: "More channels soon" }, text: { ar: "نعمل على إضافة قنوات وتكاملات جديدة — ترقّب التحديثات.", en: "New channels and integrations are on the way — stay tuned." } }
+  ] as (Item & { brand: string | null; soon?: boolean })[],
   tools: [
     { icon: "Megaphone", title: { ar: "الحملات", en: "Campaigns" }, text: { ar: "أرسل حملات جماعية وأتمتة استرداد السلة المتروكة.", en: "Bulk campaigns and automated abandoned-cart recovery." } },
     { icon: "Users", title: { ar: "جهات الاتصال", en: "Contacts" }, text: { ar: "نظام CRM بسيط مبني حول محادثات عملائك الفعلية.", en: "A simple CRM built around your real customer conversations." } },
