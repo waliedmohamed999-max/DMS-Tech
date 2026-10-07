@@ -117,7 +117,7 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
             {(
               [
                 ["ClipboardList", "bg-[#efecff] text-iris", L(locale, "إدارة", "PM")],
-                ["PenTool", "bg-[#efecff] text-iris", L(locale, "تصميم", "Design")],
+                ["PencilRuler", "bg-[#efecff] text-iris", L(locale, "تصميم", "Design")],
                 ["Monitor", "bg-[#efecff] text-iris", L(locale, "واجهات", "Front")],
                 ["Server", "bg-[#efecff] text-iris", L(locale, "أنظمة", "Back")],
                 ["SearchCheck", "bg-[#efecff] text-iris", L(locale, "جودة", "QA")]
@@ -244,7 +244,7 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-[11.5px] font-semibold text-ink">
               <span className="grid size-5 place-items-center rounded-md bg-[#efecff] text-iris">
-                <Icon name="PenTool" size={11} />
+                <Icon name="PencilRuler" size={11} />
               </span>
               {L(locale, "استوديو التصميم", "Design studio")}
             </span>

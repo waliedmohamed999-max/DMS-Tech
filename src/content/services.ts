@@ -64,7 +64,7 @@ export const services: Service[] = [
   },
   {
     slug: "web-development",
-    icon: "MonitorSmartphone",
+    icon: "CodeXml",
     image: "/images/photos/svc-web.jpg",
     eyebrow: { ar: "المواقع والتطبيقات", en: "Websites & Apps" },
     title: { ar: "تطوير المواقع والتطبيقات", en: "Web & App Development" },
@@ -84,7 +84,7 @@ export const services: Service[] = [
       { icon: "Globe", title: { ar: "تطبيقات الويب", en: "Web Applications" }, description: { ar: "منصات وبوابات ولوحات تحكم حديثة.", en: "Modern platforms, portals and dashboards." } },
       { icon: "Smartphone", title: { ar: "تطبيقات الجوال", en: "Mobile Apps" }, description: { ar: "تجارب متعددة المنصات لـ iOS و Android.", en: "Cross-platform experiences for iOS and Android." } },
       { icon: "Settings", title: { ar: "أنظمة الإدارة", en: "Admin Systems" }, description: { ar: "أدوات داخلية للفرق والعمليات.", en: "Internal tools for teams and operations." } },
-      { icon: "PenTool", title: { ar: "تصميم UX / UI", en: "UX / UI Design" }, description: { ar: "تجارب واضحة وحديثة وسهلة الاستخدام.", en: "Clear, modern and user-friendly experiences." } },
+      { icon: "PencilRuler", title: { ar: "تصميم UX / UI", en: "UX / UI Design" }, description: { ar: "تجارب واضحة وحديثة وسهلة الاستخدام.", en: "Clear, modern and user-friendly experiences." } },
       { icon: "Gauge", title: { ar: "الأداء و SEO", en: "Performance & SEO" }, description: { ar: "تحميل سريع، تجاوب كامل، وتحسين مستمر.", en: "Fast loading, responsive and optimized." } },
       { icon: "Cloud", title: { ar: "API والتكامل السحابي", en: "API & Cloud Integration" }, description: { ar: "اتصال خلفي آمن ونشر موثوق.", en: "Secure back-end connectivity and deployment." } }
     ],
@@ -113,7 +113,7 @@ export const services: Service[] = [
     ],
     features: [
       { icon: "ClipboardList", title: { ar: "مدير مشروع مخصص", en: "Dedicated project manager" }, description: { ar: "نقطة تواصل واحدة تنظّم الأولويات وتتابع التسليم وترفع التقارير.", en: "One point of contact who sets priorities, tracks delivery and reports progress." } },
-      { icon: "PenTool", title: { ar: "مصمم UX / UI", en: "UX / UI designer" }, description: { ar: "واجهات وتجارب استخدام متسقة مع هوية علامتك.", en: "Interfaces and user experiences consistent with your brand." } },
+      { icon: "PencilRuler", title: { ar: "مصمم UX / UI", en: "UX / UI designer" }, description: { ar: "واجهات وتجارب استخدام متسقة مع هوية علامتك.", en: "Interfaces and user experiences consistent with your brand." } },
       { icon: "Monitor", title: { ar: "مطوّر واجهات أمامية", en: "Front-end developer" }, description: { ar: "مواقع ولوحات تحكم سريعة ومتجاوبة.", en: "Fast, responsive websites and dashboards." } },
       { icon: "Server", title: { ar: "مطوّر أنظمة خلفية و API", en: "Back-end & API developer" }, description: { ar: "قواعد بيانات وواجهات برمجية وتكاملات آمنة.", en: "Databases, APIs and secure integrations." } },
       { icon: "Smartphone", title: { ar: "مطوّر تطبيقات جوال", en: "Mobile developer" }, description: { ar: "تطبيقات iOS و Android وتحديثاتها المستمرة.", en: "iOS and Android apps and their ongoing updates." } },
@@ -286,7 +286,7 @@ export const services: Service[] = [
   },
   {
     slug: "ux-ui-design",
-    icon: "PenTool",
+    icon: "PencilRuler",
     image: "/images/photos/svc-ux.jpg",
     eyebrow: { ar: "تجربة المستخدم", en: "UX / UI" },
     title: { ar: "تصميم تجربة وواجهة المستخدم", en: "UX / UI Design & Brand Experiences" },
