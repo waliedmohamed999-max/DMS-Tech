@@ -91,6 +91,8 @@ Add these under **Environment variables** in the same screen, then **Save**. The
 - `SENTRY_DSN` or `ERROR_REPORT_WEBHOOK_URL`: error reporting.
 - `LOG_LEVEL=info`
 
+**Website requests by e-mail.** Every quote / contact request is e-mailed to `info@dmstech.sa` (change with `LEAD_NOTIFY_EMAIL`), even when the database is unavailable. On cPanel this uses the server `sendmail`, so nothing has to be configured. If the e-mails do not arrive, set `SMTP_HOST=mail.dmstech.sa`, `SMTP_PORT=465`, `SMTP_USER=info@dmstech.sa` and `SMTP_PASS` (the mailbox password, a secret) to send through the mailbox instead.
+
 **Never set in production:**
 - `ALLOW_DEMO_SEED`
 - `OS_LOCAL_PROD_TEST`

@@ -4,6 +4,8 @@ import { hit } from "@/server/rate-limit";
 import { randomUUID } from "node:crypto";
 import { runWithObs } from "@/server/obs/context";
 import { reportError } from "@/server/obs/errors";
+import { spamReason } from "@/server/crm/website";
+import { emailWebsiteLead } from "@/server/notify/lead-mail";
 
 const MAX_BODY = 16_000;
 
@@ -12,6 +14,8 @@ const MAX_BODY = 16_000;
  * - DB-backed rate limit (works across serverless instances): 5 / 10 min per IP, 30 / hour globally per IP prefix
  * - strict whitelist schema, body size cap, honeypot + timing + content heuristics (silent drop)
  * - never returns internal ids
+ * - every non-spam request is also e-mailed to the company inbox (src/server/notify/lead-mail.ts); the visitor sees
+ *   success when either the CRM save or the e-mail worked, so a request is never lost to one failing side
  */
 export async function POST(request: NextRequest) {
   // Phase 10: request id → lead.created event → automation → outbox share one correlation id
@@ -49,11 +53,25 @@ async function handle(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "invalid", issues: parsed.error.issues.map((i) => i.path.join(".")) }, { status: 422 });
   }
 
+  let saved = false;
+  let leadNumber: string | undefined;
   try {
-    await saveLead(parsed.data, { ip, userAgent });
+    const r = await saveLead(parsed.data, { ip, userAgent });
+    saved = true;
+    leadNumber = r.leadNumber;
   } catch (e) {
     reportError(e, "website_lead");
-    return NextResponse.json({ ok: false, error: "server" }, { status: 500 });
   }
+
+  // spam is dropped silently (the CRM side audits it); everything else goes to the inbox too
+  if (spamReason(parsed.data)) return NextResponse.json({ ok: true });
+  let mailed = false;
+  try {
+    mailed = (await emailWebsiteLead(parsed.data, { ip, leadNumber, saved })) === "sent";
+  } catch (e) {
+    reportError(e, "website_lead_email");
+  }
+
+  if (!saved && !mailed) return NextResponse.json({ ok: false, error: "server" }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
