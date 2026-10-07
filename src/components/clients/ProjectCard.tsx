@@ -27,13 +27,13 @@ export function ProjectCard({ project, details, rtl }: { project: ProjectCardDat
   const host = hostOf(project.link);
   return (
     <article className="card card-hover group relative flex flex-col overflow-hidden">
-      <div className={`relative aspect-[16/10] overflow-hidden border-b border-mist ${project.coverFit === "contain" ? "bg-cloud" : "bg-white"}`}>
+      <div className={`relative aspect-[7/3] overflow-hidden border-b border-mist ${project.coverFit === "contain" ? "bg-cloud" : "bg-white"}`}>
         <Image
           src={project.cover}
           alt={project.name}
           fill
           sizes="(min-width:1024px) 400px, (min-width:768px) 50vw, 92vw"
-          className={project.coverFit === "contain" ? "object-contain p-8 transition duration-500 group-hover:scale-105" : "object-cover transition duration-500 group-hover:scale-105"}
+          className={project.coverFit === "contain" ? "object-contain p-6 transition duration-500 group-hover:scale-105" : "object-cover transition duration-500 group-hover:scale-105"}
         />
       </div>
       <div className="flex flex-1 flex-col gap-3 p-7">

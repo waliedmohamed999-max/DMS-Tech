@@ -73,17 +73,25 @@ export default async function ClientProjectPage({ params }: Props) {
               </p>
             )}
           </div>
-          <div className="overflow-hidden rounded-card border border-white/10 bg-white shadow-sm2">
-            <Image
-              src={cover.src}
-              alt={project.name}
-              width={cover.width}
-              height={cover.height}
-              priority
-              sizes="(min-width:1024px) 600px, 92vw"
-              className={`h-auto w-full ${project.coverFit === "contain" ? "mx-auto max-h-[420px] object-contain p-10" : ""}`}
-            />
-          </div>
+          {project.coverFit === "contain" ? (
+            // logos: centred, never enlarged beyond their own size (small files would turn blurry)
+            <div className="grid min-h-[240px] place-items-center overflow-hidden rounded-card border border-white/10 bg-white p-10 shadow-sm2">
+              <Image
+                src={cover.src}
+                alt={project.name}
+                width={cover.width}
+                height={cover.height}
+                priority
+                sizes={`${Math.min(cover.width, 600)}px`}
+                className="h-auto max-h-[340px] w-auto max-w-full object-contain"
+                style={{ width: `min(100%, ${cover.width}px)` }}
+              />
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-card border border-white/10 bg-white shadow-sm2">
+              <Image src={cover.src} alt={project.name} width={cover.width} height={cover.height} priority sizes="(min-width:1024px) 600px, 92vw" className="h-auto w-full" />
+            </div>
+          )}
         </div>
       </section>
 
