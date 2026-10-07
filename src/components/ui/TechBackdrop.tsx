@@ -1,20 +1,12 @@
 /**
- * Decorative "tech" background: a fading grid, soft glows and animated circuit traces.
+ * Decorative "tech" background: soft glows and optional animated circuit traces (no grid lines).
  * Place inside a `relative overflow-hidden` section; content needs `relative`.
  */
 export default function TechBackdrop({ variant = "dark", circuits = false }: { variant?: "dark" | "light"; circuits?: boolean }) {
   const dark = variant === "dark";
-  const line = dark ? "rgba(255,255,255,.07)" : "rgba(0,0,0,.07)";
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div
-        className="absolute inset-0 [mask-image:radial-gradient(ellipse_75%_70%_at_50%_40%,black_20%,transparent_80%)]"
-        style={{
-          backgroundImage: `linear-gradient(${line} 1px, transparent 1px), linear-gradient(90deg, ${line} 1px, transparent 1px)`,
-          backgroundSize: "56px 56px"
-        }}
-      />
       {dark ? (
         <>
           <div className="absolute -top-48 end-[-10%] size-[640px] rounded-full bg-[radial-gradient(circle,rgba(98,77,227,.28),transparent_65%)]" />
