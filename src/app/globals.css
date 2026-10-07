@@ -111,20 +111,10 @@
     from { background-position: 200% 0; }
     to { background-position: -200% 0; }
   }
-  @keyframes ctaPress {
-    0%, 50%, 70%, 100% { transform: scale(1); background: #1a1d1e; }
-    58% { transform: scale(.9); background: #624de3; }
-    64% { background: #624de3; }
-  }
   @keyframes listScroll {
     0%, 20% { transform: translateY(0); }
     50%, 70% { transform: translateY(-44px); }
     100% { transform: translateY(0); }
-  }
-  @keyframes pop {
-    0% { transform: scale(.6); opacity: .4; }
-    12% { transform: scale(1.18); opacity: 1; }
-    20%, 100% { transform: scale(1); opacity: 1; }
   }
   @keyframes stepFill {
     0% { transform: scaleX(0); }
@@ -132,9 +122,12 @@
     100% { transform: scaleX(0); }
   }
   @keyframes barGrow {
-    0% { transform: scaleY(.35); }
-    30%, 90% { transform: scaleY(1); }
-    100% { transform: scaleY(.35); }
+    0%, 100% { transform: scaleY(.82); }
+    50% { transform: scaleY(1); }
+  }
+  @keyframes softPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .7; }
   }
   @keyframes snap {
     0%, 15% { transform: translate(0, 0); }

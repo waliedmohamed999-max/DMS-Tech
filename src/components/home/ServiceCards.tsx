@@ -59,10 +59,10 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
           </div>
           <div className="grid gap-1.5 rounded-lg bg-[#efeae2] p-2">
             <span className="w-fit max-w-[85%] rounded-xl rounded-es-sm bg-white px-2.5 py-1 text-[10.5px] text-ink shadow-sm">{L(locale, "أبغى عرض سعر لمتجر", "I need a quote for a store")}</span>
-            <span className="ms-auto w-fit max-w-[85%] rounded-xl rounded-ee-sm bg-[#d9fdd3] px-2.5 py-1 text-[10.5px] text-ink shadow-sm animate-[pop_4.5s_ease_infinite] [animation-delay:.4s]">{L(locale, "أكيد! اختر الباقة 👇", "Sure! Pick a plan 👇")}</span>
+            <span className="ms-auto w-fit max-w-[85%] rounded-xl rounded-ee-sm bg-[#d9fdd3] px-2.5 py-1 text-[10.5px] text-ink shadow-sm animate-[softPulse_4.5s_ease_infinite] [animation-delay:.4s]">{L(locale, "أكيد! اختر الباقة 👇", "Sure! Pick a plan 👇")}</span>
             <span className="ms-auto flex gap-1">
               {[L(locale, "أساسية", "Basic"), L(locale, "احترافية", "Pro")].map((b, k) => (
-                <span key={b} className="rounded-full border border-[#25d366]/40 bg-white px-2 py-0.5 text-[10px] font-semibold text-[#128c7e] animate-[pop_4.5s_ease_infinite]" style={{ animationDelay: `${0.9 + k * 0.2}s` }}>
+                <span key={b} className="rounded-full border border-[#25d366]/40 bg-white px-2 py-0.5 text-[10px] font-semibold text-[#128c7e] animate-[softPulse_4.5s_ease_infinite]" style={{ animationDelay: `${0.9 + k * 0.2}s` }}>
                   {b}
                 </span>
               ))}
@@ -83,21 +83,21 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
             <div className="grid gap-1.5 p-2.5">
               <span className="h-2 w-3/4 rounded-full bg-[linear-gradient(90deg,#ebedef_25%,#f6f7f9_50%,#ebedef_75%)] bg-[length:200%_100%] animate-[shimmer_1.8s_linear_infinite]" />
               <span className="h-2 w-1/2 rounded-full bg-[linear-gradient(90deg,#ebedef_25%,#f6f7f9_50%,#ebedef_75%)] bg-[length:200%_100%] animate-[shimmer_1.8s_linear_infinite]" />
-              <span className="mt-1 h-5 w-16 rounded-full bg-ink animate-[ctaPress_4s_ease_infinite]" />
+              <span className="mt-1 h-5 w-16 rounded-full bg-ink animate-[softPulse_4s_ease-in-out_infinite]" />
             </div>
             <span className="absolute end-2 top-7 rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#16a34a]">SEO 98</span>
           </div>
           <div className="absolute -top-3 end-0 h-[112px] w-[60px] overflow-hidden rounded-[14px] border-[3px] border-ink bg-white shadow-card">
             <span className="absolute start-1/2 top-1 h-1 w-5 -translate-x-1/2 rounded-full bg-ink rtl:translate-x-1/2" />
             <div className="grid gap-1 px-1 pt-3.5 animate-[listScroll_5s_ease-in-out_infinite]">
-              {["#624de3", "#1d58c0", "#009639", "#f97316", "#624de3"].map((c, k) => (
+              {["#624de3", "#8a7bef", "#b4abf5", "#8a7bef", "#624de3"].map((c, k) => (
                 <div key={k} className="flex items-center gap-1 rounded bg-cloud p-0.5">
                   <span className="size-2.5 shrink-0 rounded-sm" style={{ background: c }} />
                   <span className="h-1 flex-1 rounded-full bg-line" />
                 </div>
               ))}
             </div>
-            <span className="absolute bottom-1 end-1 grid size-4 place-items-center rounded-full bg-iris text-white animate-[pop_2.5s_ease_infinite]">
+            <span className="absolute bottom-1 end-1 grid size-4 place-items-center rounded-full bg-iris text-white animate-[softPulse_2.5s_ease_infinite]">
               <Icon name="Check" size={9} strokeWidth={3} />
             </span>
           </div>
@@ -117,14 +117,14 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
             {(
               [
                 ["ClipboardList", "bg-[#efecff] text-iris", L(locale, "إدارة", "PM")],
-                ["PenTool", "bg-[#fdeaf4] text-[#c0267a]", L(locale, "تصميم", "Design")],
-                ["Monitor", "bg-[#e7f0fd] text-[#1d58c0]", L(locale, "واجهات", "Front")],
-                ["Server", "bg-[#fff1e6] text-[#ea580c]", L(locale, "أنظمة", "Back")],
-                ["SearchCheck", "bg-[#e7f8ee] text-fern", L(locale, "جودة", "QA")]
+                ["PenTool", "bg-[#efecff] text-iris", L(locale, "تصميم", "Design")],
+                ["Monitor", "bg-[#efecff] text-iris", L(locale, "واجهات", "Front")],
+                ["Server", "bg-[#efecff] text-iris", L(locale, "أنظمة", "Back")],
+                ["SearchCheck", "bg-[#efecff] text-iris", L(locale, "جودة", "QA")]
               ] as [IconName, string, string][]
             ).map(([icon, tint, label], k) => (
               <span key={label} className="grid justify-items-center gap-1">
-                <span className={`grid size-8 place-items-center rounded-lg animate-[pop_5s_ease_infinite] ${tint}`} style={{ animationDelay: `${k * 0.35}s` }}>
+                <span className={`grid size-8 place-items-center rounded-lg animate-[softPulse_5s_ease_infinite] ${tint}`} style={{ animationDelay: `${k * 0.35}s` }}>
                   <Icon name={icon} size={15} />
                 </span>
                 <span className="text-[9.5px] font-medium text-iron">{label}</span>
@@ -149,7 +149,7 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
             <span className="flex items-center gap-2 text-[11px] font-semibold text-ink">
               <span className="relative">
                 <Icon name="ShoppingCart" size={16} />
-                <span className="absolute -end-1.5 -top-1.5 grid size-3.5 place-items-center rounded-full bg-iris text-[8px] text-white animate-[pop_3s_ease_infinite]">3</span>
+                <span className="absolute -end-1.5 -top-1.5 grid size-3.5 place-items-center rounded-full bg-iris text-[8px] text-white animate-[softPulse_3s_ease_infinite]">3</span>
               </span>
               {L(locale, "طلب جديد #1284", "New order #1284")}
             </span>
@@ -210,19 +210,19 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
             {(
               [
                 [
-                  ["Users", "CRM", "bg-[#e7f0fd] text-[#1d58c0]"],
-                  ["Package", "ERP", "bg-[#fff1e6] text-[#ea580c]"]
+                  ["Users", "CRM", "bg-[#efecff] text-iris"],
+                  ["Package", "ERP", "bg-[#efecff] text-iris"]
                 ],
                 [
-                  ["Cable", "API", "bg-[#e7f8ee] text-fern"],
-                  ["ChartColumn", "BI", "bg-[#fdeaf4] text-[#c0267a]"]
+                  ["Cable", "API", "bg-[#efecff] text-iris"],
+                  ["ChartColumn", "BI", "bg-[#efecff] text-iris"]
                 ]
               ] as [IconName, string, string][][]
             ).map((side, i) => (
               <div key={i} className={`grid gap-1.5 ${i === 1 ? "order-3" : ""}`}>
                 {side.map(([icon, label, tint], k) => (
                   <span key={label} className="flex items-center gap-1.5 rounded-lg border border-mist px-1.5 py-1">
-                    <span className={`grid size-5 place-items-center rounded-md animate-[pop_4s_ease_infinite] ${tint}`} style={{ animationDelay: `${(i * 2 + k) * 0.4}s` }}>
+                    <span className={`grid size-5 place-items-center rounded-md animate-[softPulse_4s_ease_infinite] ${tint}`} style={{ animationDelay: `${(i * 2 + k) * 0.4}s` }}>
                       <Icon name={icon} size={11} />
                     </span>
                     <span className="font-mono text-[10px] font-semibold text-ink">{label}</span>
@@ -243,7 +243,7 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
         <div className="grid w-full max-w-[250px] gap-2 rounded-xl border border-mist bg-white p-2.5 shadow-card">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-[11.5px] font-semibold text-ink">
-              <span className="grid size-5 place-items-center rounded-md bg-[#fdeaf4] text-[#c0267a]">
+              <span className="grid size-5 place-items-center rounded-md bg-[#efecff] text-iris">
                 <Icon name="PenTool" size={11} />
               </span>
               {L(locale, "استوديو التصميم", "Design studio")}
@@ -255,7 +255,7 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
             <div className="grid content-start gap-1.5 rounded-lg bg-cloud p-2">
               <span className="h-1.5 w-2/3 rounded-full bg-ink/80" />
               <span className="h-1.5 w-1/2 rounded-full bg-line" />
-              <span className="relative mt-1 grid h-6 w-[72%] place-items-center rounded-md bg-iris text-[9px] font-semibold text-white ring-2 ring-[#8d4af7] ring-offset-2 ring-offset-cloud animate-[pop_5s_ease_infinite]">
+              <span className="relative mt-1 grid h-6 w-[72%] place-items-center rounded-md bg-iris text-[9px] font-semibold text-white ring-2 ring-[#8d4af7] ring-offset-2 ring-offset-cloud animate-[softPulse_5s_ease_infinite]">
                 {L(locale, "ابدأ الآن", "Get started")}
                 {["-start-1 -top-1", "-end-1 -top-1", "-start-1 -bottom-1", "-end-1 -bottom-1"].map((pos) => (
                   <i key={pos} className={`absolute size-1.5 rounded-[2px] border border-[#8d4af7] bg-white ${pos}`} />
@@ -267,8 +267,8 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
             <div className="grid w-[64px] content-start gap-1.5 rounded-lg border border-mist p-1.5">
               <span className="text-center text-[15px] font-bold leading-none text-ink">Aa</span>
               <span className="grid grid-cols-3 gap-1">
-                {["#624de3", "#8d4af7", "#1d58c0", "#009639", "#f97316", "#1a1d1e"].map((c, k) => (
-                  <span key={c} className="aspect-square rounded-full animate-[pop_5s_ease_infinite]" style={{ background: c, animationDelay: `${0.6 + k * 0.15}s` }} />
+                {["#4b37c9", "#624de3", "#8a7bef", "#b4abf5", "#1a1d1e", "#6b7075"].map((c, k) => (
+                  <span key={c} className="aspect-square rounded-full animate-[softPulse_5s_ease_infinite]" style={{ background: c, animationDelay: `${0.6 + k * 0.15}s` }} />
                 ))}
               </span>
               <span className="mx-auto flex h-3 w-6 items-center rounded-full bg-iris p-[2px]">
