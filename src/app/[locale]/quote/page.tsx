@@ -5,6 +5,7 @@ import { getServices } from "@/lib/content";
 import { PageHero } from "@/components/ui/Section";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { LeadForm } from "@/components/forms/LeadForm";
+import { chatbotNav } from "@/content/chatbot";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -25,7 +26,7 @@ export default async function QuotePage({
   setRequestLocale(locale);
   const [t, nav, services] = await Promise.all([getTranslations("pages"), getTranslations("nav"), getServices(locale)]);
 
-  const options = [...services.map(({ slug, title }) => ({ slug, title })), { slug: "nova-ai", title: nav("nova") }];
+  const options = [...services.map(({ slug, title }) => ({ slug, title })), { slug: "nova-ai", title: nav("nova") }, { slug: chatbotNav.href.slice(1), title: chatbotNav.title[locale === "ar" ? "ar" : "en"] }];
   const steps: { icon: IconName; text: string }[] = [
     { icon: "MessagesSquare", text: t("quoteStep1") },
     { icon: "Lightbulb", text: t("quoteStep2") },

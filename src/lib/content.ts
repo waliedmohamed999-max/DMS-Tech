@@ -7,6 +7,7 @@ import { aiCards, capabilities, nova, phases, promises, trustCards, values } fro
 import { jobs, posts } from "@/content/posts";
 import { clientProjects } from "@/content/projects";
 import { projectsCopy } from "@/content/projects-copy";
+import { chatbot, chatbotNav } from "@/content/chatbot";
 
 /**
  * Content repository — the only place pages read content from.
@@ -93,4 +94,8 @@ export async function getProjectSlugs() {
 
 export async function getProjectsCopy(locale: Locale) {
   return localize(projectsCopy, locale);
+}
+
+export async function getChatbot(locale: Locale) {
+  return { ...localize(chatbot, locale), ui: localize(chatbotNav, locale) };
 }

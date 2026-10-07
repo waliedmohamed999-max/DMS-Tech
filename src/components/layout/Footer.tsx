@@ -2,6 +2,7 @@ import Image from "next/image";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { site, whatsappLink } from "@/content/site";
+import { chatbotNav } from "@/content/chatbot";
 import type { ServiceView } from "@/lib/content";
 import { BrandIcon } from "@/components/ui/Brand";
 import { Icon } from "@/components/ui/Icon";
@@ -45,6 +46,7 @@ export default async function Footer({ services }: { services: ServiceView[] }) 
       links: [
         { href: "/blog", label: nav("blog") },
         { href: "/nova-ai", label: "NOVA AI", badge: nav("newBadge") },
+        { href: chatbotNav.href, label: chatbotNav.title[locale === "ar" ? "ar" : "en"], badge: chatbotNav.soon[locale === "ar" ? "ar" : "en"] },
         { href: "/clients#platforms", label: nav("platforms") },
         { href: "/quote", label: nav("quote") }
       ]

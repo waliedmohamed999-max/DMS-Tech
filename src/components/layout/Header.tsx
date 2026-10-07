@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { projectsCopy } from "@/content/projects-copy";
+import { chatbotNav } from "@/content/chatbot";
 
 export type NavService = { slug: string; icon: IconName; title: string; summary: string };
 
@@ -50,14 +51,15 @@ export default function Header({ services }: { services: NavService[] }) {
     closeTimer.current = setTimeout(() => setOpen(null), 140);
   };
 
-  const aboutLinks: { href: string; icon: IconName; title: string; desc: string }[] = [
+  const lang = locale === "ar" ? "ar" : "en";
+  const aboutLinks: MenuItem[] = [
     { href: "/about", icon: "Building2", title: t("aboutCompany"), desc: t("aboutCompanyDesc") },
     { href: "/about#values", icon: "Award", title: t("whyUs"), desc: t("whyUsDesc") },
     { href: "/about#process", icon: "Route", title: t("process"), desc: t("processDesc") },
-    { href: "/nova-ai", icon: "Sparkles", title: t("nova"), desc: t("novaDesc") }
+    { href: "/nova-ai", icon: "Sparkles", title: t("nova"), desc: t("novaDesc") },
+    { href: chatbotNav.href, icon: "MessagesSquare", title: chatbotNav.title[lang], desc: chatbotNav.desc[lang], badge: chatbotNav.soon[lang] }
   ];
-  const lang = locale === "ar" ? "ar" : "en";
-  const clientLinks: typeof aboutLinks = [
+  const clientLinks: MenuItem[] = [
     { href: "/clients#projects", icon: "Briefcase", title: projectsCopy.navTitle[lang], desc: projectsCopy.navDesc[lang] },
     { href: "/clients#industries", icon: "Layers", title: t("industries"), desc: t("industriesDesc") },
     { href: "/clients#platforms", icon: "Plug", title: t("platforms"), desc: t("platformsDesc") }
@@ -148,6 +150,13 @@ export default function Header({ services }: { services: NavService[] }) {
                         <span className="rounded-full bg-iris px-2 py-0.5 text-[11px] font-semibold text-white">{t("newBadge")}</span>
                       </Link>
                     </li>
+                    <li>
+                      <Link href={chatbotNav.href} className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-sm font-medium text-[#e6e7e8] transition hover:bg-white/5 hover:text-white">
+                        <Icon name="MessagesSquare" size={15} className="text-graphite" />
+                        {chatbotNav.title[lang]}
+                        <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">{chatbotNav.soon[lang]}</span>
+                      </Link>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -226,14 +235,19 @@ function Dropdown({ show, className, children }: { show: boolean; className?: st
   );
 }
 
-function MenuLink({ href, icon, title, desc, light }: { href: string; icon: IconName; title: string; desc: string; light?: boolean }) {
+type MenuItem = { href: string; icon: IconName; title: string; desc: string; badge?: string };
+
+function MenuLink({ href, icon, title, desc, badge, light }: MenuItem & { light?: boolean }) {
   return (
     <Link href={href} className={`group flex items-start gap-3 rounded-xl p-2.5 transition ${light ? "hover:bg-cloud" : "hover:bg-white/5"}`}>
       <span className={`grid size-8 shrink-0 place-items-center rounded-icon ${light ? "bg-cloud text-iris" : "bg-white/5 text-graphite group-hover:text-white"}`}>
         <Icon name={icon} size={16} />
       </span>
       <span>
-        <span className={`block text-sm font-semibold leading-snug ${light ? "text-ink" : "text-white"}`}>{title}</span>
+        <span className={`flex items-center gap-2 text-sm font-semibold leading-snug ${light ? "text-ink" : "text-white"}`}>
+          {title}
+          {badge && <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${light ? "bg-lilac text-iris" : "bg-white/15 text-white"}`}>{badge}</span>}
+        </span>
         {desc && <span className={`mt-0.5 block text-[12.5px] leading-normal ${light ? "text-iron" : "text-graphite"}`}>{desc}</span>}
       </span>
     </Link>
@@ -248,7 +262,7 @@ function MobileItem({ href, label }: { href: string; label: string }) {
   );
 }
 
-function MobileGroup({ label, items }: { label: string; items: { href: string; icon: IconName; title: string; desc: string }[] }) {
+function MobileGroup({ label, items }: { label: string; items: MenuItem[] }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
