@@ -238,23 +238,44 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
         </div>
       );
     case "ux-ui-design":
+      // a design tool: the screen being designed + its style panel
       return (
-        <div dir="ltr" className="relative h-[110px] w-full max-w-[240px] rounded-lg border border-dashed border-line bg-white">
-          <span className="absolute left-3 top-3 h-12 w-20 rounded-md border-2 border-iris bg-lilac animate-[snap_4s_ease_infinite]">
-            <i className="absolute -right-1 -top-1 size-2 rounded-sm border border-iris bg-white" />
-            <i className="absolute -bottom-1 -left-1 size-2 rounded-sm border border-iris bg-white" />
-          </span>
-          <span className="absolute right-3 top-3 grid gap-1">
-            <span className="h-2 w-16 rounded-full bg-ink" />
-            <span className="h-1.5 w-12 rounded-full bg-line" />
-            <span className="h-1.5 w-14 rounded-full bg-line" />
-          </span>
-          <div className="absolute bottom-2.5 right-3 flex gap-1">
-            {["#624de3", "#8d4af7", "#1d58c0", "#009639", "#1a1d1e"].map((c, k) => (
-              <span key={c} className="size-4 rounded-full ring-2 ring-white animate-[pop_4s_ease_infinite]" style={{ background: c, animationDelay: `${k * 0.2}s` }} />
-            ))}
+        <div className="grid w-full max-w-[250px] gap-2 rounded-xl border border-mist bg-white p-2.5 shadow-card">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-[11.5px] font-semibold text-ink">
+              <span className="grid size-5 place-items-center rounded-md bg-[#fdeaf4] text-[#c0267a]">
+                <Icon name="PenTool" size={11} />
+              </span>
+              {L(locale, "استوديو التصميم", "Design studio")}
+            </span>
+            <span className="rounded-full bg-lilac px-2 py-0.5 text-[10px] font-bold text-iris">UX / UI</span>
           </div>
-          <span className="absolute bottom-2.5 left-3 rounded bg-ink px-1.5 py-0.5 font-mono text-[9px] text-white">Auto Layout</span>
+          <div className="grid grid-cols-[1fr_auto] gap-2" dir="ltr">
+            {/* the screen */}
+            <div className="grid content-start gap-1.5 rounded-lg bg-cloud p-2">
+              <span className="h-1.5 w-2/3 rounded-full bg-ink/80" />
+              <span className="h-1.5 w-1/2 rounded-full bg-line" />
+              <span className="relative mt-1 grid h-6 w-[72%] place-items-center rounded-md bg-iris text-[9px] font-semibold text-white ring-2 ring-[#8d4af7] ring-offset-2 ring-offset-cloud animate-[pop_5s_ease_infinite]">
+                {L(locale, "ابدأ الآن", "Get started")}
+                {["-start-1 -top-1", "-end-1 -top-1", "-start-1 -bottom-1", "-end-1 -bottom-1"].map((pos) => (
+                  <i key={pos} className={`absolute size-1.5 rounded-[2px] border border-[#8d4af7] bg-white ${pos}`} />
+                ))}
+              </span>
+              <span className="w-fit rounded bg-[#8d4af7] px-1 font-mono text-[8.5px] text-white">120 × 32</span>
+            </div>
+            {/* the style panel */}
+            <div className="grid w-[64px] content-start gap-1.5 rounded-lg border border-mist p-1.5">
+              <span className="text-center text-[15px] font-bold leading-none text-ink">Aa</span>
+              <span className="grid grid-cols-3 gap-1">
+                {["#624de3", "#8d4af7", "#1d58c0", "#009639", "#f97316", "#1a1d1e"].map((c, k) => (
+                  <span key={c} className="aspect-square rounded-full animate-[pop_5s_ease_infinite]" style={{ background: c, animationDelay: `${0.6 + k * 0.15}s` }} />
+                ))}
+              </span>
+              <span className="mx-auto flex h-3 w-6 items-center rounded-full bg-iris p-[2px]">
+                <span className="ms-auto size-2 rounded-full bg-white" />
+              </span>
+            </div>
+          </div>
         </div>
       );
     default:
