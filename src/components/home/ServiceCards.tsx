@@ -285,32 +285,33 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
 
 export default function ServiceCards({ services, locale, cta }: { services: ServiceView[]; locale: string; cta: string }) {
   return (
-    <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
       {services.map((s) => (
         <Link
           key={s.slug}
           href={`/services/${s.slug}`}
           className="group flex flex-col overflow-hidden rounded-card border border-mist bg-white shadow-card transition duration-300 hover:-translate-y-1 hover:border-line hover:shadow-lg"
         >
-          <div className="relative grid h-[170px] place-items-center overflow-hidden border-b border-mist bg-cloud px-5">
+          <div className="relative grid h-[118px] place-items-center overflow-hidden border-b border-mist bg-cloud px-2 sm:h-[170px] sm:px-5">
             <div
               aria-hidden
               className="absolute inset-0 opacity-60 [background-image:radial-gradient(#d9dbde_1px,transparent_1px)] [background-size:14px_14px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]"
             />
-            <div className="relative flex w-full justify-center">
+            {/* two cards per row on phones: the visual is zoomed down (zoom also shrinks its layout box, unlike scale) */}
+            <div className="relative flex w-full justify-center max-sm:[zoom:0.6]">
               <Visual slug={s.slug} locale={locale} />
             </div>
           </div>
-          <div className="flex flex-1 flex-col gap-2.5 p-5">
+          <div className="flex flex-1 flex-col gap-2 p-3.5 sm:gap-2.5 sm:p-5">
             <div className="flex items-center gap-2.5">
-              <span className="grid size-8 place-items-center rounded-icon bg-lilac text-iris transition group-hover:bg-iris group-hover:text-white">
+              <span className="grid size-7 shrink-0 place-items-center rounded-icon sm:size-8 bg-lilac text-iris transition group-hover:bg-iris group-hover:text-white">
                 <Icon name={s.icon as IconName} size={16} />
               </span>
-              <span className="text-xs font-medium text-graphite">{s.eyebrow}</span>
+              <span className="line-clamp-1 text-[11px] font-medium text-graphite sm:text-xs">{s.eyebrow}</span>
             </div>
-            <h3 className="text-[17px] font-semibold leading-snug tracking-[-0.3px] text-ink">{s.title}</h3>
-            <p className="text-sm leading-relaxed text-iron">{s.summary}</p>
-            <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-sm font-semibold text-iris">
+            <h3 className="text-[14.5px] font-semibold leading-snug tracking-[-0.3px] text-ink sm:text-[17px]">{s.title}</h3>
+            <p className="line-clamp-3 text-[12.5px] leading-relaxed text-iron sm:line-clamp-none sm:text-sm">{s.summary}</p>
+            <span className="mt-auto inline-flex items-center gap-1.5 pt-1 text-[13px] font-semibold text-iris sm:pt-2 sm:text-sm">
               {cta}
               <Icon name={locale === "ar" ? "ArrowLeft" : "ArrowRight"} size={15} className="transition group-hover:translate-x-[-3px] ltr:group-hover:translate-x-[3px]" />
             </span>
