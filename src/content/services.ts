@@ -3,7 +3,7 @@ import type { Service } from "./types";
 export const services: Service[] = [
   {
     slug: "ai-automation",
-    icon: "BrainCircuit",
+    icon: "Bot",
     image: "/images/photos/svc-ai.jpg",
     eyebrow: { ar: "الذكاء الاصطناعي والأتمتة", en: "AI & Automation" },
     title: { ar: "حلول الذكاء الاصطناعي وأتمتة الأعمال", en: "AI Solutions & Business Automation" },

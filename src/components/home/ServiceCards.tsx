@@ -10,64 +10,63 @@ import { BrandIcon } from "@/components/ui/Brand";
 
 const L = (locale: string, ar: string, en: string) => (locale === "ar" ? ar : en);
 
-function Bubble({ children, me, delay }: { children: React.ReactNode; me?: boolean; delay: number }) {
-  return (
-    <span
-      className={`block w-fit max-w-[85%] rounded-2xl px-3 py-1.5 text-[11.5px] leading-snug animate-[chatLoop_6s_ease_infinite_both] ${
-        me ? "ms-auto rounded-ee-sm bg-ink text-white" : "rounded-es-sm border border-mist bg-white text-ink"
-      }`}
-      style={{ animationDelay: `${delay}s` }}
-    >
-      {children}
-    </span>
-  );
-}
-
-function Typing({ delay }: { delay: number }) {
-  return (
-    <span className="flex w-fit gap-1 rounded-2xl rounded-es-sm border border-mist bg-white px-3 py-2 animate-[typingLoop_6s_ease_infinite_both]" style={{ animationDelay: `${delay}s` }}>
-      {[0, 1, 2].map((k) => (
-        <i key={k} className="size-1.5 rounded-full bg-graphite animate-[dotBounce_1s_ease-in-out_infinite]" style={{ animationDelay: `${k * 0.15}s` }} />
-      ))}
-    </span>
-  );
-}
-
 function Visual({ slug, locale }: { slug: string; locale: string }) {
   switch (slug) {
     case "ai-automation":
+      // an AI assistant answering a business question with live numbers
       return (
-        <div className="grid w-full max-w-[240px] content-end gap-1.5">
-          <Bubble delay={0}>{L(locale, "كم مبيعات هذا الأسبوع؟", "Sales this week?")}</Bubble>
-          <div className="grid [&>*]:[grid-area:1/1]">
-            <Typing delay={0.4} />
-            <Bubble me delay={1.2}>
-            <span className="inline-flex items-center gap-1">
-              <Icon name="Sparkles" size={11} className="text-iris-light" /> {L(locale, "المبيعات:", "Sales:")}{" "}
-              <b dir="ltr" className="font-semibold">SAR 84,200 <span className="text-[#4ade80]">▲12%</span></b>
+        <div className="grid w-full max-w-[250px] gap-1.5 rounded-xl border border-mist bg-white p-2.5 shadow-card">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-[11.5px] font-semibold text-ink">
+              <span className="grid size-5 place-items-center rounded-md bg-[#efecff] text-iris animate-pulse-glow">
+                <Icon name="Sparkles" size={12} />
+              </span>
+              {L(locale, "المساعد الذكي", "AI assistant")}
             </span>
-            </Bubble>
+            <span className="rounded-full bg-lilac px-2 py-0.5 text-[10px] font-bold text-iris">AI</span>
+          </div>
+          <span className="ms-auto w-fit max-w-[85%] rounded-2xl rounded-ee-sm bg-cloud px-2.5 py-1 text-[10.5px] text-ink">{L(locale, "كم مبيعات هذا الأسبوع؟", "How are sales this week?")}</span>
+          <div className="flex items-end justify-between gap-3 rounded-lg border border-mist p-2">
+            <span className="grid gap-0.5">
+              <span className="text-[10px] text-iron">{L(locale, "مبيعات الأسبوع", "Weekly sales")}</span>
+              <span className="text-[12.5px] font-bold text-ink" dir="ltr">
+                SAR 84,200
+              </span>
+              <span className="text-[10.5px] font-semibold text-fern">▲ 12%</span>
+            </span>
+            <span className="flex h-11 w-[92px] shrink-0 items-end gap-[3px]" dir="ltr" aria-hidden>
+              {[38, 52, 46, 64, 58, 80, 100].map((h, k) => (
+                <span key={k} className="flex-1 origin-bottom rounded-t-[3px] bg-gradient-to-t from-iris to-[#a78bfa] animate-[barGrow_3.5s_ease_infinite]" style={{ height: `${h}%`, animationDelay: `${k * 0.12}s` }} />
+              ))}
+            </span>
           </div>
         </div>
       );
     case "whatsapp-automation":
+      // a WhatsApp chat answered by the bot, with quick-reply buttons
       return (
-        <div className="grid w-full max-w-[240px] gap-1.5">
-          <div className="flex items-center gap-2 border-b border-mist pb-1.5">
-            <span className="grid size-6 place-items-center rounded-full bg-[#25d366] text-white">
-              <BrandIcon slug="whatsapp" size={13} />
-            </span>
-            <span className="text-[11px] font-semibold text-ink">DMS Bot</span>
-            <span className="ms-auto size-1.5 rounded-full bg-[#25d366] animate-pulse-glow" />
-          </div>
-          <Bubble delay={0}>{L(locale, "أبغى عرض سعر لمتجر", "I need a store quote")}</Bubble>
-          <Bubble me delay={0.8}>{L(locale, "أكيد! اختر الباقة 👇", "Sure! Pick a plan 👇")}</Bubble>
-          <div className="flex justify-end gap-1 animate-[chatLoop_6s_ease_infinite_both] [animation-delay:1.6s] [animation-fill-mode:both]">
-            {[L(locale, "أساسية", "Basic"), L(locale, "احترافية", "Pro")].map((b) => (
-              <span key={b} className="rounded-full border border-iris/30 bg-lilac px-2 py-0.5 text-[10.5px] font-medium text-iris">
-                {b}
+        <div className="grid w-full max-w-[250px] gap-2 rounded-xl border border-mist bg-white p-3 shadow-card">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-[11.5px] font-semibold text-ink">
+              <span className="grid size-5 place-items-center rounded-full bg-[#25d366] text-white">
+                <BrandIcon slug="whatsapp" size={11} />
               </span>
-            ))}
+              DMS Bot
+            </span>
+            <span className="flex items-center gap-1 rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[10px] font-semibold text-fern">
+              <i className="size-1.5 rounded-full bg-fern" /> {L(locale, "يرد تلقائياً", "Auto-reply")}
+            </span>
+          </div>
+          <div className="grid gap-1.5 rounded-lg bg-[#efeae2] p-2">
+            <span className="w-fit max-w-[85%] rounded-xl rounded-es-sm bg-white px-2.5 py-1 text-[10.5px] text-ink shadow-sm">{L(locale, "أبغى عرض سعر لمتجر", "I need a quote for a store")}</span>
+            <span className="ms-auto w-fit max-w-[85%] rounded-xl rounded-ee-sm bg-[#d9fdd3] px-2.5 py-1 text-[10.5px] text-ink shadow-sm animate-[pop_4.5s_ease_infinite] [animation-delay:.4s]">{L(locale, "أكيد! اختر الباقة 👇", "Sure! Pick a plan 👇")}</span>
+            <span className="ms-auto flex gap-1">
+              {[L(locale, "أساسية", "Basic"), L(locale, "احترافية", "Pro")].map((b, k) => (
+                <span key={b} className="rounded-full border border-[#25d366]/40 bg-white px-2 py-0.5 text-[10px] font-semibold text-[#128c7e] animate-[pop_4.5s_ease_infinite]" style={{ animationDelay: `${0.9 + k * 0.2}s` }}>
+                  {b}
+                </span>
+              ))}
+            </span>
           </div>
         </div>
       );
@@ -123,9 +122,9 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
                 ["Server", "bg-[#fff1e6] text-[#ea580c]", L(locale, "أنظمة", "Back")],
                 ["SearchCheck", "bg-[#e7f8ee] text-fern", L(locale, "جودة", "QA")]
               ] as [IconName, string, string][]
-            ).map(([icon, tint, label]) => (
+            ).map(([icon, tint, label], k) => (
               <span key={label} className="grid justify-items-center gap-1">
-                <span className={`grid size-8 place-items-center rounded-lg ${tint}`}>
+                <span className={`grid size-8 place-items-center rounded-lg animate-[pop_5s_ease_infinite] ${tint}`} style={{ animationDelay: `${k * 0.35}s` }}>
                   <Icon name={icon} size={15} />
                 </span>
                 <span className="text-[9.5px] font-medium text-iron">{label}</span>
@@ -138,7 +137,7 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
               <span className="font-semibold text-ink">72%</span>
             </span>
             <span className="h-1.5 overflow-hidden rounded-full bg-cloud">
-              <span className="block h-full w-[72%] rounded-full bg-gradient-to-r from-iris to-[#8d4af7] rtl:bg-gradient-to-l" />
+              <span className="block h-full w-[72%] origin-left rounded-full bg-gradient-to-r from-iris to-[#8d4af7] animate-[stepFill_5s_ease_infinite] rtl:origin-right rtl:bg-gradient-to-l" />
             </span>
           </div>
         </div>
@@ -198,29 +197,45 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
         </div>
       );
     case "digital-transformation":
+      // the company's systems connected through one hub, in sync
       return (
-        <svg viewBox="0 0 240 110" className="w-full max-w-[240px]" aria-hidden>
-          {[
-            [40, 25], [40, 85], [200, 25], [200, 85]
-          ].map(([x, y], k) => (
-            <g key={k}>
-              <path d={`M120 55 L${x} ${y}`} stroke="#ebedef" strokeWidth="2" />
-              <path d={`M120 55 L${x} ${y}`} stroke="#624de3" strokeWidth="2.5" strokeDasharray="6 90" strokeLinecap="round" className="animate-[flow_2s_linear_infinite]" style={{ animationDelay: `${k * 0.5}s` }} />
-            </g>
-          ))}
-          {[
-            [40, 25, "CRM"], [40, 85, "ERP"], [200, 25, "API"], [200, 85, "BI"]
-          ].map(([x, y, t]) => (
-            <g key={t as string}>
-              <rect x={(x as number) - 22} y={(y as number) - 12} width="44" height="24" rx="6" fill="#fff" stroke="#ebedef" />
-              <text x={x} y={(y as number) + 4} textAnchor="middle" fontSize="10" fontWeight="600" fill="#1a1d1e" fontFamily="var(--font-fira), monospace">
-                {t}
-              </text>
-            </g>
-          ))}
-          <rect x="100" y="35" width="40" height="40" rx="10" fill="#624de3" className="animate-pulse-glow" />
-          <path d="M113 55 h14 M120 48 v14" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-        </svg>
+        <div className="grid w-full max-w-[250px] gap-2.5 rounded-xl border border-mist bg-white p-3 shadow-card">
+          <div className="flex items-center justify-between">
+            <span className="text-[11.5px] font-semibold text-ink">{L(locale, "ربط الأنظمة", "Connected systems")}</span>
+            <span className="flex items-center gap-1 rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[10px] font-semibold text-fern">
+              <Icon name="Check" size={10} strokeWidth={3} /> {L(locale, "متزامن", "In sync")}
+            </span>
+          </div>
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5" dir="ltr">
+            {(
+              [
+                [
+                  ["Users", "CRM", "bg-[#e7f0fd] text-[#1d58c0]"],
+                  ["Package", "ERP", "bg-[#fff1e6] text-[#ea580c]"]
+                ],
+                [
+                  ["Cable", "API", "bg-[#e7f8ee] text-fern"],
+                  ["ChartColumn", "BI", "bg-[#fdeaf4] text-[#c0267a]"]
+                ]
+              ] as [IconName, string, string][][]
+            ).map((side, i) => (
+              <div key={i} className={`grid gap-1.5 ${i === 1 ? "order-3" : ""}`}>
+                {side.map(([icon, label, tint], k) => (
+                  <span key={label} className="flex items-center gap-1.5 rounded-lg border border-mist px-1.5 py-1">
+                    <span className={`grid size-5 place-items-center rounded-md animate-[pop_4s_ease_infinite] ${tint}`} style={{ animationDelay: `${(i * 2 + k) * 0.4}s` }}>
+                      <Icon name={icon} size={11} />
+                    </span>
+                    <span className="font-mono text-[10px] font-semibold text-ink">{label}</span>
+                  </span>
+                ))}
+              </div>
+            ))}
+            <span className="order-2 grid size-11 place-items-center rounded-xl bg-iris text-white shadow-[0_0_0_4px_#efecff] animate-pulse-glow">
+              <Icon name="Network" size={20} />
+            </span>
+          </div>
+          <span className="text-center text-[10px] text-iron">{L(locale, "بيانات واحدة لكل الفرق", "One source of truth for every team")}</span>
+        </div>
       );
     case "ux-ui-design":
       return (
