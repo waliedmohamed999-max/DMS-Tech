@@ -105,32 +105,42 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
         </div>
       );
     case "dedicated-tech-team":
-      // a team of specialists, all available
+      // the team: one tile per specialist, plus the sprint in progress
       return (
-        <div className="grid w-full max-w-[240px] gap-2 rounded-lg border border-mist bg-white p-3">
+        <div className="grid w-full max-w-[250px] gap-2.5 rounded-xl border border-mist bg-white p-3 shadow-card">
           <div className="flex items-center justify-between">
-            <div className="flex -space-x-2 rtl:space-x-reverse" dir="ltr">
-              {["#624de3", "#1d58c0", "#009639", "#f97316", "#1a1d1e"].map((c, k) => (
-                <span key={c} className="grid size-7 place-items-center rounded-full text-[10px] font-bold text-white ring-2 ring-white" style={{ background: c }}>
-                  {["PM", "UX", "FE", "BE", "QA"][k]}
-                </span>
-              ))}
-            </div>
-            <span className="flex items-center gap-1 text-[10.5px] font-semibold text-fern">
+            <span className="text-[11.5px] font-semibold text-ink">{L(locale, "فريقك التقني", "Your tech team")}</span>
+            <span className="flex items-center gap-1 rounded-full bg-[#e7f8ee] px-2 py-0.5 text-[10px] font-semibold text-fern">
               <i className="size-1.5 rounded-full bg-fern animate-pulse-glow" /> {L(locale, "متاح", "Online")}
             </span>
           </div>
-          <div className="grid gap-1.5">
-            {[L(locale, "تطوير", "Build"), L(locale, "اختبار", "Test"), L(locale, "إطلاق", "Ship")].map((t, k) => (
-              <div key={t} className="flex items-center gap-2 text-[10.5px] text-iron">
-                <span className="w-9 shrink-0">{t}</span>
-                <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-cloud">
-                  <span className="block h-full origin-left rounded-full bg-iris animate-[stepFill_4.5s_ease_infinite] rtl:origin-right" style={{ animationDelay: `${k * 0.5}s` }} />
+          <div className="grid grid-cols-5 gap-1.5">
+            {(
+              [
+                ["ClipboardList", "bg-[#efecff] text-iris", L(locale, "إدارة", "PM")],
+                ["PenTool", "bg-[#fdeaf4] text-[#c0267a]", L(locale, "تصميم", "Design")],
+                ["Monitor", "bg-[#e7f0fd] text-[#1d58c0]", L(locale, "واجهات", "Front")],
+                ["Server", "bg-[#fff1e6] text-[#ea580c]", L(locale, "أنظمة", "Back")],
+                ["SearchCheck", "bg-[#e7f8ee] text-fern", L(locale, "جودة", "QA")]
+              ] as [IconName, string, string][]
+            ).map(([icon, tint, label]) => (
+              <span key={label} className="grid justify-items-center gap-1">
+                <span className={`grid size-8 place-items-center rounded-lg ${tint}`}>
+                  <Icon name={icon} size={15} />
                 </span>
-              </div>
+                <span className="text-[9.5px] font-medium text-iron">{label}</span>
+              </span>
             ))}
           </div>
-          <span className="w-fit rounded-full bg-lilac px-2 py-0.5 text-[10px] font-semibold text-iris">{L(locale, "شهري · نصف سنوي · سنوي", "Monthly · 6-month · Annual")}</span>
+          <div className="grid gap-1">
+            <span className="flex justify-between text-[10px] text-iron">
+              <span>{L(locale, "خطة هذا الشهر", "This month's plan")}</span>
+              <span className="font-semibold text-ink">72%</span>
+            </span>
+            <span className="h-1.5 overflow-hidden rounded-full bg-cloud">
+              <span className="block h-full w-[72%] rounded-full bg-gradient-to-r from-iris to-[#8d4af7] rtl:bg-gradient-to-l" />
+            </span>
+          </div>
         </div>
       );
     case "ecommerce":
