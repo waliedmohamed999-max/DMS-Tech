@@ -1,7 +1,7 @@
 import "server-only";
 import type { Locale } from "@/i18n/routing";
 import type { L } from "@/content/types";
-import { services } from "@/content/services";
+import { serviceExtrasCopy, services } from "@/content/services";
 import { industries, integrations } from "@/content/industries";
 import { aiCards, capabilities, nova, phases, promises, trustCards, values } from "@/content/company";
 import { jobs, posts } from "@/content/posts";
@@ -104,4 +104,8 @@ export async function getChatbot(locale: Locale) {
 
 export async function getNovaPage(locale: Locale) {
   return localize(novaPage, locale);
+}
+
+export async function getServiceExtrasCopy(locale: Locale) {
+  return localize(serviceExtrasCopy, locale);
 }

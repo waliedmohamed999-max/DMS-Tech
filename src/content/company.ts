@@ -132,7 +132,7 @@ export const phases: ProcessPhase[] = [
     features: [
       { icon: "PenTool", label: { ar: "التصميم", en: "Design" }, href: "/services/ux-ui-design" },
       { icon: "Globe", label: { ar: "تطوير الويب", en: "Web development" }, href: "/services/web-development" },
-      { icon: "Smartphone", label: { ar: "تطبيقات الجوال", en: "Mobile apps" }, href: "/services/app-development" },
+      { icon: "Smartphone", label: { ar: "تطبيقات الجوال", en: "Mobile apps" }, href: "/services/web-development" },
       { icon: "Bot", label: { ar: "إعداد الأتمتة", en: "Automation setup" }, href: "/services/ai-automation" }
     ]
   },
@@ -148,7 +148,7 @@ export const phases: ProcessPhase[] = [
     image: "/images/photos/phase-launch.jpg",
     features: [
       { icon: "ShieldCheck", label: { ar: "الاختبار والجودة", en: "Testing & QA" }, href: "/about" },
-      { icon: "CloudUpload", label: { ar: "النشر", en: "Deployment" }, href: "/services/app-development" },
+      { icon: "CloudUpload", label: { ar: "النشر", en: "Deployment" }, href: "/services/web-development" },
       { icon: "Users", label: { ar: "تمكين الفريق", en: "Team enablement" }, href: "/about" },
       { icon: "Headset", label: { ar: "الدعم", en: "Support" }, href: "/contact" }
     ]

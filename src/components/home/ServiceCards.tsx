@@ -72,39 +72,65 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
         </div>
       );
     case "web-development":
+      // websites + apps: a browser with a phone beside it
       return (
-        <div className="relative w-full max-w-[240px] overflow-hidden rounded-lg border border-mist bg-white">
-          <div className="flex gap-1 border-b border-mist px-2 py-1.5" dir="ltr">
-            {[0, 1, 2].map((k) => (
-              <i key={k} className="size-1.5 rounded-full bg-line" />
-            ))}
+        <div className="relative w-full max-w-[250px] pe-12">
+          <div className="relative overflow-hidden rounded-lg border border-mist bg-white">
+            <div className="flex gap-1 border-b border-mist px-2 py-1.5" dir="ltr">
+              {[0, 1, 2].map((k) => (
+                <i key={k} className="size-1.5 rounded-full bg-line" />
+              ))}
+            </div>
+            <div className="grid gap-1.5 p-2.5">
+              <span className="h-2 w-3/4 rounded-full bg-[linear-gradient(90deg,#ebedef_25%,#f6f7f9_50%,#ebedef_75%)] bg-[length:200%_100%] animate-[shimmer_1.8s_linear_infinite]" />
+              <span className="h-2 w-1/2 rounded-full bg-[linear-gradient(90deg,#ebedef_25%,#f6f7f9_50%,#ebedef_75%)] bg-[length:200%_100%] animate-[shimmer_1.8s_linear_infinite]" />
+              <span className="mt-1 h-5 w-16 rounded-full bg-ink animate-[ctaPress_4s_ease_infinite]" />
+            </div>
+            <span className="absolute end-2 top-7 rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#16a34a]">SEO 98</span>
           </div>
-          <div className="grid gap-1.5 p-2.5">
-            <span className="h-2 w-3/4 rounded-full bg-[linear-gradient(90deg,#ebedef_25%,#f6f7f9_50%,#ebedef_75%)] bg-[length:200%_100%] animate-[shimmer_1.8s_linear_infinite]" />
-            <span className="h-2 w-1/2 rounded-full bg-[linear-gradient(90deg,#ebedef_25%,#f6f7f9_50%,#ebedef_75%)] bg-[length:200%_100%] animate-[shimmer_1.8s_linear_infinite]" />
-            <span className="mt-1 h-5 w-20 rounded-full bg-ink animate-[ctaPress_4s_ease_infinite]" />
+          <div className="absolute -top-3 end-0 h-[112px] w-[60px] overflow-hidden rounded-[14px] border-[3px] border-ink bg-white shadow-card">
+            <span className="absolute start-1/2 top-1 h-1 w-5 -translate-x-1/2 rounded-full bg-ink rtl:translate-x-1/2" />
+            <div className="grid gap-1 px-1 pt-3.5 animate-[listScroll_5s_ease-in-out_infinite]">
+              {["#624de3", "#1d58c0", "#009639", "#f97316", "#624de3"].map((c, k) => (
+                <div key={k} className="flex items-center gap-1 rounded bg-cloud p-0.5">
+                  <span className="size-2.5 shrink-0 rounded-sm" style={{ background: c }} />
+                  <span className="h-1 flex-1 rounded-full bg-line" />
+                </div>
+              ))}
+            </div>
+            <span className="absolute bottom-1 end-1 grid size-4 place-items-center rounded-full bg-iris text-white animate-[pop_2.5s_ease_infinite]">
+              <Icon name="Check" size={9} strokeWidth={3} />
+            </span>
           </div>
-          <svg width="14" height="17" viewBox="0 0 18 22" className="absolute animate-[cursorLoop_4s_ease_infinite_both] drop-shadow">
-            <path d="M1 1 L1 17 L5.5 13 L8.5 20 L11.5 18.5 L8.5 12 L14.5 12 Z" fill="#1a1d1e" stroke="#fff" strokeWidth="1.3" />
-          </svg>
-          <span className="absolute end-2 top-7 rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#16a34a]">SEO 98</span>
         </div>
       );
-    case "app-development":
+    case "dedicated-tech-team":
+      // a team of specialists, all available
       return (
-        <div className="relative h-[124px] w-[74px] overflow-hidden rounded-[16px] border-[3px] border-ink bg-white shadow-card">
-          <span className="absolute start-1/2 top-1 h-1 w-6 -translate-x-1/2 rounded-full bg-ink rtl:translate-x-1/2" />
-          <div className="grid gap-1 px-1.5 pt-4 animate-[listScroll_5s_ease-in-out_infinite]">
-            {["#624de3", "#1d58c0", "#009639", "#f97316", "#624de3", "#1d58c0"].map((c, k) => (
-              <div key={k} className="flex items-center gap-1 rounded-md bg-cloud p-1">
-                <span className="size-3 shrink-0 rounded" style={{ background: c }} />
-                <span className="h-1 flex-1 rounded-full bg-line" />
+        <div className="grid w-full max-w-[240px] gap-2 rounded-lg border border-mist bg-white p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex -space-x-2 rtl:space-x-reverse" dir="ltr">
+              {["#624de3", "#1d58c0", "#009639", "#f97316", "#1a1d1e"].map((c, k) => (
+                <span key={c} className="grid size-7 place-items-center rounded-full text-[10px] font-bold text-white ring-2 ring-white" style={{ background: c }}>
+                  {["PM", "UX", "FE", "BE", "QA"][k]}
+                </span>
+              ))}
+            </div>
+            <span className="flex items-center gap-1 text-[10.5px] font-semibold text-fern">
+              <i className="size-1.5 rounded-full bg-fern animate-pulse-glow" /> {L(locale, "متاح", "Online")}
+            </span>
+          </div>
+          <div className="grid gap-1.5">
+            {[L(locale, "تطوير", "Build"), L(locale, "اختبار", "Test"), L(locale, "إطلاق", "Ship")].map((t, k) => (
+              <div key={t} className="flex items-center gap-2 text-[10.5px] text-iron">
+                <span className="w-9 shrink-0">{t}</span>
+                <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-cloud">
+                  <span className="block h-full origin-left rounded-full bg-iris animate-[stepFill_4.5s_ease_infinite] rtl:origin-right" style={{ animationDelay: `${k * 0.5}s` }} />
+                </span>
               </div>
             ))}
           </div>
-          <span className="absolute bottom-1.5 end-1.5 grid size-5 place-items-center rounded-full bg-iris text-white animate-[pop_2.5s_ease_infinite]">
-            <Icon name="Check" size={11} strokeWidth={3} />
-          </span>
+          <span className="w-fit rounded-full bg-lilac px-2 py-0.5 text-[10px] font-semibold text-iris">{L(locale, "شهري · نصف سنوي · سنوي", "Monthly · 6-month · Annual")}</span>
         </div>
       );
     case "ecommerce":

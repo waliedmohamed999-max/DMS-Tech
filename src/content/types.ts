@@ -28,6 +28,13 @@ export type Service = {
   features: Feature[];
   benefits: Benefit[];
   order: number;
+  /** Optional extra sections, rendered on the service page only when present (e.g. dedicated-tech-team). */
+  audience?: Feature[];
+  comparison?: { label: L; inHouse: L; withUs: L }[];
+  plans?: { icon: IconName; name: L; term: L; for: L; featured?: boolean; features: L[] }[];
+  /** replaces the generic company delivery process */
+  process?: Feature[];
+  faq?: { q: L; a: L }[];
 };
 
 export type Industry = { slug: string; icon: IconName; image: string; title: L; description: L; quote: L; /** simple-icons slugs */ apps: string[] };

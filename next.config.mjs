@@ -46,6 +46,14 @@ const nextConfig = {
   images: {
     remotePatterns: [{ protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" }]
   },
+  // "app-development" was merged into "web-development" (Web & App Development): keep old links and search results working
+  async redirects() {
+    return ["", "/ar", "/en"].map((prefix) => ({
+      source: `${prefix}/services/app-development`,
+      destination: `${prefix === "/ar" ? "" : prefix}/services/web-development`,
+      permanent: true
+    }));
+  },
   async headers() {
     // Phase 9: CSP + HSTS (production) + baseline headers — see security-headers.mjs
     return headerRules(process.env.NODE_ENV === "production");
