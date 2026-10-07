@@ -37,9 +37,15 @@ export default async function NovaPage({ params }: { params: Promise<{ locale: s
             </h1>
             <p className="text-2xl font-semibold leading-snug">{nova.tagline}</p>
             <p className="lead">{nova.description}</p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/quote?service=nova-ai" className="btn btn-primary">
-                {home("novaCta")}
+            <div className="flex flex-wrap items-center gap-3">
+              <a href={nova.app.signUp} target="_blank" rel="noopener" className="btn btn-primary">
+                {nova.appLabels.tryNow} <Icon name="ExternalLink" size={16} />
+              </a>
+              <a href={nova.app.signIn} target="_blank" rel="noopener" className="btn btn-outline">
+                {nova.appLabels.signIn}
+              </a>
+              <Link href="/quote?service=nova-ai" className="btn-ghost">
+                {home("novaCta")} <Icon name={locale === "ar" ? "ArrowLeft" : "ArrowRight"} size={18} />
               </Link>
             </div>
             <ul className="flex flex-wrap gap-2.5">

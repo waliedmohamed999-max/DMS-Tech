@@ -12,6 +12,15 @@ export const nova = {
     en: "NOVA AI helps businesses centralize conversations, automate workflows, surface insights and deliver faster digital experiences."
   } as L,
   image: "/images/photos/nova.jpg",
+  /** NOVA runs as its own platform (docs/NOVA-INTEGRATION.md) — the site only links to it. Temporary host for now. */
+  app: {
+    signUp: "https://mediumseagreen-rail-823827.hostingersite.com/sign-up",
+    signIn: "https://mediumseagreen-rail-823827.hostingersite.com/sign-in"
+  },
+  appLabels: {
+    tryNow: { ar: "جرّب NOVA الآن", en: "Try NOVA now" } as L,
+    signIn: { ar: "تسجيل الدخول", en: "Sign in" } as L
+  },
   features: [
     { icon: "Bot", title: { ar: "مساعد ذكي", en: "Smart Assistant" }, description: { ar: "يرد على عملائك ويساعد فريقك على مدار الساعة.", en: "Answers customers and assists your team around the clock." } },
     { icon: "FileSearch", title: { ar: "البحث في المعرفة", en: "Knowledge Search" }, description: { ar: "إجابات فورية من مستنداتك وقاعدة معرفتك.", en: "Instant answers from your documents and knowledge base." } },
