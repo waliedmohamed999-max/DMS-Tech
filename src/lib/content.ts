@@ -4,7 +4,8 @@ import type { L } from "@/content/types";
 import { serviceExtrasCopy, services } from "@/content/services";
 import { industries, integrations } from "@/content/industries";
 import { aiCards, capabilities, nova, phases, promises, trustCards, values } from "@/content/company";
-import { jobs, posts } from "@/content/posts";
+import { posts } from "@/content/posts";
+import { careersCopy, jobs } from "@/content/careers";
 import { clientProjects } from "@/content/projects";
 import { projectsCopy } from "@/content/projects-copy";
 import { chatbot } from "@/content/chatbot";
@@ -79,6 +80,16 @@ export const getPostSlugs = async () => posts.map((p) => p.slug);
 
 export async function getJobs(locale: Locale) {
   return localize(jobs, locale);
+}
+export async function getJob(slug: string, locale: Locale) {
+  const j = jobs.find((x) => x.slug === slug);
+  return j ? localize(j, locale) : null;
+}
+export async function getJobSlugs() {
+  return jobs.map((j) => j.slug);
+}
+export async function getCareersCopy(locale: Locale) {
+  return localize(careersCopy, locale);
 }
 
 export async function getProjects(locale: Locale) {

@@ -78,6 +78,24 @@ export type Post = {
   body: L[];
 };
 
-export type Job = { slug: string; title: L; team: L; type: L; location: L; description: L };
+export type Job = {
+  slug: string;
+  /** the website service this role belongs to (services.ts slug) — groups the careers page */
+  service: string;
+  title: L;
+  team: L;
+  type: L;
+  location: L;
+  experience: L;
+  icon: IconName;
+  /** one-line summary (list card) */
+  description: L;
+  about: L;
+  responsibilities: L[];
+  requirements: L[];
+  niceToHave: L[];
+  /** tools / skills, shown as written in both languages */
+  skills: string[];
+};
 
 export type Value = { icon: IconName; title: L; description: L };

@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 import { routing } from "@/i18n/routing";
 import { site } from "@/content/site";
-import { getPostSlugs, getProjectSlugs, getServiceSlugs } from "@/lib/content";
+import { getJobSlugs, getPostSlugs, getProjectSlugs, getServiceSlugs } from "@/lib/content";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [services, posts, projects] = await Promise.all([getServiceSlugs(), getPostSlugs(), getProjectSlugs()]);
+  const [services, posts, projects, jobs] = await Promise.all([getServiceSlugs(), getPostSlugs(), getProjectSlugs(), getJobSlugs()]);
   const paths = [
     "",
     "/services",
@@ -15,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/clients",
     ...projects.map((p) => `/clients/${p}`),
     "/careers",
+    ...jobs.map((j) => `/careers/${j}`),
     "/blog",
     ...posts.map((p) => `/blog/${p}`),
     "/contact",

@@ -1,7 +1,7 @@
-import type { Job, Post } from "./types";
+import type { Post } from "./types";
 
 /**
- * Starter articles and openings. Replace/extend them from the dashboard once the
+ * Starter articles (the job openings live in careers.ts). Replace/extend them from the dashboard once the
  * `posts` and `jobs` tables are live (see supabase/migrations).
  */
 export const posts: Post[] = [
@@ -97,37 +97,3 @@ export const posts: Post[] = [
   }
 ];
 
-export const jobs: Job[] = [
-  {
-    slug: "full-stack-developer",
-    title: { ar: "مطوّر Full-Stack", en: "Full-Stack Developer" },
-    team: { ar: "تطوير التطبيقات", en: "App Development" },
-    type: { ar: "دوام كامل", en: "Full-time" },
-    location: { ar: "السعودية / عن بُعد", en: "Saudi Arabia / Remote" },
-    description: { ar: "بناء تطبيقات ويب وأنظمة إدارة باستخدام Next.js و Node.js.", en: "Build web apps and admin systems with Next.js and Node.js." }
-  },
-  {
-    slug: "ai-automation-engineer",
-    title: { ar: "مهندس أتمتة وذكاء اصطناعي", en: "AI & Automation Engineer" },
-    team: { ar: "الذكاء الاصطناعي والأتمتة", en: "AI & Automation" },
-    type: { ar: "دوام كامل", en: "Full-time" },
-    location: { ar: "السعودية / عن بُعد", en: "Saudi Arabia / Remote" },
-    description: { ar: "تصميم مساعدات ذكية ومسارات أتمتة وتكاملات API.", en: "Design AI assistants, automation flows and API integrations." }
-  },
-  {
-    slug: "ux-ui-designer",
-    title: { ar: "مصمم UX / UI", en: "UX / UI Designer" },
-    team: { ar: "التصميم", en: "Design" },
-    type: { ar: "دوام كامل", en: "Full-time" },
-    location: { ar: "السعودية / عن بُعد", en: "Saudi Arabia / Remote" },
-    description: { ar: "تصميم واجهات وأنظمة تصميم لمنتجات الويب والجوال.", en: "Design interfaces and design systems for web and mobile products." }
-  },
-  {
-    slug: "digital-marketing-specialist",
-    title: { ar: "أخصائي تسويق رقمي", en: "Digital Marketing Specialist" },
-    team: { ar: "التسويق", en: "Marketing" },
-    type: { ar: "دوام كامل", en: "Full-time" },
-    location: { ar: "السعودية", en: "Saudi Arabia" },
-    description: { ar: "إدارة الحملات الممولة والمحتوى وقياس الأداء.", en: "Run paid campaigns and content, and measure performance." }
-  }
-];
