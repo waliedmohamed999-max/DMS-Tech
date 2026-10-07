@@ -10,6 +10,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { WhatsAppFloat } from "@/components/layout/Chrome";
 import { PauseOffscreenMotion } from "@/components/layout/PauseOffscreenMotion";
+import { Splash } from "@/components/layout/Splash";
 import "../globals.css";
 
 
@@ -66,6 +67,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={fontVars}>
       <body>
+        <Splash locale={locale} />
         <NextIntlClientProvider>
           <Header services={navServices} />
           <main>{children}</main>

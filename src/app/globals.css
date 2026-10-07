@@ -134,6 +134,29 @@
 }
 
 /* off-screen sections (src/components/layout/PauseOffscreenMotion.tsx): decorative loops stop costing frames */
+/* opening screen (components/layout/Splash.tsx): holds ~1.4s, then fades out and stops catching clicks */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(ellipse at 50% 40%, #241f45 0%, var(--color-obsidian) 65%);
+  animation: splashOut 0.5s ease 1.4s forwards;
+}
+.splash-inner { animation: splashIn 0.6s ease both; }
+.splash-bar { transform-origin: left; animation: progress 1.3s ease 0.2s both; }
+[dir="rtl"] .splash-bar { transform-origin: right; }
+@keyframes splashIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes splashOut {
+  to { opacity: 0; visibility: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash { display: none; }
+}
 [data-motion-paused],
 [data-motion-paused] * {
   animation-play-state: paused !important;
