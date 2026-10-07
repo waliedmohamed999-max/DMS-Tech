@@ -8,6 +8,7 @@ import { Highlight, SectionHeading } from "@/components/ui/Section";
 import { Icon } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import TechBackdrop from "@/components/ui/TechBackdrop";
+import { DarkSteps, Faq, SectionNav } from "@/components/ui/ProductBlocks";
 import { FinalCta } from "@/components/home/Sections";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -65,13 +66,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
               </span>
             </div>
           </div>
-          <nav aria-label={c.title} className="flex flex-wrap justify-center gap-2">
-            {c.sectionNav.map((s) => (
-              <a key={s.id} href={`#${s.id}`} className="rounded-pill border border-white/15 px-4 py-1.5 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white">
-                {s.label}
-              </a>
-            ))}
-          </nav>
+          <SectionNav label={c.title} items={c.sectionNav} />
         </div>
       </section>
 
@@ -199,20 +194,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
             <h2 className="text-center text-3xl font-bold md:text-4xl">
               <Highlight text={c.methodTitle} />
             </h2>
-            <ol className="grid gap-px overflow-hidden rounded-card border border-white/10 bg-white/10 sm:grid-cols-2 lg:grid-cols-5">
-              {c.method.map((m, i) => (
-                <li key={m.title} className="grid content-start gap-3 bg-obsidian p-7">
-                  <span className="flex items-center justify-between">
-                    <span className="grid size-9 place-items-center rounded-icon bg-white/5 text-iris-light">
-                      <Icon name={m.icon} size={17} />
-                    </span>
-                    <span className="font-mono text-xs text-[#8d8e8f]">{String(i + 1).padStart(2, "0")}</span>
-                  </span>
-                  <h3 className="text-lg font-bold">{m.title}</h3>
-                  <p className="text-[15px] leading-relaxed text-[#b4b5b6]">{m.text}</p>
-                </li>
-              ))}
-            </ol>
+            <DarkSteps steps={c.method} />
             <div className="flex justify-center">
               <Link href={quote} className="btn btn-primary">
                 {c.ui.notify} <Icon name={arrow} size={17} />
@@ -226,17 +208,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
       <section id="faq" className="section scroll-mt-24">
         <div className="container-site max-w-3xl">
           <SectionHeading title={c.faqTitle} />
-          <div className="grid gap-3">
-            {c.faq.map((f, i) => (
-              <details key={f.q} className="card group p-0 [&_summary::-webkit-details-marker]:hidden" open={i === 0}>
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-6 text-lg font-semibold">
-                  {f.q}
-                  <Icon name="ChevronDown" size={20} className="shrink-0 text-graphite transition group-open:rotate-180" />
-                </summary>
-                <p className="px-6 pb-6 text-[15.5px] leading-relaxed text-iron">{f.a}</p>
-              </details>
-            ))}
-          </div>
+          <Faq items={c.faq} />
         </div>
       </section>
 

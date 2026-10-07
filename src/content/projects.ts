@@ -35,7 +35,7 @@ export const clientProjects: ClientProject[] = [
         height: 600
       },
       {
-        src: "/images/projects/shalfa/03.jpg",
+        src: "/images/projects/shalfa/03.webp",
         width: 1000,
         height: 1000
       },
@@ -83,11 +83,11 @@ export const clientProjects: ClientProject[] = [
       en: "Selling mashalih, oud, oud oil, saffron, sadari, farawi, abayas, shawls, swords, and headbands"
     },
     link: "https://suqalzl.com/",
-    cover: "/images/projects/souq-alzel/01.png",
+    cover: "/images/projects/souq-alzel/01.webp",
     coverFit: "contain",
     gallery: [
       {
-        src: "/images/projects/souq-alzel/01.png",
+        src: "/images/projects/souq-alzel/01.webp",
         width: 400,
         height: 400
       }
@@ -130,11 +130,11 @@ export const clientProjects: ClientProject[] = [
       en: "100% safe, natural products"
     },
     link: null,
-    cover: "/images/projects/ana-tabiei/01.png",
+    cover: "/images/projects/ana-tabiei/01.webp",
     coverFit: "contain",
     gallery: [
       {
-        src: "/images/projects/ana-tabiei/01.png",
+        src: "/images/projects/ana-tabiei/01.webp",
         width: 1131,
         height: 1131
       }
@@ -218,11 +218,11 @@ export const clientProjects: ClientProject[] = [
       en: "We believe sports is a lifestyle, not just a workout — that's why we offer a curated selection of men's and women's activewear that combines comfort, quality, and style to suit various daily and athletic activities."
     },
     link: "https://vavitalksa.com/",
-    cover: "/images/projects/vavitalk/01.png",
+    cover: "/images/projects/vavitalk/01.webp",
     coverFit: "contain",
     gallery: [
       {
-        src: "/images/projects/vavitalk/01.png",
+        src: "/images/projects/vavitalk/01.webp",
         width: 1400,
         height: 600
       }
@@ -240,11 +240,11 @@ export const clientProjects: ClientProject[] = [
       en: "We offer you an authentic experience inspired by Kuwait's rich heritage, combining the finest premium nuts with carefully selected Kuwaiti Middle Eastern sweets to give you an exceptional taste for every occasion. At Zad Al-Mubarakiya, we're committed to high quality, authentic taste, and elegant packaging, making us your first choice for gifts, hospitality, and special occasions."
     },
     link: "https://zadalmubarakiya.com/",
-    cover: "/images/projects/zad-almubarakiya/01.png",
+    cover: "/images/projects/zad-almubarakiya/01.webp",
     coverFit: "contain",
     gallery: [
       {
-        src: "/images/projects/zad-almubarakiya/01.png",
+        src: "/images/projects/zad-almubarakiya/01.webp",
         width: 1206,
         height: 510
       }
@@ -265,11 +265,11 @@ export const clientProjects: ClientProject[] = [
       en: "A fast shipping company delivering within Riyadh in 3 to 4 hours"
     },
     link: "https://logex-ksa.com/",
-    cover: "/images/projects/logex/01.jpg",
+    cover: "/images/projects/logex/01.webp",
     coverFit: "contain",
     gallery: [
       {
-        src: "/images/projects/logex/01.jpg",
+        src: "/images/projects/logex/01.webp",
         width: 1080,
         height: 1080
       }
@@ -315,16 +315,16 @@ export const clientProjects: ClientProject[] = [
       en: "We offer a wide range of the finest fish and seafood at competitive prices"
     },
     link: "https://bahruna.zid.store/",
-    cover: "/images/projects/bahrna/02.png",
+    cover: "/images/projects/bahrna/02.webp",
     coverFit: "cover",
     gallery: [
       {
-        src: "/images/projects/bahrna/01.png",
+        src: "/images/projects/bahrna/01.webp",
         width: 483,
         height: 816
       },
       {
-        src: "/images/projects/bahrna/02.png",
+        src: "/images/projects/bahrna/02.webp",
         width: 958,
         height: 411
       }
@@ -342,11 +342,11 @@ export const clientProjects: ClientProject[] = [
       en: "Sarah Line is an abaya brand that combines modern elegance with luxurious detail, with designs made to complement your look and reflect your taste in a refined, distinctive style."
     },
     link: "https://bysarahline.zid.store/",
-    cover: "/images/projects/sarah-line/01.png",
+    cover: "/images/projects/sarah-line/01.webp",
     coverFit: "cover",
     gallery: [
       {
-        src: "/images/projects/sarah-line/01.png",
+        src: "/images/projects/sarah-line/01.webp",
         width: 1559,
         height: 667
       }
@@ -361,16 +361,16 @@ export const clientProjects: ClientProject[] = [
     category: null,
     description: null,
     link: "https://oreva.zid.store/",
-    cover: "/images/projects/oreva/02.png",
+    cover: "/images/projects/oreva/02.webp",
     coverFit: "cover",
     gallery: [
       {
-        src: "/images/projects/oreva/01.png",
+        src: "/images/projects/oreva/01.webp",
         width: 483,
         height: 816
       },
       {
-        src: "/images/projects/oreva/02.png",
+        src: "/images/projects/oreva/02.webp",
         width: 958,
         height: 411
       }

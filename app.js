@@ -81,9 +81,21 @@ const siteOrigin = (() => {
     return null;
   }
 })();
+// last (rightmost) entry of a comma-separated forwarding header = the one added by the nearest proxy;
+// a client can only prepend values, never append after the proxy's own
+const lastEntry = (v) => String(v ?? "").split(",").map((s) => s.trim()).filter(Boolean).pop() ?? "";
+let headersReported = false;
 function fromPassenger(req, res) {
-  const proto = req.headers["!~passenger-proto"];
-  // plain HTTP → canonical HTTPS URL (never the client's Host header). ACME / AutoSSL validation stays on HTTP.
+  if (!headersReported) {
+    // once per process, NAMES only (never values): shows which forwarding headers this Passenger actually sends
+    headersReported = true;
+    const names = Object.keys(req.headers).filter((h) => h.startsWith("!~") || /^x-forwarded-|^x-real-ip$/.test(h));
+    log("info", "passenger_headers", { names });
+  }
+  const secureProto = req.headers["!~passenger-proto"];
+  const proto = secureProto === "https" || secureProto === "http" ? secureProto : lastEntry(req.headers["x-forwarded-proto"]).toLowerCase();
+  // plain HTTP → canonical HTTPS URL (never the client's Host header). Only when the request is explicitly marked http,
+  // so a missing header can never cause a redirect loop. ACME / AutoSSL validation stays on HTTP.
   if (proto === "http" && siteOrigin && !(req.url ?? "").startsWith("/.well-known/")) {
     res.statusCode = 308;
     res.setHeader("Location", siteOrigin + (req.url ?? "/"));
@@ -91,11 +103,17 @@ function fromPassenger(req, res) {
     res.end();
     return false;
   }
-  const client = String(req.headers["!~passenger-client-address"] ?? "").trim();
-  for (const h of ["x-forwarded-for", "x-real-ip", "x-forwarded-host"]) delete req.headers[h];
+  // client address: Passenger's unspoofable header, else the proxy-appended last X-Forwarded-For entry
+  const secureClient = String(req.headers["!~passenger-client-address"] ?? "").trim();
+  const client = isIP(secureClient) ? secureClient : lastEntry(req.headers["x-forwarded-for"]);
+  delete req.headers["x-forwarded-host"];
   if (isIP(client)) {
     req.headers["x-forwarded-for"] = client;
     req.headers["x-real-ip"] = client;
+  } else {
+    // nothing trustworthy: drop client-supplied values rather than letting them choose their rate-limit bucket
+    delete req.headers["x-forwarded-for"];
+    delete req.headers["x-real-ip"];
   }
   if (proto === "https" || proto === "http") req.headers["x-forwarded-proto"] = proto;
   return true;

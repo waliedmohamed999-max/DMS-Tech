@@ -8,6 +8,7 @@ import { SectionHeading } from "@/components/ui/Section";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { Icon } from "@/components/ui/Icon";
 import { FinalCta } from "@/components/home/Sections";
+import { Faq } from "@/components/ui/ProductBlocks";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -235,17 +236,7 @@ export default async function ServicePage({ params }: Props) {
         <section className="section bg-cloud">
           <div className="container-site max-w-3xl">
             <SectionHeading title={x.faqTitle} />
-            <div className="grid gap-3">
-              {service.faq.map((fq, i) => (
-                <details key={fq.q} className="card group p-0 [&_summary::-webkit-details-marker]:hidden" open={i === 0}>
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-6 text-lg font-semibold">
-                    {fq.q}
-                    <Icon name="ChevronDown" size={20} className="shrink-0 text-graphite transition group-open:rotate-180" />
-                  </summary>
-                  <p className="px-6 pb-6 text-[15.5px] leading-relaxed text-iron">{fq.a}</p>
-                </details>
-              ))}
-            </div>
+            <Faq items={service.faq} />
           </div>
         </section>
       )}
