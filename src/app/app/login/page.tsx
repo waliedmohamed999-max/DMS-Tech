@@ -18,7 +18,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <div aria-hidden className="pointer-events-none absolute -top-40 start-1/2 size-[520px] rounded-full bg-[radial-gradient(circle,rgba(98,77,227,.22),transparent_65%)]" />
       <div className="relative w-full max-w-sm">
         <div className="mb-8 grid justify-items-center gap-3 text-center">
-          <Image src="/images/logo-dark.png" alt="DMS Tech" width={1200} height={437} priority className="h-11 w-auto" />
+          <Image src="/images/logo-dark.png" alt="DMS Tech" width={1200} height={437} priority className="os-logo-on-dark h-11 w-auto" />
+          <Image src="/images/logo.png" alt="" width={1200} height={435} priority className="os-logo-on-light h-11 w-auto" />
           <div>
             <h1 className="text-lg font-semibold">{t("title")}</h1>
             <p className="mt-1 text-sm text-os-muted">{t("subtitle")}</p>

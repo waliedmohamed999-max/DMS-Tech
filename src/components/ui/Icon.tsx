@@ -4,9 +4,9 @@ import {
   CircleCheck, ClipboardList, Clock, Cloud, CloudUpload, CodeXml, Cog, CreditCard, Crosshair, DatabaseZap, FileSearch,
   FileText, Filter, Gauge, Gem, Globe, GraduationCap, Handshake, Headset, House, Image, Inbox, Languages, Layers,
   LayoutDashboard, LayoutTemplate, LifeBuoy, Lightbulb, Link, Mail, MapPin, Megaphone, Menu, MessageSquareMore,
-  MessagesSquare, Monitor, MonitorSmartphone, MousePointerClick, Network, Package, Palette, PencilRuler, PenTool, Phone, Play,
+  MessagesSquare, Monitor, MonitorSmartphone, Moon, MousePointerClick, Network, Package, Palette, PencilRuler, PenTool, Phone, Play,
   Plug, Rocket, Route, Search, SearchCheck, Send, Server, Settings, Share2, ShieldCheck, ShoppingBag, ShoppingCart,
-  SlidersHorizontal, Smartphone, Sparkles, Star, Stethoscope, Target, Timer, TrendingUp, Users, Workflow, X, Zap,
+  SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Stethoscope, Target, Timer, TrendingUp, Users, Workflow, X, Zap,
   type LucideProps
 } from "lucide-react";
 
@@ -21,9 +21,9 @@ const registry = {
   CircleCheck, ClipboardList, Clock, Cloud, CloudUpload, CodeXml, Cog, CreditCard, Crosshair, DatabaseZap, FileSearch,
   FileText, Filter, Gauge, Gem, Globe, GraduationCap, Handshake, Headset, House, Image, Inbox, Languages, Layers,
   LayoutDashboard, LayoutTemplate, LifeBuoy, Lightbulb, Link, Mail, MapPin, Megaphone, Menu, MessageSquareMore,
-  MessagesSquare, Monitor, MonitorSmartphone, MousePointerClick, Network, Package, Palette, PencilRuler, PenTool, Phone, Play,
+  MessagesSquare, Monitor, MonitorSmartphone, Moon, MousePointerClick, Network, Package, Palette, PencilRuler, PenTool, Phone, Play,
   Plug, Rocket, Route, Search, SearchCheck, Send, Server, Settings, Share2, ShieldCheck, ShoppingBag, ShoppingCart,
-  SlidersHorizontal, Smartphone, Sparkles, Star, Stethoscope, Target, Timer, TrendingUp, Users, Workflow, X, Zap
+  SlidersHorizontal, Smartphone, Sparkles, Star, Sun, Stethoscope, Target, Timer, TrendingUp, Users, Workflow, X, Zap
 } as const;
 
 export type IconName = keyof typeof registry;

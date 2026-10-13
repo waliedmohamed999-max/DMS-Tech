@@ -271,3 +271,30 @@
   .os-table tbody tr:last-child td { @apply border-b-0; }
   .tabular { font-variant-numeric: tabular-nums; }
 }
+
+/*
+ * Business OS light theme — the default (html.os-light, set by the /app root layout from the os_theme cookie;
+ * ThemeToggle flips it). It only re-points the os-* tokens, so every dashboard screen follows; dark keeps the
+ * @theme values above. Accents tuned for dark surfaces get deeper shades that stay readable on white.
+ */
+html.os-light {
+  --color-os-bg: #f6f7f9;
+  --color-os-panel: #ffffff;
+  --color-os-surface: #ffffff;
+  --color-os-raised: #f2f4f7;
+  --color-os-hover: #eceef2;
+  --color-os-line: #e6e8ec;
+  --color-os-line-strong: #d3d7de;
+  --color-os-text: #15181b;
+  --color-os-muted: #5b6270;
+  --color-os-faint: #959ca8;
+  --color-iris-light: #5a44de;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-danger: #dc2626;
+  --color-info: #2563eb;
+}
+html.os-light .os-card { box-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.03); }
+/* the gold-on-dark logo and the regular logo: each theme shows its own */
+html.os-light .os-logo-on-dark,
+html:not(.os-light) .os-logo-on-light { display: none; }

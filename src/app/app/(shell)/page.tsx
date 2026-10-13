@@ -13,12 +13,39 @@ import { arAging, AGING_BUCKETS, financeKpis } from "@/server/finance/insights";
 import { formatMoney } from "@/lib/commercial/calc";
 import type { Ctx } from "@/server/context";
 import { CREATE_ITEMS, findModule } from "@/lib/os/modules";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, type IconName } from "@/components/ui/Icon";
 import { Badge, EmptyState, fmtDate, fmtMoney, fmtNumber, fmtRelative, PermissionDenied, priorityTone, SectionCard } from "@/components/os/ui";
 import ApprovalControls from "@/components/os/ApprovalControls";
 import ActivityList from "@/components/os/ActivityList";
 
 export const metadata = { title: "Command Center" };
+
+/** One icon per KPI; the alert KPIs turn red when they are above zero. */
+const KPI_ICONS: Record<string, IconName> = {
+  invoiced: "FileText",
+  collected: "CreditCard",
+  receivables: "Clock",
+  expenses: "ShoppingBag",
+  pipeline: "ChartColumn",
+  wonThisMonth: "Trophy",
+  activeLeads: "Filter",
+  openOpps: "Target",
+  overdueFollowUps: "CalendarClock",
+  activeClients: "Building2",
+  quotesAwaiting: "Send",
+  quotesNeedContract: "Handshake",
+  activeProjects: "Briefcase",
+  projectsAtRisk: "Gauge",
+  myUrgentTasks: "Zap",
+  pendingApprovals: "CircleCheck",
+  activeEmployees: "Users",
+  openTickets: "Headset",
+  pendingProcurement: "ShoppingCart",
+  team: "Users",
+  auditEvents: "ShieldCheck",
+  failedEvents: "CircleX"
+};
+const KPI_ALERTS = new Set(["overdueFollowUps", "projectsAtRisk", "failedEvents"]);
 
 function KpiCard({ k, label, locale, t }: { k: Kpi; label: string; locale: string; t: (k: string, v?: Record<string, string | number>) => string }) {
   if (k.state === "planned") {
@@ -39,8 +66,17 @@ function KpiCard({ k, label, locale, t }: { k: Kpi; label: string; locale: strin
   if (k.state === "forbidden") return null;
   const delta = k.previous != null && k.previous > 0 ? Math.round(((k.value - k.previous) / k.previous) * 100) : null;
   const body = (
-    <div className="os-card flex min-h-[112px] flex-col justify-between p-4 transition hover:border-os-line-strong">
-      <span className="text-[13px] text-os-muted">{label}</span>
+    <div className="os-card group flex min-h-[112px] flex-col justify-between gap-3 p-4 transition hover:border-os-line-strong">
+      <span className="flex items-start justify-between gap-2">
+        <span className="text-[13px] leading-snug text-os-muted">{label}</span>
+        <span
+          className={`grid size-8 shrink-0 place-items-center rounded-lg transition ${
+            KPI_ALERTS.has(k.key) && k.value > 0 ? "bg-danger/10 text-danger" : "bg-iris/10 text-iris-light group-hover:bg-iris group-hover:text-white"
+          }`}
+        >
+          <Icon name={KPI_ICONS[k.key] ?? "ChartColumn"} size={16} />
+        </span>
+      </span>
       <div className="flex items-end justify-between gap-2">
         <p className={`${k.format === "currency" ? "text-[22px]" : "text-[28px]"} font-semibold leading-none tracking-[-0.5px] tabular`} dir="ltr">
           {k.format === "currency" ? fmtMoney(k.value, locale) : fmtNumber(k.value, locale)}
