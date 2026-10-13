@@ -19,6 +19,8 @@ export const SERVICE_CATEGORIES = [
   { key: "systems-integration", ar: "تكامل الأنظمة", en: "Systems Integration" },
   { key: "ux-ui-design", ar: "تصميم UX/UI", en: "UX/UI" },
   { key: "nova-ai", ar: "NOVA AI", en: "NOVA AI" },
+  { key: "dedicated-tech-team", ar: "فريق تقني متكامل", en: "Dedicated Tech Team" },
+  { key: "dms-chat-bot", ar: "DMS Chat Bot", en: "DMS Chat Bot" },
   { key: "custom-software", ar: "برمجيات مخصصة", en: "Custom Software" },
   { key: "support-maintenance", ar: "الدعم والصيانة", en: "Support / Maintenance" },
   { key: "consulting", ar: "الاستشارات", en: "Consulting" },

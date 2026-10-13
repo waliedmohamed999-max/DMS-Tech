@@ -37,6 +37,8 @@ export const DEFAULT_SERVICES: { key: string; nameAr: string; nameEn: string; ca
   { key: "ux-ui-design", nameAr: "تصميم تجربة وواجهة المستخدم", nameEn: "UX/UI Design", category: "Design" },
   // A sellable product entry only — NOVA AI is an external platform, not built in the Business OS.
   { key: "nova-ai", nameAr: "NOVA AI", nameEn: "NOVA AI", category: "Products" },
+  { key: "dms-chat-bot", nameAr: "DMS Chat Bot", nameEn: "DMS Chat Bot", category: "Products" },
+  { key: "dedicated-tech-team", nameAr: "فريق تقني متكامل لشركتك", nameEn: "Dedicated Tech Team", category: "Development" },
   { key: "custom-software", nameAr: "تطوير البرمجيات المخصصة", nameEn: "Custom Software Development", category: "Development" },
   { key: "support-maintenance", nameAr: "الصيانة والدعم الفني", nameEn: "Maintenance & Support", category: "Support" },
   { key: "consulting", nameAr: "الاستشارات التقنية", nameEn: "Technology Consulting", category: "Consulting" }
