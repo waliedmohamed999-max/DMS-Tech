@@ -14,6 +14,8 @@ import { InvoiceEditor } from "@/components/finance/InvoiceEditor";
 import { CollectionNoteForm, InvoiceActions } from "@/components/finance/Widgets";
 import { invoiceTone, paymentTone } from "@/components/finance/tones";
 import { Icon } from "@/components/ui/Icon";
+import { InvoicePaper, InvoiceStepper, PaymentProgress } from "@/components/finance/InvoiceView";
+import { prisma } from "@/server/db";
 
 export const metadata = { title: "Invoice" };
 const TABS = ["overview", "items", "payments", "activity", "source"] as const;
@@ -68,6 +70,12 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
   }
 
   const activity = tab === "activity" ? await invoiceActivity(ctx, id) : [];
+  // the preview shows what the client receives: the frozen snapshot once issued, live company / client data for drafts
+  type Party = Parameters<typeof InvoicePaper>[0]["seller"];
+  const issued = inv.status !== "DRAFT" && inv.status !== "CANCELLED";
+  const seller: Party = issued ? ((inv.sellerSnapshot ?? {}) as Party) : await prisma.organization.findUniqueOrThrow({ where: { id: ctx.organizationId } });
+  const buyer: Party = issued ? ((inv.buyerSnapshot ?? {}) as Party) : { name: inv.client.displayName, taxNumber: inv.client.taxNumber };
+  const fmt = (x: Date) => fmtDate(x, locale);
   return (
     <div className="grid gap-5">
       <div className="flex flex-wrap items-start gap-4">
@@ -147,6 +155,8 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
       {d.replaces && <p className="text-xs text-os-muted">{t("replaces")}: <Link href={`/app/finance/invoices/${d.replaces.id}`} className="underline" dir="ltr">{d.replaces.number}</Link></p>}
       {inv.status === "DRAFT" && <p className="rounded-lg border border-os-line bg-os-panel px-4 py-2.5 text-xs text-os-muted">{t("draftNote")}</p>}
 
+      <InvoiceStepper inv={inv} locale={locale} fmt={fmt} />
+
       <nav className="no-scrollbar flex gap-1 overflow-x-auto border-b border-os-line">
         {TABS.filter((k) => k !== "payments" || d.canPayments).map((k) => (
           <Link key={k} href={`?tab=${k}`} className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm ${tab === k ? "border-iris text-os-text" : "border-transparent text-os-muted hover:text-os-text"}`}>
@@ -159,6 +169,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
       {tab === "overview" && (
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
           <div className="grid gap-5">
+            <InvoicePaper inv={inv} seller={seller} buyer={buyer} locale={locale} money={m} fmt={fmt} />
             <SectionCard title={t("amounts")}>
               <dl className="grid gap-2 p-4 text-sm">
                 {(
@@ -179,6 +190,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
                   </div>
                 ))}
               </dl>
+              {issued && <PaymentProgress paid={Number(inv.paidAmount)} total={Number(inv.total)} locale={locale} overdue={inv.status === "OVERDUE"} />}
             </SectionCard>
             {open && (
               <SectionCard title={t("collection")}>
