@@ -124,6 +124,15 @@ Lines are calculated by the same decimal engine as quotations (`src/lib/commerci
 - **Layout**: bilingual title, coloured status chip and a PAID stamp on current copies, payment instructions in a box (IBAN lines kept left-to-right).
 - **Receipts**: payment receipt PDFs are not generated.
 
+## Recurring invoices (`recurring.ts`, `/app/finance/recurring`)
+
+Schedules for subscriptions and retainers (e.g. the dedicated tech team plans): client, lines (JSON in the invoice line format; `{period}` in a description becomes the period label), interval MONTHLY / QUARTERLY / SEMIANNUAL / ANNUAL, start date, optional end date or number of invoices, payment days, language, `autoIssue` and `autoSend` (auto-send needs auto-issue). Numbers `REC-NNNNNN`.
+
+- **Generation** — the finance sweep (background lease, also right after a schedule is created or resumed) bills each due period as a MANUAL-source invoice with `recurringInvoiceId` + `recurringPeriodStart`, issue date = period start, due date = + payment days; at most 3 missed periods per run. Periods are anchored on the start date (31 Jan → 28/29 Feb → 31 Mar).
+- **Who** — it runs AS THE SCHEDULE OWNER with that person's current permissions: a draft always; issued only if `autoIssue` and the owner holds `finance.invoices.issue`; e-mailed only if `autoSend` and `finance.invoices.send`. An owner who is disabled or lost `finance.invoices.create` pauses the schedule (`pauseReason = OWNER_NO_PERMISSION`) — nothing is ever billed "as nobody". A failed issue / send leaves the draft and is audited (`recurring_invoice.automation_failed`).
+- **Guarantees** — the partial unique index `Invoice_recurring_one_per_period` allows one live (not cancelled / void) invoice per schedule and period; the schedule row is locked while a period is billed; CHECKs keep the dates, counts and the auto-send rule consistent.
+- **Statuses** — ACTIVE / PAUSED / ENDED (end date or invoice limit reached, or ended by hand; final). Audit: `recurring_invoice.created`, `.status`, `.generated`.
+
 ## Payments, allocation, reversal (`payments.ts`)
 
 Explicit policy:

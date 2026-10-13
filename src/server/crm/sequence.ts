@@ -16,7 +16,7 @@ async function bump(tx: Tx, organizationId: string, key: string): Promise<number
 const pad = (n: number) => String(n).padStart(6, "0");
 
 /** LEAD-000001 / OPP-000001 / CLI-000001 / SRV-000001 / PKG-000001 / TASK-000001 */
-export async function nextNumber(tx: Tx, organizationId: string, key: "LEAD" | "OPP" | "CLI" | "SRV" | "PKG" | "TASK" | "VEN" | "EMP" | "JOB" | "CAN" | "OFR" | "AST" | "DOC" | "TCK" | "KB" | "CMP"): Promise<string> {
+export async function nextNumber(tx: Tx, organizationId: string, key: "LEAD" | "OPP" | "CLI" | "SRV" | "PKG" | "TASK" | "VEN" | "EMP" | "JOB" | "CAN" | "OFR" | "AST" | "DOC" | "TCK" | "KB" | "CMP" | "REC"): Promise<string> {
   return `${key}-${pad(await bump(tx, organizationId, key))}`;
 }
 

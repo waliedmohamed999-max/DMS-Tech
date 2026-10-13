@@ -83,6 +83,7 @@ export const NAV: NavGroup[] = [
     items: [
       m("finance", "/app/finance", "ChartColumn", "النظرة المالية", "Finance overview", "الفوترة والتحصيل والذمم والمصروفات", "Billing, collection, receivables and spending", 5, true, "finance.dashboard.view"),
       m("invoices", "/app/finance/invoices", "FileText", "الفواتير", "Invoices", "الفواتير الضريبية من العقود والمراحل والمشاريع والوقت", "VAT invoices from contracts, milestones, projects and time", 5, true, "finance.invoices.view"),
+      m("recurring", "/app/finance/recurring", "RotateCcw", "الفواتير المتكررة", "Recurring invoices", "اشتراكات وباقات تُفوتر تلقائياً كل فترة", "Subscriptions and plans billed every period", 5, true, "finance.invoices.view"),
       m("receivables", "/app/finance/receivables", "CalendarClock", "الذمم المدينة", "Receivables", "أعمار الذمم والتحصيل والمتابعة", "Aging, collection and follow-ups", 5, true, "finance.invoices.view"),
       m("payments", "/app/finance/payments", "CreditCard", "المدفوعات", "Payments", "تسجيل المدفوعات وتوزيعها على الفواتير", "Record payments and allocate them to invoices", 5, true, "finance.payments.view"),
       m("expenses", "/app/finance/expenses", "ShoppingBag", "المصروفات", "Expenses", "المصروفات مع دورة الموافقات والصرف", "Expenses with approval and payment", 5, true, "finance.expenses.create"),

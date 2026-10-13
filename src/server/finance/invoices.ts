@@ -155,6 +155,9 @@ export type DraftRefs = {
   projectId?: string | null;
   contractMilestoneId?: string | null;
   replacesInvoiceId?: string | null;
+  /** recurring schedule + period (MANUAL source) */
+  recurringInvoiceId?: string | null;
+  recurringPeriodStart?: Date | null;
 };
 
 /** Insert a DRAFT (inside the caller's unit of work). Returns the invoice and created line ids in order. */
@@ -181,6 +184,8 @@ export async function insertDraftTx(tx: Tx, uow: Uow, ctx: Ctx, raw: z.input<typ
       projectId: refs.projectId ?? null,
       contractMilestoneId: refs.contractMilestoneId ?? null,
       replacesInvoiceId: refs.replacesInvoiceId ?? null,
+      recurringInvoiceId: refs.recurringInvoiceId ?? null,
+      recurringPeriodStart: refs.recurringPeriodStart ?? null,
       language: input.language,
       currency: input.currency,
       issueDate,

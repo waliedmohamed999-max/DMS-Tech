@@ -6,6 +6,7 @@ import { withLease } from "../jobs/lease";
 import { recomputeInvoiceTx } from "./invoices";
 import { billingCandidates } from "./eligibility";
 import { sendAutoReminders } from "./invoice-email";
+import { runDueSchedules } from "./recurring";
 import { reportError } from "../obs/errors";
 
 /**
@@ -14,19 +15,20 @@ import { reportError } from "../obs/errors";
  *   · invoices due within org.invoiceDueSoonDays → invoice.due_soon (claimed once: dueSoonNotifiedAt)
  *   · eligible contract milestones / completed projects not yet invoiced → *.billing_ready (once per source)
  *   · APPROVED expenses unpaid for 3+ days → expense.payment_due (claimed once: payReminderAt)
- *   · automatic client payment reminders by e-mail when enabled (invoice-email.ts, own lease)
+ *   · recurring invoice schedules due today (recurring.ts) and automatic client payment reminders by e-mail when
+ *     enabled (invoice-email.ts) — both under their own lease
  * Multi-instance safe: JobLease (one runner per org) + conditional claims + notification dedupeKeys.
  * It never mutates projects, contracts or quotations, and never creates invoices.
  */
 export async function sweepFinance(organizationId: string, now = new Date()) {
   const res = await withLease(`sweep:finance:${organizationId}`, 10 * 60_000, () => runSweep(organizationId, now));
-  const reminders = await clientReminders(organizationId, now);
-  return res ? { ...res, reminders } : { skipped: true as const, reminders };
+  const automation = await billingAutomation(organizationId, now);
+  return res ? { ...res, automation } : { skipped: true as const, automation };
 }
 
-/** Client e-mail reminders run under their own lease (sending takes seconds; never twice at once). */
-function clientReminders(organizationId: string, now: Date) {
-  return withLease(`reminders:invoices:${organizationId}`, 15 * 60_000, () => sendAutoReminders(organizationId, now));
+/** Recurring invoices, then client e-mail reminders — their own lease (issuing and sending take seconds). */
+function billingAutomation(organizationId: string, now: Date) {
+  return withLease(`billing:automation:${organizationId}`, 15 * 60_000, async () => ({ recurring: await runDueSchedules(organizationId, now), reminders: await sendAutoReminders(organizationId, now) }));
 }
 
 async function runSweep(organizationId: string, now: Date) {
@@ -95,6 +97,6 @@ export async function sweepFinanceIfDue(organizationId: string, everyMs = 5 * 60
   last.set(organizationId, Date.now());
   const res = await withLease(`sweep:finance:${organizationId}`, 10 * 60_000, () => runSweep(organizationId, new Date()));
   // page-triggered: e-mails go out in the background so the dashboard never waits on the mail server
-  void clientReminders(organizationId, new Date()).catch((e) => reportError(e, "invoice_reminders"));
+  void billingAutomation(organizationId, new Date()).catch((e) => reportError(e, "billing_automation"));
   return res ?? { skipped: true as const };
 }
