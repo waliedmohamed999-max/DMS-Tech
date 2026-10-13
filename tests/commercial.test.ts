@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { prisma } from "@/server/db";
-import { createService, listServices, updateService, archiveService, createPackage } from "@/server/commercial/catalog";
+import { createService, listServices, updateService, archiveService, createPackage, DEFAULT_SERVICES } from "@/server/commercial/catalog";
 import {
   acceptQuotation,
   cancelQuotation,
@@ -91,15 +91,15 @@ async function pdfText(data: Buffer) {
 
 describe("service catalog", () => {
   it("1. default DMS services are seeded idempotently and a new service persists with code, audit and event", async () => {
-    expect(await prisma.service.count({ where: { organizationId: orgId } })).toBe(14);
+    expect(await prisma.service.count({ where: { organizationId: orgId } })).toBe(DEFAULT_SERVICES.length);
     await setupOrg(); // re-run bootstrap: no duplicates
-    expect(await prisma.service.count({ where: { organizationId: orgId } })).toBe(14);
+    expect(await prisma.service.count({ where: { organizationId: orgId } })).toBe(DEFAULT_SERVICES.length);
     const nova = await svc("nova-ai");
     expect(nova.nameEn).toBe("NOVA AI");
 
     const { manager } = await users();
     const s = await createService(manager, { nameAr: "استضافة", nameEn: "Hosting", pricingModel: "MONTHLY", basePrice: "250.50", taxBehavior: "STANDARD", category: "Support" });
-    expect(s.code).toBe("SRV-000015");
+    expect(s.code).toBe(`SRV-${String(DEFAULT_SERVICES.length + 1).padStart(6, "0")}`);
     const row = await prisma.service.findUniqueOrThrow({ where: { id: s.id } });
     expect(row.basePrice.toFixed(2)).toBe("250.50");
     expect(await prisma.auditLog.count({ where: { action: "service.created", entityId: s.id } })).toBe(1);
@@ -118,7 +118,7 @@ describe("service catalog", () => {
     const { rep, employee } = await users();
     await expect(createService(rep, { nameAr: "س", nameEn: "X service" })).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(listServices(employee, {})).rejects.toMatchObject({ code: "FORBIDDEN" });
-    expect((await listServices(rep, {})).total).toBe(14);
+    expect((await listServices(rep, {})).total).toBe(DEFAULT_SERVICES.length);
   });
 });
 
