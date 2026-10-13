@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { assertInvoiceIssuingAllowed } from "./zatca";
 import { assertDeliverableTx, assertNotLockedByZatcaTx, generateForIssuedInvoiceTx } from "../zatca/service";
 import { z } from "zod";
-import type { InvoiceStatus, Prisma } from "@/generated/prisma/client";
+import type { InvoiceSendMethod, InvoiceStatus, Prisma } from "@/generated/prisma/client";
 import { prisma, type Tx } from "../db";
 import { can, requirePermission, type Ctx } from "../context";
 import { conflict, forbidden, invalid, notFound } from "../errors";
@@ -318,19 +318,22 @@ const sendSchema = z.object({ method: z.enum(["EMAIL_MANUAL", "WHATSAPP_MANUAL",
 export async function markInvoiceSent(ctx: Ctx, id: string, raw: unknown) {
   requirePermission(ctx, "finance.invoices.send");
   const input = sendSchema.parse(raw);
-  return unitOfWork(ctx, async (tx, uow) => {
-    const inv = await lockInvoice(tx, ctx, id);
-    if (inv.sentAt) throw conflict("INVOICE_ALREADY_SENT");
-    if (!MANUAL_ACTIONS.send.includes(inv.status)) throw conflict(`INVOICE_INVALID_TRANSITION:${inv.status}`);
-    await assertDeliverableTx(tx, id); // Phase 11: a standard e-invoice reaches the buyer only once cleared by ZATCA
-    const org = await orgFinance(tx, ctx.organizationId);
-    const sentAt = new Date();
-    const status = deriveStatus({ total: inv.total.toFixed(2), paid: inv.paidAmount.toFixed(2), sentAt, dueDate: inv.dueDate, today: todayIn(org.timezone) });
-    await tx.invoice.update({ where: { id }, data: { sentAt, sentById: ctx.userId || null, sentMethod: input.method, status } });
-    await uow.audit({ action: "invoice.sent", entityType: "Invoice", entityId: id, before: { status: inv.status }, after: { status, method: input.method, note: input.note, recordedById: ctx.userId } });
-    uow.emit({ type: "invoice.sent", entityType: "Invoice", entityId: id, payload: { invoiceId: id, number: inv.number, method: input.method, clientId: inv.clientId }, activity: { entityLabel: inv.number ?? "", href: `/app/finance/invoices/${id}`, visibility: "finance.invoices.view" } });
-    return { id, status };
-  });
+  return unitOfWork(ctx, (tx, uow) => recordInvoiceSentTx(tx, uow, ctx, id, input.method, input.note ?? null));
+}
+
+/** Marks an issued invoice as delivered (manual record or the system e-mail). Caller holds the permission. */
+export async function recordInvoiceSentTx(tx: Tx, uow: Uow, ctx: Ctx, id: string, method: InvoiceSendMethod, note: string | null) {
+  const inv = await lockInvoice(tx, ctx, id);
+  if (inv.sentAt) throw conflict("INVOICE_ALREADY_SENT");
+  if (!MANUAL_ACTIONS.send.includes(inv.status)) throw conflict(`INVOICE_INVALID_TRANSITION:${inv.status}`);
+  await assertDeliverableTx(tx, id); // Phase 11: a standard e-invoice reaches the buyer only once cleared by ZATCA
+  const org = await orgFinance(tx, ctx.organizationId);
+  const sentAt = new Date();
+  const status = deriveStatus({ total: inv.total.toFixed(2), paid: inv.paidAmount.toFixed(2), sentAt, dueDate: inv.dueDate, today: todayIn(org.timezone) });
+  await tx.invoice.update({ where: { id }, data: { sentAt, sentById: ctx.userId || null, sentMethod: method, status } });
+  await uow.audit({ action: "invoice.sent", entityType: "Invoice", entityId: id, before: { status: inv.status }, after: { status, method, note, recordedById: ctx.userId } });
+  uow.emit({ type: "invoice.sent", entityType: "Invoice", entityId: id, payload: { invoiceId: id, number: inv.number, method, clientId: inv.clientId }, activity: { entityLabel: inv.number ?? "", href: `/app/finance/invoices/${id}`, visibility: "finance.invoices.view" } });
+  return { id, status };
 }
 
 async function releaseTime(tx: Tx, invoiceId: string) {

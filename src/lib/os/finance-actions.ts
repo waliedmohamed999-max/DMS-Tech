@@ -6,6 +6,7 @@ import { createInvoiceFromSource } from "@/server/finance/eligibility";
 import { recordPayment, reversePayment } from "@/server/finance/payments";
 import { cancelExpense, createExpense, createVendor, payExpense, saveCategory, setVendorArchived, submitExpense, updateExpense, updateVendor, withdrawExpense } from "@/server/finance/expenses";
 import { setCostRate } from "@/server/finance/costing";
+import { emailInvoice, setInvoiceAutoReminders } from "@/server/finance/invoice-email";
 import { runAction } from "./action";
 
 /** Thin adapters — every finance service re-checks permission, finance scope and state. */
@@ -19,6 +20,8 @@ export const issueInvoiceAction = async (id: string) => runAction(async (ctx) =>
 export const markInvoiceSentAction = async (id: string, input: R) => runAction(async (ctx) => void (await markInvoiceSent(ctx, id, input)));
 export const cancelInvoiceAction = async (id: string, reason: string) => runAction(async (ctx) => void (await cancelInvoiceDraft(ctx, id, { reason })));
 export const voidInvoiceAction = async (id: string, reason: string, replace: boolean) => runAction(async (ctx) => ({ replacementId: (await voidInvoice(ctx, id, { reason, replace })).replacementId }));
+export const emailInvoiceAction = async (id: string, input: R) => runAction(async (ctx) => void (await emailInvoice(ctx, id, input)));
+export const setInvoiceAutoRemindersAction = async (enabled: boolean) => runAction(async (ctx) => void (await setInvoiceAutoReminders(ctx, enabled)));
 export const collectionNoteAction = async (id: string, input: R) => runAction(async (ctx) => void (await addCollectionNote(ctx, id, input)));
 export const openInvoicesAction = async (clientId: string) =>
   runAction(async (ctx) => (await openInvoicesForClient(ctx, clientId)).map((i) => ({ id: i.id, number: i.number, dueDate: i.dueDate.toISOString().slice(0, 10), total: i.total.toFixed(2), balance: i.balanceDue.toFixed(2), currency: i.currency, status: i.status })), { revalidate: false });

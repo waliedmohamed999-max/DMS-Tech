@@ -16,6 +16,8 @@ import { invoiceTone, paymentTone } from "@/components/finance/tones";
 import { Icon } from "@/components/ui/Icon";
 import { InvoicePaper, InvoiceStepper, PaymentProgress } from "@/components/finance/InvoiceView";
 import { prisma } from "@/server/db";
+import { InvoiceEmailPanel } from "@/components/finance/InvoiceEmailPanel";
+import { invoiceEmailDefaults } from "@/server/finance/invoice-email";
 
 export const metadata = { title: "Invoice" };
 const TABS = ["overview", "items", "payments", "activity", "source"] as const;
@@ -76,6 +78,9 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
   const seller: Party = issued ? ((inv.sellerSnapshot ?? {}) as Party) : await prisma.organization.findUniqueOrThrow({ where: { id: ctx.organizationId } });
   const buyer: Party = issued ? ((inv.buyerSnapshot ?? {}) as Party) : { name: inv.client.displayName, taxNumber: inv.client.taxNumber };
   const fmt = (x: Date) => fmtDate(x, locale);
+  const canSend = can(ctx, "finance.invoices.send") && inv.status !== "DRAFT";
+  const emailDefaults = canSend && tab === "overview" ? await invoiceEmailDefaults(ctx, id) : null;
+  const autoReminders = emailDefaults ? (await prisma.organization.findUniqueOrThrow({ where: { id: ctx.organizationId }, select: { invoiceAutoReminders: true } })).invoiceAutoReminders : false;
   return (
     <div className="grid gap-5">
       <div className="flex flex-wrap items-start gap-4">
@@ -222,6 +227,8 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
               </SectionCard>
             )}
           </div>
+          <div className="grid gap-5">
+          {emailDefaults && <InvoiceEmailPanel invoiceId={id} defaults={emailDefaults} autoReminders={autoReminders} canManageSettings={can(ctx, "admin.settings.manage")} />}
           <SectionCard title={t("details")}>
             <dl className="grid gap-2 p-4 text-xs">
               {(
@@ -245,6 +252,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
               ))}
             </dl>
           </SectionCard>
+          </div>
         </div>
       )}
 

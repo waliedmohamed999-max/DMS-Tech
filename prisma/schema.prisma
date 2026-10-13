@@ -134,6 +134,8 @@ model Organization {
   invoiceDueSoonDays         Int            @default(3)
   /// Phase 5: bank / IBAN / payment instructions printed on invoices (snapshotted at issue)
   invoicePaymentInstructions String?
+  /// e-mail the client automatic payment reminders (before due, then 1 / 7 / 14 days overdue) — off until enabled
+  invoiceAutoReminders       Boolean        @default(false)
   /// Phase 5: expenses at/above this total need finance.expenses.approve_executive
   expenseApprovalThreshold   Decimal        @default(5000) @db.Decimal(14, 2)
   /// Phase 5: outstanding balance per client above which the Command Center flags it
@@ -1772,6 +1774,8 @@ enum InvoiceSource {
 }
 
 enum InvoiceSendMethod {
+  /// sent by the system (InvoiceEmail log)
+  EMAIL
   EMAIL_MANUAL
   WHATSAPP_MANUAL
   IN_PERSON
@@ -1887,6 +1891,7 @@ model Invoice {
   timeLinks         InvoiceTimeEntry[]
   documents         CommercialDocument[]
   collectionNotes   InvoiceCollectionNote[]
+  emails            InvoiceEmail[]
 
   @@unique([organizationId, number])
   @@index([organizationId, status, dueDate])
@@ -1959,6 +1964,30 @@ model InvoiceCollectionNote {
   createdBy User?   @relation("InvoiceNoteAuthor", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([invoiceId, createdAt])
+}
+
+/// Every e-mail the system sent (or tried to send) for an invoice: first send, manual reminders and the automatic
+/// reminder ladder (AUTO_DUE_SOON, AUTO_OVERDUE_1 / _7 / _14). A partial unique index (migration) lets each automatic
+/// step succeed at most once per invoice while a FAILED attempt can be retried.
+model InvoiceEmail {
+  id             String   @id @default(cuid())
+  organizationId String
+  invoiceId      String
+  kind           String
+  to             String
+  cc             String?
+  language       String
+  subject        String
+  /// PENDING → SENT | FAILED | SKIPPED (no mail transport configured)
+  status         String   @default("PENDING")
+  error          String?
+  sentById       String?
+  createdAt      DateTime @default(now())
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, createdAt])
+  @@index([organizationId, kind, status])
 }
 
 /// Money received from a client. Must be fully allocated to open invoices of that client

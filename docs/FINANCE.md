@@ -120,7 +120,9 @@ Lines are calculated by the same decimal engine as quotations (`src/lib/commerci
 - **`?original=1`** returns the stored bytes from issue time (`X-Document-Source: stored-issued-artifact`).
 - **The default copy** adds the payment status "as of" the company's current day.
 - **Drafts** carry a DRAFT watermark.
-- **Receipts**: payment receipt PDFs are not generated; no regulatory e-invoicing (ZATCA) claim is made.
+- **ZATCA QR**: issued invoices carry the QR code with TLV tags 1–5 (seller name, VAT number, time of issue, total with VAT, VAT total), built from the frozen snapshot when the seller has a VAT number. The encoder is `src/server/pdf/qrcode.ts` (no dependency; checked against an external decoder). This is the Phase 1 ("generation") QR only — Phase 2 stamping / clearance is covered in docs/ZATCA.md.
+- **Layout**: bilingual title, coloured status chip and a PAID stamp on current copies, payment instructions in a box (IBAN lines kept left-to-right).
+- **Receipts**: payment receipt PDFs are not generated.
 
 ## Payments, allocation, reversal (`payments.ts`)
 
@@ -133,7 +135,14 @@ Explicit policy:
 
 Aging uses `dueDate` and the remaining balance: `current` (not due), 1–30, 31–60, 61–90, 90+ days past due, per client and per invoice.
 
-Collection activity is **recorded manually**: note / reminder (with channel) / promise to pay, plus a follow-up date. It updates `nextFollowUpAt` / `lastReminderAt`. The system never emails or messages clients.
+Collection activity is recorded on the invoice: note / reminder (with channel) / promise to pay, plus a follow-up date. It updates `nextFollowUpAt` / `lastReminderAt`.
+
+### E-mailing invoices and reminders (`invoice-email.ts`)
+
+- **Send to client** (invoice page, `finance.invoices.send`): e-mails the issued invoice with the PDF attached — the stored original for the first send, a current copy (with the balance) for later reminders. The first successful send marks the invoice SENT with method `EMAIL`; later sends add a REMINDER collection note (channel EMAIL). Recipients are validated (max 5 + 5 cc); the ZATCA delivery gate applies as for "mark as sent".
+- **Automatic reminders** (company switch `Organization.invoiceAutoReminders`, off by default, `admin.settings.manage`): the finance sweep sends the latest applicable step of AUTO_DUE_SOON (within `invoiceDueSoonDays`), AUTO_OVERDUE_1 / _7 / _14 — only for invoices already sent to the client, to the last address and in the last language used. Each step succeeds once per invoice (partial unique index `InvoiceEmail_auto_once`, safe under concurrent sweeps); failures are retried, three times at most. When the sweep is triggered by a page load the e-mails go out in the background under their own lease.
+- **Log**: every attempt is an `InvoiceEmail` row (SENT / FAILED with the error / SKIPPED when no mail transport exists) shown on the invoice page, plus an `invoice.emailed` audit entry. Nothing is ever reported as sent when it was not.
+- **Transport**: `src/server/notify/mailer.ts` — SMTP over TLS when `SMTP_HOST` is set, else the server sendmail (cPanel). See docs/CPANEL_DEPLOYMENT.md.
 
 ## Expenses, approval, payment (`expenses.ts`)
 
