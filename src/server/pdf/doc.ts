@@ -118,7 +118,7 @@ export function createDoc(opts: { rtl: boolean; title: string; footer: (page: nu
 }
 
 /** Brand header: logo on the start side, document title + meta on the end side. Returns y below. */
-export function header(d: Doc, title: string, meta: [string, string][]) {
+export function header(d: Doc, title: string, meta: [string, string][], opts: { subtitle?: string; badge?: { text: string; color: string } } = {}) {
   const { pdf, rtl } = d;
   const a = assets();
   const logoW = 120;
@@ -128,6 +128,22 @@ export function header(d: Doc, title: string, meta: [string, string][]) {
   const boxX = rtl ? PAGE.m : PAGE.w - PAGE.m - boxW;
   d.font("bold", 18, COLORS.ink);
   let y = d.text(title, boxX, top - 2, boxW, { align: "end" });
+  if (opts.subtitle) {
+    d.font("regular", 9, COLORS.faint);
+    y = d.text(opts.subtitle, boxX, y - 1, boxW, { align: "end" });
+  }
+  if (opts.badge) {
+    // a rounded status chip on the end edge
+    d.font("semibold", 8.5, opts.badge.color);
+    const w = d.width(opts.badge.text) + 16;
+    const x = rtl ? boxX : boxX + boxW - w;
+    pdf.save();
+    pdf.roundedRect(x, y + 2, w, 16, 8).fillOpacity(0.1).fill(opts.badge.color);
+    pdf.restore();
+    d.font("semibold", 8.5, opts.badge.color);
+    d.text(opts.badge.text, x, y + 5.5, w, { align: "center" });
+    y += 22;
+  }
   y += 2;
   for (const [k, v] of meta) {
     // label at the start edge of the box, value at the end edge, same baseline

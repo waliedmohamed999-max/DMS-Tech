@@ -4,6 +4,8 @@ import { todayIn } from "../commercial/dates";
 import { formatMoney } from "@/lib/commercial/calc";
 import { COLORS, PAGE, createDoc, header, parties, section, tableHeader, columnXs, type Column } from "./doc";
 import { ltr } from "./text";
+import { encodeQr } from "./qrcode";
+import { basicQrFields, encodeTlv } from "../zatca/qr";
 
 /**
  * Invoice PDF — DB-authoritative.
@@ -14,11 +16,14 @@ import { ltr } from "./text";
  * (CommercialDocument INVOICE_PDF) and served as the "original". A "current copy" adds the
  * payment status (paid / balance as of today) from the payment ledger. Drafts carry a DRAFT
  * watermark and use live data.
+ *
+ * Issued invoices carry the ZATCA QR (TLV tags 1–5: seller, VAT no., time of issue, total with VAT, VAT) built from the
+ * frozen snapshot, when the seller has a VAT number. Phase 2 cryptographic stamping is NOT applied (docs/ZATCA.md).
  */
 
 const L = {
   ar: {
-    title: "فاتورة ضريبية", draftTitle: "مسودة فاتورة", number: "رقم الفاتورة", issue: "تاريخ الإصدار", due: "تاريخ الاستحقاق", status: "الحالة",
+    title: "فاتورة ضريبية", otherTitle: "Tax Invoice", draftTitle: "مسودة فاتورة", qr: "رمز الفاتورة الإلكترونية — هيئة الزكاة والضريبة والجمارك", paidStamp: "مدفوعة", number: "رقم الفاتورة", issue: "تاريخ الإصدار", due: "تاريخ الاستحقاق", status: "الحالة",
     from: "المورد", to: "العميل", vat: "الرقم الضريبي", cr: "السجل التجاري", attn: "عناية", no: "#", item: "الوصف", qty: "الكمية", price: "سعر الوحدة",
     discount: "الخصم", tax: "الضريبة", total: "الإجمالي", subtotal: "المجموع قبل الخصم", discountTotal: "إجمالي الخصم", taxable: "المبلغ الخاضع للضريبة",
     vatTotal: "ضريبة القيمة المضافة", grand: "الإجمالي شامل الضريبة", paid: "المدفوع", balance: "الرصيد المستحق", asOf: (d: string) => `حالة السداد حتى ${d}`,
@@ -27,7 +32,7 @@ const L = {
     statusText: { DRAFT: "مسودة", ISSUED: "صادرة", SENT: "مُرسلة", PARTIALLY_PAID: "مدفوعة جزئيًا", PAID: "مدفوعة", OVERDUE: "متأخرة", CANCELLED: "ملغاة", VOID: "ملغاة (باطلة)" } as Record<string, string>
   },
   en: {
-    title: "TAX INVOICE", draftTitle: "DRAFT INVOICE", number: "Invoice no.", issue: "Issue date", due: "Due date", status: "Status",
+    title: "TAX INVOICE", otherTitle: "فاتورة ضريبية", draftTitle: "DRAFT INVOICE", qr: "ZATCA e-invoice QR code", paidStamp: "PAID", number: "Invoice no.", issue: "Issue date", due: "Due date", status: "Status",
     from: "Seller", to: "Bill to", vat: "VAT no.", cr: "CR no.", attn: "Attn.", no: "#", item: "Description", qty: "Qty", price: "Unit price",
     discount: "Discount", tax: "VAT", total: "Total", subtotal: "Subtotal", discountTotal: "Discount", taxable: "Taxable amount",
     vatTotal: "VAT", grand: "Total incl. VAT", paid: "Paid", balance: "Balance due", asOf: (d: string) => `Payment status as of ${d}`,
@@ -94,12 +99,20 @@ export async function renderInvoicePdf(db: Tx | typeof prisma, organizationId: s
     footer: (p, n) => [sellerName, seller.vatNumber ? `${t.vat} ${ltr(seller.vatNumber)}` : null, ltr(inv.number ?? ""), inv.contentHash ? ltr(`#${inv.contentHash.slice(0, 12)}`) : null, t.page(p, n)].filter(Boolean).join("  ·  ")
   });
 
-  header(d, issued ? t.title : t.draftTitle, [
-    [t.number, inv.number ?? "—"],
-    [t.issue, dateStr(inv.issueDate, lang)],
-    [t.due, dateStr(inv.dueDate, lang)],
-    ...(!opts.original && issued ? ([[t.status, t.statusText[inv.status] ?? inv.status]] as [string, string][]) : [])
-  ]);
+  const statusColor: Record<string, string> = { PAID: "#15803d", PARTIALLY_PAID: "#b45309", OVERDUE: COLORS.danger, VOID: COLORS.danger, CANCELLED: COLORS.muted };
+  header(
+    d,
+    issued ? t.title : t.draftTitle,
+    [
+      [t.number, inv.number ?? "—"],
+      [t.issue, dateStr(inv.issueDate, lang)],
+      [t.due, dateStr(inv.dueDate, lang)]
+    ],
+    {
+      subtitle: issued ? t.otherTitle : undefined,
+      badge: !opts.original && issued ? { text: t.statusText[inv.status] ?? inv.status, color: statusColor[inv.status] ?? COLORS.brand } : undefined
+    }
+  );
 
   const refs = [inv.contract ? `${t.contract} ${ltr(inv.contract.number)}` : null, inv.project ? `${t.project} ${ltr(inv.project.number)}` : null, inv.quotation ? `${t.quotation} ${ltr(`${inv.quotation.number}${inv.quotationVersion ? ` V${inv.quotationVersion.versionNumber}` : ""}`)}` : null].filter(Boolean).join("  ·  ");
   parties(
@@ -155,10 +168,31 @@ export async function renderInvoicePdf(db: Tx | typeof prisma, organizationId: s
     [t.grand, m(inv.total), "band"]
   ];
   if (!opts.original && issued) rows.push([t.paid, m(inv.paidAmount), "n"], [t.balance, m(inv.balanceDue), "strong"]);
-  d.ensure(rows.length * 18 + 40);
+  const qrPayload = issued && seller.vatNumber && inv.issuedAt ? zatcaQr(seller, inv) : null;
+  d.ensure(Math.max(rows.length * 18 + 40, qrPayload ? 150 : 0));
   d.y += 6;
   const boxW = 250;
   const boxX = rtl ? PAGE.m : PAGE.w - PAGE.m - boxW;
+  const totalsTop = d.y;
+  if (qrPayload) {
+    const qrSize = 104;
+    const qrX = rtl ? PAGE.w - PAGE.m - qrSize : PAGE.m;
+    drawQr(d, qrPayload, qrX, totalsTop, qrSize);
+    d.font("regular", 7, COLORS.faint);
+    // caption under the QR, kept inside the page margin on the QR side
+    const capW = 180;
+    d.text(t.qr, rtl ? PAGE.w - PAGE.m - capW : PAGE.m, totalsTop + qrSize + 4, capW, { align: "start" });
+  }
+  if (!opts.original && inv.status === "PAID") {
+    // "paid" stamp between the QR and the totals
+    const sx = PAGE.w / 2 - 55;
+    d.pdf.save();
+    d.pdf.rotate(-12, { origin: [sx + 55, totalsTop + 40] });
+    d.pdf.roundedRect(sx, totalsTop + 22, 110, 36, 6).lineWidth(2).strokeColor("#15803d").stroke();
+    d.font("bold", 17, "#15803d");
+    d.text(t.paidStamp, sx, totalsTop + 30, 110, { align: "center" });
+    d.pdf.restore();
+  }
   for (const [k, val, kind] of rows) {
     if (kind === "band") {
       d.pdf.rect(boxX, d.y - 4, boxW, 24).fill(COLORS.band);
@@ -177,13 +211,60 @@ export async function renderInvoicePdf(db: Tx | typeof prisma, organizationId: s
     d.y = d.text(t.asOf(dateStr(todayIn(tz), lang)), boxX + 8, d.y, boxW - 16, { align: "end" }) + 10;
   }
   else d.y += 10;
+  if (qrPayload) d.y = Math.max(d.y, totalsTop + 104 + 26);
 
-  section(d, t.payment, instructions);
+  paymentBox(d, t.payment, instructions);
   section(d, t.terms, inv.paymentTerms);
   section(d, t.notes, inv.notes);
 
   const out = await d.finish();
   return { ...out, language: lang, fileName: `${inv.number ?? `DRAFT-${inv.id.slice(-6)}`}-${lang}${opts.original || !issued ? "" : "-copy"}.pdf` };
+}
+
+type QrInvoice = { issuedAt: Date | null; total: { toFixed(n: number): string }; taxTotal: { toFixed(n: number): string } };
+
+/** ZATCA QR payload (TLV tags 1–5) from the frozen seller snapshot and the issued totals. */
+export function zatcaQr(seller: { legalName?: string | null; name?: string | null; nameAr?: string | null; vatNumber?: string | null }, inv: QrInvoice): string {
+  return encodeTlv(
+    basicQrFields({
+      sellerName: (seller.legalName || seller.nameAr || seller.name || "").slice(0, 120),
+      vatNumber: seller.vatNumber ?? "",
+      timestamp: (inv.issuedAt ?? new Date()).toISOString().replace(/\.\d{3}Z$/, "Z"),
+      totalWithVat: inv.total.toFixed(2),
+      vatTotal: inv.taxTotal.toFixed(2)
+    })
+  );
+}
+
+function drawQr(d: ReturnType<typeof createDoc>, payload: string, x: number, y: number, size: number) {
+  const m = encodeQr(payload);
+  const quiet = 2;
+  const cell = size / (m.length + quiet * 2);
+  d.pdf.save();
+  d.pdf.rect(x, y, size, size).fill("#ffffff");
+  m.forEach((row, r) => row.forEach((dark, c) => dark && d.pdf.rect(x + (c + quiet) * cell, y + (r + quiet) * cell, cell + 0.05, cell + 0.05).fill("#000000")));
+  d.pdf.restore();
+}
+
+/** Payment instructions in a tinted box (bank / IBAN lines kept left-to-right). */
+function paymentBox(d: ReturnType<typeof createDoc>, title: string, body: string | null | undefined) {
+  if (!body?.trim()) return;
+  const lines = body.split("\n");
+  d.font("regular", 9);
+  const h = lines.reduce((n, l) => n + d.measure(l || " ", d.cw - 28, 1.5), 0) + 34;
+  d.ensure(h + 10);
+  const top = d.y;
+  d.pdf.save();
+  d.pdf.roundedRect(PAGE.m, top, d.cw, h, 8).fill(COLORS.band);
+  d.pdf.restore();
+  d.font("semibold", 9.5, COLORS.ink);
+  let y = d.text(title, PAGE.m + 14, top + 11, d.cw - 28) + 3;
+  for (const l of lines) {
+    d.font("regular", 9, COLORS.muted);
+    // a line without Arabic letters (IBAN, account no.) stays one left-to-right run
+    y = d.text(l && !/[؀-ۿ]/.test(l) ? ltr(l) : l || " ", PAGE.m + 14, y, d.cw - 28, { lineGap: 1.5 });
+  }
+  d.y = top + h + 14;
 }
 
 /**
