@@ -6,6 +6,8 @@ import { industries, integrations } from "@/content/industries";
 import { aiCards, capabilities, nova, phases, promises, trustCards, values } from "@/content/company";
 import { posts } from "@/content/posts";
 import { careersCopy, jobs } from "@/content/careers";
+import { activeOffers, findDeal, findOffer, offerEndInstant, offers, offersCopy, packageGroups } from "@/content/offers";
+import { formatMoney } from "@/lib/commercial/calc";
 import { clientProjects } from "@/content/projects";
 import { projectsCopy } from "@/content/projects-copy";
 import { chatbot } from "@/content/chatbot";
@@ -119,4 +121,35 @@ export async function getNovaPage(locale: Locale) {
 
 export async function getServiceExtrasCopy(locale: Locale) {
   return localize(serviceExtrasCopy, locale);
+}
+
+// Packages, offers and private deals (src/content/offers.ts)
+const offerMoney = (v: number | null, locale: Locale) => (v === null ? null : formatMoney(v.toFixed(2), locale, "SAR"));
+export async function getOffersCopy(locale: Locale) {
+  return localize(offersCopy, locale);
+}
+export async function getPackageGroups(locale: Locale) {
+  return packageGroups.map((g) => ({ ...localize({ title: g.title, text: g.text }, locale), service: g.service, icon: g.icon, tiers: g.tiers.map((t) => ({ ...localize(t, locale), price: offerMoney(t.price, locale) })) }));
+}
+export async function getActiveOffers(locale: Locale) {
+  return activeOffers().map((o) => ({ ...localize(o, locale), endsAtInstant: offerEndInstant(o.endsAt), price: offerMoney(o.price, locale), oldPrice: offerMoney(o.oldPrice, locale) }));
+}
+/** A shareable item: a package tier or a running offer (null = unknown / ended). */
+export async function getOfferItem(slug: string, locale: Locale) {
+  for (const g of packageGroups) {
+    const t = g.tiers.find((x) => x.key === slug);
+    if (t) return { kind: "package" as const, key: `pkg:${t.key}`, service: g.service, group: localize(g.title, locale), ...localize({ name: t.name, tagline: t.tagline, features: t.features, period: t.period }, locale), icon: t.icon, featured: Boolean(t.featured), price: offerMoney(t.price, locale), oldPrice: null, endsAtInstant: null };
+  }
+  const o = findOffer(slug);
+  if (o) return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: localize(o.badge, locale), ...localize({ name: o.title, tagline: o.text, features: o.features }, locale), period: null, icon: o.icon, featured: false, price: offerMoney(o.price, locale), oldPrice: offerMoney(o.oldPrice, locale), endsAtInstant: offerEndInstant(o.endsAt), preview: Boolean(o.preview) };
+  return null;
+}
+export const offerExists = (slug: string) => offers.some((o) => o.slug === slug);
+export async function getDeal(token: string, locale: Locale) {
+  const r = findDeal(token);
+  if (!r) return null;
+  return { expired: r.expired, key: `deal:${r.deal.token}`, preview: Boolean(r.deal.preview), ...localize({ client: r.deal.client, title: r.deal.title, text: r.deal.text }, locale), items: r.deal.items.map((i) => ({ label: localize(i.label, locale), price: offerMoney(i.price, locale) })), total: offerMoney(r.deal.total, locale), expiresAt: r.deal.expiresAt, expiresAtInstant: offerEndInstant(r.deal.expiresAt) };
+}
+export async function getOfferSlugs() {
+  return [...packageGroups.flatMap((g) => g.tiers.map((t) => t.key)), ...activeOffers().map((o) => o.slug)];
 }

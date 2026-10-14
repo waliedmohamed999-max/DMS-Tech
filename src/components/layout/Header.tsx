@@ -7,6 +7,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { projectsCopy } from "@/content/projects-copy";
 import { chatbotNav } from "@/content/chatbot-nav";
+import { offersNav } from "@/content/offers-nav";
 
 export type NavService = { slug: string; icon: IconName; title: string; summary: string };
 
@@ -172,6 +173,7 @@ export default function Header({ services }: { services: NavService[] }) {
             </Dropdown>
           </div>
 
+          {plain(offersNav.href, offersNav.title[lang])}
           {plain("/careers", t("careers"))}
           {plain("/contact", t("contact"))}
           {plain("/blog", t("blog"))}
@@ -211,6 +213,7 @@ export default function Header({ services }: { services: NavService[] }) {
           ]}
         />
         <MobileGroup label={t("clients")} items={clientLinks} />
+        <MobileItem href={offersNav.href} label={offersNav.title[lang]} />
         <MobileItem href="/careers" label={t("careers")} />
         <MobileItem href="/contact" label={t("contact")} />
         <MobileItem href="/blog" label={t("blog")} />

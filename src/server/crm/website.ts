@@ -7,6 +7,7 @@ import { SERVICE_KEYS, WEBSITE_BUDGET_KEYS, WEBSITE_BUDGETS } from "@/lib/crm/se
 import { normEmail, normPhone } from "./normalize";
 import { systemActivity } from "./activities";
 import { createLeadTx } from "./leads";
+import { offerLabel } from "@/content/offers";
 
 /**
  * Public website → CRM lead capture.
@@ -29,7 +30,9 @@ export const websiteLeadSchema = z
     service: t(60),
     budget: t(40),
     message: t(4000),
-    source: z.enum(["quote", "contact", "hero", "cta", "career"]).default("quote"),
+    /** package / offer / private deal key from the offers pages ("pkg:…", "offer:…", "deal:…"), resolved server-side */
+    offer: t(160),
+    source: z.enum(["quote", "contact", "hero", "cta", "career", "offer"]).default("quote"),
     locale: z.enum(["ar", "en"]).default("ar"),
     utm: z.record(z.string().regex(/^utm_(source|medium|campaign|term|content)$/), z.string().max(150)).optional(),
     referrer: z.string().max(300).optional().default(""),
@@ -88,7 +91,11 @@ export async function captureWebsiteLead(raw: unknown, meta: { ip?: string | nul
   const wa = normPhone(d.whatsapp || null);
   const service = (SERVICE_KEYS as readonly string[]).includes(d.service) ? d.service : d.service ? "other" : null;
   const budget = WEBSITE_BUDGET_KEYS.includes(d.budget) ? WEBSITE_BUDGETS[d.budget] : null;
-  const captureMeta = { form: d.source, utm: d.utm ?? {}, referrer: d.referrer || null, page: d.page || null, ip: meta.ip ?? null, userAgent: meta.userAgent?.slice(0, 200) ?? null, budgetOption: d.budget || null, rawService: d.service || null };
+  // only keys that exist on the site are kept (the label comes from src/content/offers.ts, never from the visitor)
+  const offer = d.offer ? offerLabel(d.offer) : null;
+  if (offer) d.message = `[${offer}]${d.message ? `
+${d.message}` : ""}`;
+  const captureMeta = { form: d.source, offer: offer ? { key: d.offer, label: offer } : null, utm: d.utm ?? {}, referrer: d.referrer || null, page: d.page || null, ip: meta.ip ?? null, userAgent: meta.userAgent?.slice(0, 200) ?? null, budgetOption: d.budget || null, rawService: d.service || null };
 
   const matchOr = [
     ...(email ? [{ emailNormalized: email }] : []),

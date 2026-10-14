@@ -39,15 +39,17 @@ async function submitLead(payload: Record<string, unknown>) {
 
 const waLink = (text: string) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`;
 
-/** Full quote / contact form */
+/** Full quote / contact form. `offer` (offers pages) shows the chosen package / offer and sends its key. */
 export function LeadForm({
   services,
   defaultService,
-  source = "quote"
+  source = "quote",
+  offer
 }: {
   services: { slug: string; title: string }[];
   defaultService?: string;
-  source?: "quote" | "contact" | "career";
+  source?: "quote" | "contact" | "career" | "offer";
+  offer?: { key: string; label: string; caption: string };
 }) {
   const t = useTranslations("form");
   const locale = useLocale();
@@ -71,7 +73,7 @@ export function LeadForm({
     setStatus("sending");
     const serviceTitle = services.find((s) => s.slug === data.service)?.title ?? data.service;
     setSummary(
-      [`DMS Tech — ${serviceTitle}`, data.name, data.phone, data.email, data.company, data.message].filter(Boolean).join("\n")
+      [`DMS Tech — ${offer?.label ?? serviceTitle}`, data.name, data.phone, data.email, data.company, data.message].filter(Boolean).join("\n")
     );
     try {
       await submitLead({ ...data, source, locale, ...attribution(), elapsed: Date.now() - shownAt.current });
@@ -98,6 +100,18 @@ export function LeadForm({
 
   return (
     <form onSubmit={onSubmit} noValidate className="card grid gap-5 border border-mist p-6 shadow-lg sm:grid-cols-2 sm:p-10">
+      {offer && (
+        <div className="flex items-center gap-3 rounded-2xl bg-lilac px-4 py-3 sm:col-span-2">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-iris text-white">
+            <Icon name="BadgeCheck" size={18} />
+          </span>
+          <span className="grid">
+            <span className="text-xs text-iris">{offer.caption}</span>
+            <span className="font-bold text-ink">{offer.label}</span>
+          </span>
+          <input type="hidden" name="offer" value={offer.key} />
+        </div>
+      )}
       <Field label={t("name")} htmlFor="lf-name">
         <input id="lf-name" name="name" className="input" placeholder={t("namePh")} autoComplete="name" required />
       </Field>

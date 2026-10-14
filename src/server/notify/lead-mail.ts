@@ -3,6 +3,7 @@ import type { websiteLeadSchema } from "@/server/crm/website";
 import { serviceLabel, SERVICE_KEYS } from "@/lib/crm/services";
 import { services } from "@/content/services";
 import { chatbot } from "@/content/chatbot";
+import { offerLabel } from "@/content/offers";
 import { site } from "@/content/site";
 import { buildMessage, isEmail, oneLine, sendMail, type MailResult } from "./mailer";
 
@@ -24,7 +25,7 @@ const BUDGETS: Record<string, string> = {
   "30k-100k": "30,000 – 100,000 ريال",
   "gt-100k": "أكثر من 100,000 ريال"
 };
-const FORMS: Record<string, string> = { quote: "طلب عرض سعر", contact: "تواصل معنا", hero: "الصفحة الرئيسية", cta: "نموذج سريع", career: "التوظيف" };
+const FORMS: Record<string, string> = { quote: "طلب عرض سعر", contact: "تواصل معنا", hero: "الصفحة الرئيسية", cta: "نموذج سريع", career: "التوظيف", offer: "الباقات والعروض" };
 
 function serviceName(key: string): string {
   if (!key) return "—";
@@ -48,6 +49,7 @@ export function buildLeadMail(d: Lead, meta: { ip?: string | null; leadNumber?: 
     ["واتساب", d.whatsapp],
     ["البريد", d.email],
     ["الخدمة", d.service ? service : ""],
+    ["الباقة / العرض", d.offer ? (offerLabel(d.offer) ?? "") : ""],
     ["الميزانية", d.budget ? (BUDGETS[d.budget] ?? d.budget) : ""],
     ["النموذج", FORMS[d.source] ?? d.source],
     ["لغة الزائر", d.locale === "ar" ? "العربية" : "الإنجليزية"],
