@@ -10,10 +10,9 @@ import { BrandIcon } from "@/components/ui/Brand";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { Countdown, PackagesBrowser } from "@/components/offers/OfferWidgets";
 
-// rendered per request: offers start / end by date, and the public CSP gives fresh renders a nonce (a cached
-// re-render would no longer match the build-time script hashes)
+// rendered per request: the deal of the day changes at midnight and weekly offers renew every Sunday; fresh renders
+// also get the public CSP nonce (a cached re-render would no longer match the build-time script hashes)
 export const dynamic = "force-dynamic";
-
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -21,14 +20,15 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: c.eyebrow, description: c.sub };
 }
 
-/** Packages & offers: limited-time offers (with a countdown), then packages per service; every card links to its own page. */
+/** Packages & offers: today's 24-hour deal, this week's offers (one countdown to Saturday midnight), then packages. */
 export default async function OffersPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: raw } = await params;
   const locale = raw as Locale;
   setRequestLocale(locale);
   const [c, groups, offers] = await Promise.all([getOffersCopy(locale), getPackageGroups(locale), getActiveOffers(locale)]);
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
-  const countdown = { endsIn: c.endsIn, days: c.days, hours: c.hours, minutes: c.minutes };
+  const cd = { endsIn: c.endsIn, days: c.days, hours: c.hours, minutes: c.minutes };
+  const today = offers.today;
 
   return (
     <>
@@ -51,50 +51,90 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
         </div>
       </section>
 
-      {offers.length > 0 && (
-        <section className="section bg-cloud">
+      {today && (
+        <section className="pt-12 md:pt-16">
           <div className="container-site">
-            <SectionHeading title={c.offersTitle} />
-            <div className={`grid gap-5 ${offers.length === 1 ? "mx-auto max-w-2xl" : "md:grid-cols-2"}`}>
-              {offers.map((o) => (
-                <article key={o.slug} className="card relative grid content-start gap-4 overflow-hidden p-7">
-                  {o.preview && <span className="absolute end-0 top-0 rounded-es-xl bg-warning/15 px-3 py-1 text-[11px] font-semibold text-warning">{c.preview}</span>}
-                  <div className="flex items-center gap-3">
-                    <span className="grid size-12 place-items-center rounded-xl bg-iris text-white">
-                      <Icon name={o.icon} size={22} />
+            <article className="relative grid gap-8 overflow-hidden rounded-card bg-gradient-to-br from-iris via-[#5a3fd8] to-iris-soft p-7 text-white shadow-lg md:grid-cols-[1.3fr_1fr] md:p-10">
+              <span aria-hidden className="absolute -end-20 -top-20 size-72 rounded-full bg-white/10 blur-2xl" />
+              <div className="relative grid content-start gap-4">
+                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-iris">
+                  <Icon name="Zap" size={13} /> {c.dayTitle}
+                </span>
+                <h2 className="text-2xl font-bold leading-snug md:text-3xl">{today.title}</h2>
+                <p className="text-[15px] leading-relaxed text-white/85">{today.text}</p>
+                <ul className="flex flex-wrap gap-2">
+                  {today.features.map((f) => (
+                    <li key={f} className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm">
+                      <Icon name="Check" size={14} /> {f}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-xs text-white/70">{c.dayNote}</p>
+              </div>
+              <div className="relative grid content-center justify-items-start gap-4 rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
+                <Countdown endsAt={today.endsAtInstant} labels={{ ...cd, seconds: c.seconds }} dark big />
+                <div className="grid">
+                  <span className="text-sm text-white/70 line-through" dir="ltr">
+                    {today.oldPrice}
+                  </span>
+                  <span className="text-4xl font-bold" dir="ltr">
+                    {today.price}
+                  </span>
+                  <span className="mt-1 w-fit rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold">
+                    {c.save} {today.saving}
+                  </span>
+                </div>
+                <Link href="/offers/today" className="btn w-full justify-center bg-white text-iris hover:bg-cloud">
+                  {c.seeDeal} <Icon name={arrow} size={16} />
+                </Link>
+              </div>
+            </article>
+          </div>
+        </section>
+      )}
+
+      {offers.weekly.length > 0 && (
+        <section className="section">
+          <div className="container-site">
+            <SectionHeading title={c.offersTitle} sub={c.weeklyNote}>
+              <Countdown endsAt={offers.weekEndsAt} labels={cd} />
+            </SectionHeading>
+            <div className="grid gap-5 lg:grid-cols-3">
+              {offers.weekly.map((o) => (
+                <article key={o.slug} className="card grid content-start gap-4 p-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="grid size-11 place-items-center rounded-xl bg-iris text-white">
+                      <Icon name={o.icon} size={20} />
                     </span>
-                    <span className="rounded-full bg-lilac px-3 py-1 text-xs font-bold text-iris">{o.badge}</span>
+                    <span className="rounded-full bg-mint px-3 py-1 text-xs font-bold text-fern">
+                      {c.save} {o.saving}
+                    </span>
                   </div>
-                  <h2 className="text-2xl font-bold">{o.title}</h2>
-                  <p className="text-[15px] leading-relaxed text-iron">{o.text}</p>
+                  <span className="text-xs font-semibold text-iris">{o.badge}</span>
+                  <h3 className="text-xl font-bold leading-snug">{o.title}</h3>
+                  <p className="text-[14.5px] leading-relaxed text-iron">{o.text}</p>
                   <ul className="grid gap-2">
                     {o.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-[15px]">
-                        <Icon name="CircleCheck" size={17} className="mt-0.5 shrink-0 text-iris" />
+                      <li key={f} className="flex items-start gap-2 text-[14.5px]">
+                        <Icon name="CircleCheck" size={16} className="mt-0.5 shrink-0 text-iris" />
                         {f}
                       </li>
                     ))}
                   </ul>
-                  <Countdown endsAt={o.endsAtInstant} labels={countdown} />
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-mist pt-4">
+                  <p className="flex items-center gap-1.5 text-sm text-iron">
+                    <Icon name="Clock" size={14} className="text-iris" /> {c.delivery}: <b className="font-semibold text-ink">{o.delivery}</b>
+                  </p>
+                  <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-mist pt-4">
                     <span className="grid">
-                      {o.price ? (
-                        <>
-                          {o.oldPrice && (
-                            <span className="text-sm text-graphite line-through" dir="ltr">
-                              {o.oldPrice}
-                            </span>
-                          )}
-                          <span className="text-2xl font-bold" dir="ltr">
-                            {o.price}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="font-semibold text-iris">{c.onRequest}</span>
-                      )}
+                      <span className="text-sm text-graphite line-through" dir="ltr">
+                        {o.oldPrice}
+                      </span>
+                      <span className="text-2xl font-bold" dir="ltr">
+                        {o.price}
+                      </span>
                     </span>
                     <Link href={`/offers/${o.slug}`} className="btn btn-primary">
-                      {c.getOffer} <Icon name={arrow} size={16} />
+                      {c.details} <Icon name={arrow} size={16} />
                     </Link>
                   </div>
                 </article>
@@ -104,15 +144,15 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
         </section>
       )}
 
-      <section id="packages" className="section scroll-mt-24">
+      <section id="packages" className="section scroll-mt-24 bg-cloud">
         <div className="container-site">
           <SectionHeading title={c.packagesTitle} sub={c.packagesSub} />
-          <PackagesBrowser groups={groups} labels={{ mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose }} locale={locale} />
+          <PackagesBrowser groups={groups} labels={{ mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery }} locale={locale} />
           <p className="mt-6 text-center text-xs text-graphite">{c.vatNote}</p>
         </div>
       </section>
 
-      <section className="pb-20">
+      <section className="py-20">
         <div className="container-site">
           <div className="flex flex-wrap items-center justify-between gap-5 rounded-card border border-mist bg-cloud p-8 md:p-10">
             <div className="grid gap-1">

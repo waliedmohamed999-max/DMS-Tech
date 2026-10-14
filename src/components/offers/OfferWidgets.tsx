@@ -5,47 +5,48 @@ import { Link } from "@/i18n/navigation";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 
-/** Time left until `endsAt` (an ISO instant). Renders nothing until mounted, so server and client markup agree. */
-export function Countdown({ endsAt, labels, dark = false }: { endsAt: string; labels: { endsIn: string; days: string; hours: string; minutes: string }; dark?: boolean }) {
+/** Time left until `endsAt` (an ISO instant); `labels.seconds` adds a ticking seconds box (24-hour deals).
+ * Renders nothing until mounted, so server and client markup agree. */
+export function Countdown({ endsAt, labels, dark = false, big = false }: { endsAt: string; labels: { endsIn: string; days: string; hours: string; minutes: string; seconds?: string }; dark?: boolean; big?: boolean }) {
   const [now, setNow] = useState<number | null>(null);
+  const everyMs = labels.seconds ? 1000 : 60_000;
   useEffect(() => {
     const tick = () => setNow(Date.now());
     tick();
-    const id = setInterval(tick, 60_000);
+    const id = setInterval(tick, everyMs);
     return () => clearInterval(id);
-  }, []);
+  }, [everyMs]);
   if (now === null) return null;
   const left = Math.max(0, new Date(endsAt).getTime() - now);
   const d = Math.floor(left / 86_400_000);
   const h = Math.floor((left % 86_400_000) / 3_600_000);
   const m = Math.floor((left % 3_600_000) / 60_000);
+  const sec = Math.floor((left % 60_000) / 1000);
+  const parts: [number, string][] = [...(d > 0 ? ([[d, labels.days]] as [number, string][]) : []), [h, labels.hours], [m, labels.minutes], ...(labels.seconds ? ([[sec, labels.seconds]] as [number, string][]) : [])];
   const box = dark ? "bg-white/10 text-white" : "bg-white text-ink shadow-card";
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
       <span className={`inline-flex items-center gap-1.5 font-semibold ${dark ? "text-white/80" : "text-iris"}`}>
         <Icon name="Timer" size={15} /> {labels.endsIn}
       </span>
-      {(
-        [
-          [d, labels.days],
-          [h, labels.hours],
-          [m, labels.minutes]
-        ] as [number, string][]
-      ).map(([v, l]) => (
-        <span key={l} className={`inline-flex items-baseline gap-1 rounded-lg px-2.5 py-1 ${box}`}>
-          <b className="tabular text-base">{v}</b>
-          <span className="text-xs opacity-70">{l}</span>
-        </span>
-      ))}
+      {/* follows the page direction: Arabic reads days → hours → minutes from the right */}
+      <span className="flex gap-1.5">
+        {parts.map(([v, l]) => (
+          <span key={l} className={`grid min-w-12 justify-items-center rounded-lg px-2 py-1 ${box}`}>
+            <b className={`tabular ${big ? "text-2xl" : "text-base"}`}>{String(v).padStart(2, "0")}</b>
+            <span className="text-[10px] opacity-70">{l}</span>
+          </span>
+        ))}
+      </span>
     </div>
   );
 }
 
-export type TierView = { key: string; icon: IconName; name: string; tagline: string; price: string | null; period: string | null; featured?: boolean; features: string[] };
+export type TierView = { key: string; icon: IconName; name: string; tagline: string; price: string | null; period: string | null; delivery: string; featured?: boolean; features: string[] };
 export type GroupView = { service: string; icon: IconName; title: string; text: string; tiers: TierView[] };
 
 /** Packages by service (tabs), three tiers each; every tier links to its own shareable page. */
-export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[]; labels: { mostPopular: string; from: string; onRequest: string; choose: string }; locale: string }) {
+export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[]; labels: { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string }; locale: string }) {
   const [active, setActive] = useState(groups[0]?.service);
   const g = groups.find((x) => x.service === active) ?? groups[0];
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
@@ -91,6 +92,9 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
               ) : (
                 <span className="text-base font-semibold text-iris">{labels.onRequest}</span>
               )}
+            </p>
+            <p className="flex items-center gap-1.5 text-sm text-iron">
+              <Icon name="Clock" size={14} className="text-iris" /> {labels.delivery}: <b className="font-semibold text-ink">{t.delivery}</b>
             </p>
             <ul className="grid gap-2.5">
               {t.features.map((f) => (

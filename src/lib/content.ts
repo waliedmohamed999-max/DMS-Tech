@@ -6,7 +6,7 @@ import { industries, integrations } from "@/content/industries";
 import { aiCards, capabilities, nova, phases, promises, trustCards, values } from "@/content/company";
 import { posts } from "@/content/posts";
 import { careersCopy, jobs } from "@/content/careers";
-import { activeOffers, findDeal, findOffer, offerEndInstant, offers, offersCopy, packageGroups } from "@/content/offers";
+import { activeOffers, cycleEnd, findDeal, findOffer, offerEndInstant, offers, offersCopy, packageGroups, todaysDeal, type Offer } from "@/content/offers";
 import { formatMoney } from "@/lib/commercial/calc";
 import { clientProjects } from "@/content/projects";
 import { projectsCopy } from "@/content/projects-copy";
@@ -132,25 +132,48 @@ export async function getOffersCopy(locale: Locale) {
 export async function getPackageGroups(locale: Locale) {
   return packageGroups.map((g) => ({ ...localize({ title: g.title, text: g.text }, locale), service: g.service, icon: g.icon, tiers: g.tiers.map((t) => ({ ...localize(t, locale), price: offerMoney(t.price, locale) })) }));
 }
-export async function getActiveOffers(locale: Locale) {
-  return activeOffers().map((o) => ({ ...localize(o, locale), endsAtInstant: offerEndInstant(o.endsAt), price: offerMoney(o.price, locale), oldPrice: offerMoney(o.oldPrice, locale) }));
+/** An offer with its localized details and the end of its current cycle (end of today / of this week). */
+function offerView(o: Offer, locale: Locale) {
+  return { ...localize(o, locale), endsAtInstant: cycleEnd(o.cycle).toISOString(), price: offerMoney(o.price, locale), oldPrice: offerMoney(o.oldPrice, locale), saving: offerMoney(o.oldPrice - o.price, locale) };
 }
-/** A shareable item: a package tier or a running offer (null = unknown / ended). */
+export async function getActiveOffers(locale: Locale) {
+  const today = todaysDeal();
+  return { weekly: activeOffers().filter((o) => o.cycle === "weekly").map((o) => offerView(o, locale)), today: today ? offerView(today, locale) : null, weekEndsAt: cycleEnd("weekly").toISOString() };
+}
+/** A shareable item: a package tier, a running offer or "today" (null = unknown, ended, or a daily deal on another day). */
 export async function getOfferItem(slug: string, locale: Locale) {
   for (const g of packageGroups) {
     const t = g.tiers.find((x) => x.key === slug);
-    if (t) return { kind: "package" as const, key: `pkg:${t.key}`, service: g.service, group: localize(g.title, locale), ...localize({ name: t.name, tagline: t.tagline, features: t.features, period: t.period }, locale), icon: t.icon, featured: Boolean(t.featured), price: offerMoney(t.price, locale), oldPrice: null, endsAtInstant: null };
+    if (t)
+      return {
+        kind: "package" as const,
+        key: `pkg:${t.key}`,
+        service: g.service,
+        group: localize(g.title, locale),
+        ...localize({ name: t.name, tagline: t.tagline, features: t.features, period: t.period, delivery: t.delivery }, locale),
+        icon: t.icon,
+        price: offerMoney(t.price, locale),
+        oldPrice: null,
+        saving: null,
+        endsAtInstant: null,
+        details: null
+      };
   }
   const o = findOffer(slug);
-  if (o) return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: localize(o.badge, locale), ...localize({ name: o.title, tagline: o.text, features: o.features }, locale), period: null, icon: o.icon, featured: false, price: offerMoney(o.price, locale), oldPrice: offerMoney(o.oldPrice, locale), endsAtInstant: offerEndInstant(o.endsAt), preview: Boolean(o.preview) };
-  return null;
+  if (!o) return null;
+  const v = offerView(o, locale);
+  return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: v.badge, name: v.title, tagline: v.text, features: v.features, period: null, delivery: v.delivery, icon: o.icon, price: v.price, oldPrice: v.oldPrice, saving: v.saving, endsAtInstant: v.endsAtInstant, cycle: o.cycle, details: { forWho: v.forWho, deliverables: v.deliverables, terms: v.terms, excludes: v.excludes } };
 }
-export const offerExists = (slug: string) => offers.some((o) => o.slug === slug);
+/** "ended" for a past weekly offer, "notToday" for a daily deal on another day, null when the slug never existed. */
+export const offerUnavailable = (slug: string) => {
+  const o = offers.find((x) => x.slug === slug);
+  return o ? (o.cycle === "daily" ? ("notToday" as const) : ("ended" as const)) : null;
+};
 export async function getDeal(token: string, locale: Locale) {
   const r = findDeal(token);
   if (!r) return null;
   return { expired: r.expired, key: `deal:${r.deal.token}`, preview: Boolean(r.deal.preview), ...localize({ client: r.deal.client, title: r.deal.title, text: r.deal.text }, locale), items: r.deal.items.map((i) => ({ label: localize(i.label, locale), price: offerMoney(i.price, locale) })), total: offerMoney(r.deal.total, locale), expiresAt: r.deal.expiresAt, expiresAtInstant: offerEndInstant(r.deal.expiresAt) };
 }
 export async function getOfferSlugs() {
-  return [...packageGroups.flatMap((g) => g.tiers.map((t) => t.key)), ...activeOffers().map((o) => o.slug)];
+  return [...packageGroups.flatMap((g) => g.tiers.map((t) => t.key)), ...offers.filter((o) => o.cycle === "weekly").map((o) => o.slug), "today"];
 }
