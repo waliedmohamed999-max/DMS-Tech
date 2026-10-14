@@ -958,7 +958,8 @@ export const offersCopy = {
   excludes: { ar: "لا يشمل العرض", en: "Not included" } as L,
   seconds: { ar: "ثانية", en: "s" } as L,
   save: { ar: "وفّر", en: "Save" } as L,
-  off: { ar: "خصم", en: "off" } as L,
+  /** {n} = the discount percentage */
+  off: { ar: "خصم {n}%", en: "{n}% off" } as L,
   details: { ar: "التفاصيل والطلب", en: "Details & order" } as L,
   packagesTitle: { ar: "الباقات", en: "Packages" } as L,
   packagesSub: { ar: "أسعار ثابتة وواضحة، وكل باقة تذكر بالضبط ما تشمله وما لا تشمله — والباقات المتقدمة تُسعَّر حسب نطاق مشروعك.", en: "Clear, fixed prices — every package says exactly what it includes and what it doesn't; Advanced packages are priced to your scope." } as L,

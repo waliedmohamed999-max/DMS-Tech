@@ -130,7 +130,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
                         <Icon name={o.icon} size={15} /> {o.badge}
                       </span>
                       <span className="rounded-full bg-[#ef4444] px-3 py-1 text-sm font-extrabold text-white shadow">
-                        {c.off} {o.percent}%
+                        {c.off.replace("{n}", String(o.percent))}
                       </span>
                     </span>
                     <h3 className="text-xl font-bold leading-snug">{o.title}</h3>
@@ -144,7 +144,10 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
                       ))}
                     </ul>
                     <p className="flex items-start gap-1.5 text-sm text-iron">
-                      <Icon name="Clock" size={14} className="mt-0.5 shrink-0 text-iris" /> {c.delivery}: <b className="font-semibold text-ink">{o.delivery}</b>
+                      <Icon name="Clock" size={14} className="mt-0.5 shrink-0 text-iris" />
+                      <span>
+                        {c.delivery}: <b className="font-semibold text-ink">{o.delivery}</b>
+                      </span>
                     </p>
                   </div>
                   <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-mist px-6 py-5">

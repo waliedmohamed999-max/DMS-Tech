@@ -165,7 +165,7 @@ export default async function OfferItemPage({ params }: Props) {
               </span>
               {item.percent && (
                 <span className="rounded-lg bg-[#ef4444] px-2.5 py-0.5 text-base font-extrabold text-white">
-                  {c.off} {item.percent}%
+                  {c.off.replace("{n}", String(item.percent))}
                 </span>
               )}
             </span>
@@ -201,9 +201,11 @@ export default async function OfferItemPage({ params }: Props) {
           className="w-full"
         />
       </div>
-      <p className="flex items-center gap-1.5 border-t border-mist pt-3 text-sm text-iron">
-        <Icon name="Clock" size={14} className="shrink-0 text-iris" />{" "}
-        {c.delivery}: <b className="font-semibold text-ink">{item.delivery}</b>
+      <p className="flex items-start gap-1.5 border-t border-mist pt-3 text-sm text-iron">
+        <Icon name="Clock" size={14} className="mt-0.5 shrink-0 text-iris" />
+        <span>
+          {c.delivery}: <b className="font-semibold text-ink">{item.delivery}</b>
+        </span>
       </p>
     </div>
   );

@@ -117,7 +117,7 @@ export function DealsCarousel({ deals, labels, locale }: { deals: DealSlide[]; l
                     {d.oldPrice}
                   </span>
                   <span className="rounded-lg bg-white px-3 py-1 text-lg font-extrabold text-ink shadow">
-                    {labels.off} {d.percent}%
+                    {labels.off.replace("{n}", String(d.percent))}
                   </span>
                 </span>
                 <span className="text-5xl font-bold" dir="ltr">
@@ -248,8 +248,11 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
                 <span className="text-base font-semibold text-iris">{labels.onRequest}</span>
               )}
             </p>
-            <p className="flex items-center gap-1.5 text-sm text-iron">
-              <Icon name="Clock" size={14} className="text-iris" /> {labels.delivery}: <b className="font-semibold text-ink">{t.delivery}</b>
+            <p className="flex items-start gap-1.5 text-sm text-iron">
+              <Icon name="Clock" size={14} className="mt-0.5 shrink-0 text-iris" />
+              <span>
+                {labels.delivery}: <b className="font-semibold text-ink">{t.delivery}</b>
+              </span>
             </p>
             <ul className="grid gap-2.5">
               {t.features.map((f) => (
