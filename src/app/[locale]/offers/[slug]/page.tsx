@@ -249,44 +249,80 @@ export default async function OfferItemPage({ params }: Props) {
               />
             )}
           </div>
-          <div className="lg:ps-8">{priceCard}</div>
-        </div>
-      </section>
-
-      {/* at a glance: who it is for + what's included in one line each */}
-      <section className="section">
-        <div className="container-site grid items-stretch gap-6 lg:grid-cols-[1fr_1.2fr]">
           <ServiceVisual
             service={item.service}
             locale={locale}
-            className="min-h-80 border border-mist"
+            className="h-72 md:h-80"
           />
-          <div className="grid content-start gap-6">
-            <Block icon="Users" title={d ? c.forWho : c.idealFor}>
-              <p className="leading-relaxed text-iron">
-                {d ? d.forWho : item.kind === "package" ? item.idealFor : ""}
-              </p>
-            </Block>
-            <Block icon="CircleCheck" title={c.included}>
-              <ul className="grid gap-2.5 sm:grid-cols-2">
-                {item.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-[15px]">
-                    <Icon
-                      name="CircleCheck"
-                      size={17}
-                      className="mt-0.5 shrink-0 text-iris"
-                    />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </Block>
+        </div>
+      </section>
+
+      {/* order first: the price card and the form, then the details */}
+      <section id="order" className="section scroll-mt-24">
+        <div className="container-site grid items-start gap-10 lg:grid-cols-[1fr_1.3fr]">
+          <aside className="grid gap-5 lg:sticky lg:top-28">
+            {priceCard}
+            <div className="rounded-card border border-mist bg-cloud p-5">
+              <ShareLink
+                title={label}
+                labels={{
+                  share: c.share,
+                  copy: c.copy,
+                  copied: c.copied,
+                  shareWa: c.shareWa,
+                }}
+              />
+            </div>
+            <Link href="/offers" className="link-arrow">
+              {c.allOffers} <Icon name={arrow} size={15} />
+            </Link>
+          </aside>
+          <div className="grid gap-5">
+            <div className="grid gap-1">
+              <h2 className="text-2xl font-bold">{c.formTitle}</h2>
+              <p className="text-iron">{c.formSub}</p>
+            </div>
+            <LeadForm
+              services={options}
+              defaultService={
+                options.some((o) => o.slug === item.service)
+                  ? item.service
+                  : undefined
+              }
+              source="offer"
+              offer={{ key: item.key, label, caption: c.chosen }}
+            />
           </div>
         </div>
       </section>
 
+      {/* at a glance: who it is for + what is included */}
+      <section className="section bg-cloud">
+        <div className="container-site grid items-stretch gap-6 lg:grid-cols-[1fr_1.4fr]">
+          <Block icon="Users" title={d ? c.forWho : c.idealFor}>
+            <p className="leading-relaxed text-iron">
+              {d ? d.forWho : item.kind === "package" ? item.idealFor : ""}
+            </p>
+          </Block>
+          <Block icon="CircleCheck" title={c.included}>
+            <ul className="grid gap-2.5 sm:grid-cols-2">
+              {item.features.map((f) => (
+                <li key={f} className="flex items-start gap-2 text-[15px]">
+                  <Icon
+                    name="CircleCheck"
+                    size={17}
+                    className="mt-0.5 shrink-0 text-iris"
+                  />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </Block>
+        </div>
+      </section>
+
       {d && (
-        <section className="section bg-cloud">
+        <section className="section">
           <div className="container-site grid gap-8">
             <h2 className="text-center text-3xl font-bold">{c.deliverables}</h2>
             <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -311,7 +347,7 @@ export default async function OfferItemPage({ params }: Props) {
         </section>
       )}
 
-      <section className="section">
+      <section className="section bg-cloud">
         <div className="container-site grid gap-5 md:grid-cols-2">
           {d && (
             <Block icon="ClipboardList" title={c.terms}>
@@ -373,7 +409,7 @@ export default async function OfferItemPage({ params }: Props) {
         </div>
       </section>
 
-      <section className="section bg-cloud">
+      <section className="section">
         <div className="container-site grid gap-8">
           <h2 className="text-center text-3xl font-bold">
             <Highlight text={c.howTitle} />
@@ -394,44 +430,6 @@ export default async function OfferItemPage({ params }: Props) {
               </li>
             ))}
           </ol>
-        </div>
-      </section>
-
-      <section id="order" className="section scroll-mt-24">
-        <div className="container-site grid items-start gap-10 lg:grid-cols-[1fr_1.3fr]">
-          <aside className="grid gap-5 lg:sticky lg:top-28">
-            {priceCard}
-            <div className="rounded-card border border-mist bg-cloud p-5">
-              <ShareLink
-                title={label}
-                labels={{
-                  share: c.share,
-                  copy: c.copy,
-                  copied: c.copied,
-                  shareWa: c.shareWa,
-                }}
-              />
-            </div>
-            <Link href="/offers" className="link-arrow">
-              {c.allOffers} <Icon name={arrow} size={15} />
-            </Link>
-          </aside>
-          <div className="grid gap-5">
-            <div className="grid gap-1">
-              <h2 className="text-2xl font-bold">{c.formTitle}</h2>
-              <p className="text-iron">{c.formSub}</p>
-            </div>
-            <LeadForm
-              services={options}
-              defaultService={
-                options.some((o) => o.slug === item.service)
-                  ? item.service
-                  : undefined
-              }
-              source="offer"
-              offer={{ key: item.key, label, caption: c.chosen }}
-            />
-          </div>
         </div>
       </section>
 
