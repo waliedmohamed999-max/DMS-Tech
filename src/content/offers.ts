@@ -753,7 +753,7 @@ export const offers: Offer[] = [
     service: "digital-marketing",
     icon: "Share2",
     badge: { ar: "صفقة اليوم — سوشيال ميديا", en: "Deal of the day — social media" },
-    title: { ar: "30 تصميم سوشيال ميديا بـ 699 ريال", en: "30 social media designs for SAR 699" },
+    title: { ar: "30 تصميم سوشيال ميديا بـ 1,999 ريال", en: "30 social media designs for SAR 1,999" },
     text: { ar: "شهر كامل من المنشورات بهويتك: تصاميم ونصوص جاهزة للنشر على إنستغرام وتيك توك وسناب وإكس.", en: "A full month of posts in your brand: designs and captions ready for Instagram, TikTok, Snap and X." },
     forWho: { ar: "لمن يدير حساباته بنفسه ويحتاج محتوى احترافياً منتظماً.", en: "For those who run their own accounts and need regular, professional content." },
     features: [
@@ -772,8 +772,8 @@ export const offers: Offer[] = [
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
     excludes: [{ ar: "النشر وإدارة الحسابات والفيديو", en: "Publishing, account management and video" }],
-    price: 699,
-    oldPrice: 1199
+    price: 1999,
+    oldPrice: 2999
   },
   {
     slug: "day-ads-setup",
