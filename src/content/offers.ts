@@ -698,17 +698,17 @@ export const offers: Offer[] = [
     icon: "Palette",
     badge: { ar: "صفقة اليوم — تصميم", en: "Deal of the day — design" },
     title: { ar: "هوية بصرية كاملة لمشروعك بـ 999 ريال", en: "A complete brand identity for SAR 999" },
-    text: { ar: "شعار احترافي مع ألوانك وخطوطك وقوالب سوشيال جاهزة — كل ما تحتاجه لتبدأ بشكل يثق فيه العميل من أول نظرة.", en: "A professional logo with your colours, fonts and ready social templates — everything you need to look trustworthy from the first glance." },
+    text: { ar: "شعار احترافي مع ألوانك وخطوطك وقالبين سوشيال جاهزين — كل ما تحتاجه لتبدأ بشكل يثق فيه العميل من أول نظرة.", en: "A professional logo with your colours, fonts and two ready social templates — everything you need to look trustworthy from the first glance." },
     forWho: { ar: "للمشاريع الجديدة والمتاجر التي تبدأ بدون هوية، أو تريد تجديد شكلها.", en: "For new businesses and stores starting without an identity, or refreshing their look." },
     features: [
       { ar: "3 مقترحات للشعار", en: "3 logo concepts" },
       { ar: "دليل ألوان وخطوط", en: "Colour and font guide" },
-      { ar: "10 قوالب سوشيال ميديا", en: "10 social media templates" }
+      { ar: "قالبان للسوشيال ميديا", en: "2 social media templates" }
     ],
     deliverables: [
       { title: { ar: "الشعار", en: "Logo" }, text: { ar: "3 مقترحات، وجولتا تعديل على المقترح المختار، وتسليمه بكل الصيغ (PNG, SVG, PDF).", en: "3 concepts, two revision rounds on the chosen one, delivered in every format (PNG, SVG, PDF)." } },
       { title: { ar: "دليل الهوية", en: "Brand guide" }, text: { ar: "الألوان والخطوط وطريقة استخدام الشعار في ملف واحد.", en: "Colours, fonts and logo usage in one file." } },
-      { title: { ar: "السوشيال", en: "Social" }, text: { ar: "10 قوالب منشورات وغلاف للحسابات قابلة للتعديل.", en: "10 editable post templates and account covers." } }
+      { title: { ar: "السوشيال", en: "Social" }, text: { ar: "قالبان للمنشورات وغلاف للحسابات، قابلة للتعديل.", en: "2 editable post templates and account covers." } }
     ],
     delivery: { ar: "7 أيام عمل", en: "7 business days" },
     terms: [
