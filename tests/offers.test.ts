@@ -23,6 +23,18 @@ describe("packages & offers", () => {
     expect(offerLabel("anything")).toBeNull();
   });
 
+  it("6. every package says who it suits and what is not included; store packages exclude the platform subscription", () => {
+    const tiers = packageGroups.flatMap((g) => g.tiers);
+    expect(tiers.every((t) => t.idealFor.ar && t.features.length >= 4 && t.excludes.length >= 1 && t.delivery.ar)).toBe(true);
+    const store = packageGroups.find((g) => g.service === "ecommerce")!;
+    expect(store.notice.ar).toContain("غير مشمول");
+    expect(store.tiers.every((t) => t.excludes.some((x) => x.ar.includes("اشتراك المنصة")))).toBe(true);
+    // "from" prices only where the scope varies; longer team terms are cheaper per month
+    expect(tiers.filter((t) => t.from).map((t) => t.key).sort()).toEqual(["store-scale", "web-pro"]);
+    const team = packageGroups.find((g) => g.service === "dedicated-tech-team")!.tiers.map((t) => t.price!);
+    expect(team[0] > team[1] && team[1] > team[2]).toBe(true);
+  });
+
   it("2. design examples never appear in production", () => {
     vi.stubEnv("NODE_ENV", "production");
     expect(findDeal("example-k3v9q2")).toBeNull();

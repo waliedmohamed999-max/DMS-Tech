@@ -1,12 +1,12 @@
 import type { IconName } from "@/components/ui/Icon";
 import type { L } from "./types";
-import { services } from "./services";
 
 /**
  * Packages, limited-time offers and private deals (/offers, /offers/[slug], /offers/deal/[token]).
  *
  * PRICES (SAR, before VAT): revised with the owner on 2026-10-14 — competitive agency prices ending in 99; longer terms
- * get a clear discount (team 8% / 17%). `price: null` shows "priced to your needs". Never change a price without the
+ * get a clear discount (team 8% / 17%). Every tier states who it suits, exact quantities and what is NOT included
+ * (store packages never include the Zid / Salla / Shopify subscription). `price: null` shows "priced to your needs". Never change a price without the
  * company's approval.
  * OFFERS renew by themselves (weekly, or one daily deal per day) — see the block above `offers`. PRIVATE DEALS run
  * until expiresAt; entries with `preview: true` are design examples rendered in development only.
@@ -14,8 +14,25 @@ import { services } from "./services";
  * offerLabel), so the CRM lead and the e-mail show exactly what the client asked for.
  */
 
-export type Tier = { key: string; icon: IconName; name: L; tagline: L; price: number | null; period: L | null; delivery: L; featured?: boolean; features: L[] };
-export type PackageGroup = { service: string; icon: IconName; title: L; text: L; tiers: Tier[] };
+export type Tier = {
+  key: string;
+  icon: IconName;
+  name: L;
+  tagline: L;
+  /** who the package suits */
+  idealFor: L;
+  price: number | null;
+  /** true = "from" price (scope-dependent); false = a fixed price */
+  from: boolean;
+  period: L | null;
+  delivery: L;
+  featured?: boolean;
+  features: L[];
+  /** stated plainly so nobody is surprised later */
+  excludes: L[];
+};
+/** `notice`: one sentence shown above the tiers (e.g. the store platform subscription is not included). */
+export type PackageGroup = { service: string; icon: IconName; title: L; text: L; notice: L; tiers: Tier[] };
 export type Offer = {
   slug: string;
   /** weekly: Sunday → Saturday, renews every week · daily: one deal per Riyadh day (24 hours) */
@@ -38,7 +55,6 @@ export type Deal = { token: string; client: L; title: L; text: L; items: { label
 
 const perMonth: L = { ar: "شهرياً", en: "per month" };
 const oneTime: L = { ar: "دفعة واحدة", en: "one-time" };
-const team = services.find((s) => s.slug === "dedicated-tech-team");
 
 export const packageGroups: PackageGroup[] = [
   {
@@ -46,39 +62,56 @@ export const packageGroups: PackageGroup[] = [
     icon: "CodeXml",
     title: { ar: "باقات المواقع والتطبيقات", en: "Website & app packages" },
     text: { ar: "من موقع تعريفي أنيق إلى نظام أو تطبيق متكامل.", en: "From an elegant company site to a complete system or app." },
+    notice: { ar: "الأسعار تشمل التصميم والبرمجة والإطلاق. المحتوى (النصوص والصور) يقدمه العميل، ونساعدك في صياغته عند الحاجة.", en: "Prices cover design, development and launch. Content (text and images) comes from the client; we can help write it." },
     tiers: [
       {
         key: "web-starter",
         icon: "Monitor",
         name: { ar: "الأساسية", en: "Starter" },
         tagline: { ar: "حضور رقمي احترافي لشركتك", en: "A professional online presence" },
+        idealFor: { ar: "المكاتب والعيادات والمقاولين والشركات الصغيرة", en: "Offices, clinics, contractors and small businesses" },
         price: 2499,
+        from: false,
         period: oneTime,
         delivery: { ar: "7 أيام عمل", en: "7 business days" },
         features: [
-          { ar: "موقع تعريفي حتى 5 صفحات", en: "Company website, up to 5 pages" },
-          { ar: "تصميم متجاوب مع الجوال", en: "Mobile-responsive design" },
-          { ar: "نموذج تواصل وزر واتساب", en: "Contact form and WhatsApp button" },
-          { ar: "تهيئة أساسية لمحركات البحث", en: "Basic search engine setup" },
-          { ar: "شهادة أمان SSL", en: "SSL certificate" }
+          { ar: "5 صفحات: الرئيسية، من نحن، الخدمات، أعمالنا، تواصل معنا", en: "5 pages: home, about, services, our work, contact" },
+          { ar: "لغة واحدة (العربية أو الإنجليزية)", en: "One language (Arabic or English)" },
+          { ar: "تصميم متجاوب مع الجوال والأجهزة اللوحية", en: "Responsive on phones and tablets" },
+          { ar: "نموذج تواصل يصل لبريدك وزر واتساب ثابت", en: "Contact form to your inbox and a fixed WhatsApp button" },
+          { ar: "شهادة SSL وتهيئة أساسية لمحركات البحث", en: "SSL and basic search engine set-up" },
+          { ar: "جولة تعديلات واحدة على التصميم", en: "One round of design revisions" },
+          { ar: "دعم فني شهر بعد الإطلاق", en: "One month of support after launch" }
+        ],
+        excludes: [
+          { ar: "الاستضافة والنطاق (باسمك وعلى حسابك)", en: "Hosting and domain (in your name)" },
+          { ar: "لوحة تحكم لتعديل المحتوى", en: "A content management panel" }
         ]
       },
       {
         key: "web-growth",
         icon: "Rocket",
         name: { ar: "الاحترافية", en: "Professional" },
-        tagline: { ar: "موقع يجلب العملاء ويُدار بسهولة", en: "A site that brings clients and is easy to run" },
+        tagline: { ar: "موقع يجلب العملاء وتديره بنفسك", en: "A site that brings clients and you run yourself" },
+        idealFor: { ar: "الشركات التي تعتمد على موقعها في جلب العملاء والحملات", en: "Companies that rely on their site for leads and campaigns" },
         price: 5999,
+        from: false,
         period: oneTime,
         delivery: { ar: "21 يوم عمل", en: "21 business days" },
         featured: true,
         features: [
           { ar: "حتى 15 صفحة بالعربية والإنجليزية", en: "Up to 15 pages in Arabic and English" },
-          { ar: "لوحة تحكم لتعديل المحتوى", en: "Content management panel" },
-          { ar: "مدونة وصفحات هبوط للحملات", en: "Blog and campaign landing pages" },
-          { ar: "تحسين السرعة ومحركات البحث", en: "Speed and SEO optimisation" },
-          { ar: "ربط أدوات التحليل والتتبع", en: "Analytics and tracking set up" },
-          { ar: "دعم فني 3 أشهر", en: "3 months of support" }
+          { ar: "تصميم مخصص بهوية شركتك (ليس قالباً جاهزاً)", en: "A custom design in your brand (not a ready template)" },
+          { ar: "لوحة تحكم لتعديل النصوص والصور والأخبار", en: "A panel to edit text, images and news" },
+          { ar: "مدونة و3 صفحات هبوط للحملات الإعلانية", en: "A blog and 3 landing pages for ad campaigns" },
+          { ar: "تحسين السرعة وتهيئة متقدمة لمحركات البحث", en: "Speed optimisation and advanced SEO set-up" },
+          { ar: "ربط Google Analytics وبكسل الإعلانات", en: "Google Analytics and ad pixels connected" },
+          { ar: "استضافة سحابية ونطاق .com للسنة الأولى", en: "Cloud hosting and a .com domain for the first year" },
+          { ar: "جولتا تعديلات ودعم فني 3 أشهر", en: "Two revision rounds and 3 months of support" }
+        ],
+        excludes: [
+          { ar: "تجديد الاستضافة والنطاق بعد السنة الأولى", en: "Hosting and domain renewal after year one" },
+          { ar: "كتابة المحتوى والتصوير", en: "Copywriting and photography" }
         ]
       },
       {
@@ -86,15 +119,23 @@ export const packageGroups: PackageGroup[] = [
         icon: "Layers",
         name: { ar: "المتقدمة", en: "Advanced" },
         tagline: { ar: "نظام أو تطبيق مصمم على مقاس عملك", en: "A system or app built around your business" },
+        idealFor: { ar: "الشركات التي تحتاج بوابة عملاء أو نظاماً داخلياً أو تطبيق جوال", en: "Companies that need a client portal, an internal system or a mobile app" },
         price: 14999,
+        from: true,
         period: oneTime,
         delivery: { ar: "من 6 أسابيع حسب نطاق المشروع", en: "From 6 weeks, depending on scope" },
         features: [
-          { ar: "تطبيق ويب أو نظام إدارة مخصص", en: "Custom web app or management system" },
+          { ar: "ورشة تحليل متطلبات ووثيقة نطاق مكتوبة قبل البدء", en: "A requirements workshop and a written scope before we start" },
+          { ar: "تطبيق ويب أو نظام إدارة بصلاحيات لكل دور", en: "A web app or management system with role permissions" },
           { ar: "تطبيق جوال iOS و Android عند الحاجة", en: "iOS and Android app when needed" },
-          { ar: "تكاملات مع أنظمتك عبر API", en: "API integrations with your systems" },
-          { ar: "صلاحيات ولوحات تحكم للفرق", en: "Roles and dashboards for your teams" },
+          { ar: "تكاملات مع أنظمتك (محاسبة، CRM، بوابات دفع) عبر API", en: "Integrations with your systems (accounting, CRM, payments) via API" },
+          { ar: "لوحات تقارير ومؤشرات للإدارة", en: "Reports and KPI dashboards for management" },
+          { ar: "ملكية كاملة للكود وتسليم موثق", en: "Full code ownership and documented hand-over" },
           { ar: "دعم وصيانة 6 أشهر", en: "6 months of support and maintenance" }
+        ],
+        excludes: [
+          { ar: "رسوم الخوادم ومتاجر التطبيقات (Apple / Google)", en: "Server costs and app store fees (Apple / Google)" },
+          { ar: "تراخيص الأنظمة والخدمات الخارجية", en: "Third-party licences and services" }
         ]
       }
     ]
@@ -103,38 +144,55 @@ export const packageGroups: PackageGroup[] = [
     service: "ecommerce",
     icon: "ShoppingCart",
     title: { ar: "باقات المتاجر الإلكترونية", en: "Online store packages" },
-    text: { ar: "متجر جاهز للبيع من اليوم الأول على زد أو سلة أو شوبيفاي.", en: "A store ready to sell from day one on Zid, Salla or Shopify." },
+    text: { ar: "متجر جاهز للبيع على زد أو سلة أو شوبيفاي.", en: "A store ready to sell on Zid, Salla or Shopify." },
+    notice: { ar: "مهم: اشتراك منصة زد أو سلة أو شوبيفاي غير مشمول في الباقات — يُدفع للمنصة مباشرة وباسمك، ليبقى المتجر ملكك بالكامل. نساعدك في اختيار باقة المنصة المناسبة لحجم مبيعاتك.", en: "Important: the Zid, Salla or Shopify subscription is not included — you pay the platform directly, in your name, so the store stays fully yours. We help you choose the right platform plan." },
     tiers: [
       {
         key: "store-launch",
         icon: "ShoppingBag",
         name: { ar: "الانطلاق", en: "Launch" },
         tagline: { ar: "ابدأ البيع أونلاين بسرعة", en: "Start selling online fast" },
+        idealFor: { ar: "من يبيع على إنستغرام أو واتساب ويريد متجراً حقيقياً", en: "Sellers on Instagram or WhatsApp who want a real store" },
         price: 1999,
+        from: false,
         period: oneTime,
         delivery: { ar: "5 أيام عمل", en: "5 business days" },
         features: [
-          { ar: "إعداد المتجر على زد أو سلة", en: "Store set up on Zid or Salla" },
-          { ar: "رفع حتى 30 منتجاً وتنظيمها", en: "Up to 30 products uploaded and organised" },
-          { ar: "ربط الدفع الإلكتروني والشحن", en: "Online payments and shipping connected" },
-          { ar: "تصميم بهوية علامتك", en: "Design in your brand identity" }
+          { ar: "إعداد المتجر على زد أو سلة بقالب المنصة", en: "Store set up on Zid or Salla with a platform theme" },
+          { ar: "تخصيص القالب بشعارك وألوانك", en: "Theme styled with your logo and colours" },
+          { ar: "رفع حتى 30 منتجاً بالصور والوصف والأسعار", en: "Up to 30 products with photos, descriptions and prices" },
+          { ar: "ربط مدى وأبل باي والبطاقات وشركات الشحن", en: "mada, Apple Pay, cards and shipping companies connected" },
+          { ar: "صفحات السياسات: الاسترجاع والشحن والخصوصية", en: "Policy pages: returns, shipping and privacy" },
+          { ar: "دعم فني أسبوعين بعد الإطلاق", en: "Two weeks of support after launch" }
+        ],
+        excludes: [
+          { ar: "اشتراك المنصة ورسوم بوابات الدفع والشحن", en: "Platform subscription, payment and shipping fees" },
+          { ar: "التصميم المخصص وتصوير المنتجات", en: "Custom design and product photography" }
         ]
       },
       {
         key: "store-growth",
         icon: "TrendingUp",
         name: { ar: "النمو", en: "Growth" },
-        tagline: { ar: "متجر يبيع أكثر ويُدار بسهولة", en: "A store that sells more and runs smoothly" },
+        tagline: { ar: "متجر بهويتك يبيع أكثر", en: "A store in your brand that sells more" },
+        idealFor: { ar: "العلامات التي تريد متجراً مميزاً وتعلن على السوشيال ميديا", en: "Brands that want a distinctive store and advertise on social media" },
         price: 4499,
+        from: false,
         period: oneTime,
         delivery: { ar: "10 أيام عمل", en: "10 business days" },
         featured: true,
         features: [
-          { ar: "تصميم مخصص لصفحات المتجر ورفع حتى 100 منتج", en: "Custom store design and up to 100 products" },
-          { ar: "تحسين صفحات المنتجات لرفع المبيعات", en: "Product pages optimised to convert" },
-          { ar: "إشعارات الطلبات عبر واتساب", en: "Order notifications on WhatsApp" },
-          { ar: "أدوات التتبع لحملاتك الإعلانية", en: "Tracking for your ad campaigns" },
-          { ar: "تدريب فريقك على إدارة المتجر", en: "Training for your team" }
+          { ar: "تصميم مخصص للصفحة الرئيسية وصفحة المنتج بهويتك", en: "Custom home and product page design in your brand" },
+          { ar: "رفع حتى 100 منتج بالخيارات (المقاس، اللون…) والتصنيفات", en: "Up to 100 products with options (size, colour…) and categories" },
+          { ar: "ربط الدفع والشحن والدفع عند الاستلام", en: "Payments, shipping and cash on delivery connected" },
+          { ar: "بكسل سناب وتيك توك وميتا و Google Analytics", en: "Snap, TikTok and Meta pixels plus Google Analytics" },
+          { ar: "إشعار الطلبات الجديدة على واتساب", en: "New-order notifications on WhatsApp" },
+          { ar: "كوبونات الخصم الأولى وحملة الإطلاق", en: "First discount coupons and a launch campaign set-up" },
+          { ar: "جلسة تدريب لفريقك + دعم فني شهر", en: "A training session for your team + one month of support" }
+        ],
+        excludes: [
+          { ar: "اشتراك المنصة ورسوم بوابات الدفع والشحن", en: "Platform subscription, payment and shipping fees" },
+          { ar: "تصوير المنتجات وإدارة الإعلانات", en: "Product photography and ad management" }
         ]
       },
       {
@@ -142,14 +200,21 @@ export const packageGroups: PackageGroup[] = [
         icon: "Building2",
         name: { ar: "التوسع", en: "Scale" },
         tagline: { ar: "للعلامات الكبيرة والمبيعات العالية", en: "For larger brands and high volumes" },
+        idealFor: { ar: "المتاجر ذات المبيعات العالية أو الفروع أو التي تبيع خارج المملكة", en: "High-volume stores, multi-branch businesses or cross-border sellers" },
         price: 9999,
+        from: true,
         period: oneTime,
         delivery: { ar: "من 4 أسابيع", en: "From 4 weeks" },
         features: [
-          { ar: "متجر مخصص أو على شوبيفاي", en: "Custom or Shopify store" },
-          { ar: "ربط مع أنظمة المخزون والمحاسبة", en: "Inventory and accounting integration" },
-          { ar: "استرداد السلات المتروكة تلقائياً", en: "Automatic abandoned-cart recovery" },
-          { ar: "تقارير مبيعات ودعم بأولوية", en: "Sales reports and priority support" }
+          { ar: "متجر بتصميم كامل مخصص أو على شوبيفاي", en: "A fully custom store or a Shopify store" },
+          { ar: "ربط مع أنظمة المخزون والمحاسبة والفوترة الإلكترونية", en: "Inventory, accounting and e-invoicing integration" },
+          { ar: "استرداد السلات المتروكة برسائل واتساب تلقائية", en: "Automatic WhatsApp abandoned-cart recovery" },
+          { ar: "متعدد اللغات والعملات عند البيع خارج المملكة", en: "Multi-language and multi-currency for selling abroad" },
+          { ar: "تقارير مبيعات شهرية ودعم بأولوية 3 أشهر", en: "Monthly sales reports and 3 months of priority support" }
+        ],
+        excludes: [
+          { ar: "اشتراك المنصة وتطبيقاتها المدفوعة", en: "Platform subscription and paid apps" },
+          { ar: "رسوم بوابات الدفع والشحن", en: "Payment and shipping fees" }
         ]
       }
     ]
@@ -159,37 +224,52 @@ export const packageGroups: PackageGroup[] = [
     icon: "MessagesSquare",
     title: { ar: "باقات حلول واتساب", en: "WhatsApp solution packages" },
     text: { ar: "رد أسرع ومبيعات أكثر على القناة التي يفضلها عملاؤك.", en: "Faster replies and more sales on your clients' favourite channel." },
+    notice: { ar: "اشتراك شهري بلا عقد طويل، والإعداد مجاني. رسوم الرسائل التي تتقاضاها Meta تُحتسب حسب استخدامك الفعلي، والرد على العميل خلال 24 ساعة من رسالته مجاني ضمن الحدود التي تحددها Meta.", en: "A monthly subscription with no long contract, and free set-up. Meta's own message fees follow your actual usage; replying within 24 hours of a client's message is free within Meta's limits." },
     tiers: [
       {
         key: "wa-basic",
         icon: "MessageSquareMore",
         name: { ar: "الأساسية", en: "Basic" },
         tagline: { ar: "لا تفوّت أي رسالة", en: "Never miss a message" },
+        idealFor: { ar: "الأنشطة الصغيرة التي تنظم رسائل واتساب لأول مرة", en: "Small businesses organising WhatsApp for the first time" },
         price: 199,
+        from: false,
         period: perMonth,
         delivery: { ar: "يومان عمل", en: "2 business days" },
         features: [
-          { ar: "ربط رقمك بواتساب للأعمال الرسمي", en: "Your number on the official WhatsApp Business Platform" },
-          { ar: "رسالة ترحيب ورد آلي", en: "Welcome message and auto-reply" },
-          { ar: "ردود سريعة للأسئلة المتكررة", en: "Quick replies for frequent questions" },
-          { ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees billed by usage" }
+          { ar: "ربط رقمك بواتساب للأعمال الرسمي (WhatsApp API)", en: "Your number on the official WhatsApp Business Platform" },
+          { ar: "مستخدم واحد", en: "One user" },
+          { ar: "رسالة ترحيب ورد خارج أوقات العمل", en: "Welcome and out-of-hours messages" },
+          { ar: "10 ردود سريعة جاهزة للأسئلة المتكررة", en: "10 ready quick replies for frequent questions" },
+          { ar: "دعم فني عبر واتساب", en: "Support on WhatsApp" }
+        ],
+        excludes: [
+          { ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees, by usage" },
+          { ar: "الشات بوت والحملات", en: "Chatbot and campaigns" }
         ]
       },
       {
         key: "wa-pro",
         icon: "Bot",
         name: { ar: "الاحترافية", en: "Professional" },
-        tagline: { ar: "بوت يؤهل العملاء ويحوّلهم لفريقك", en: "A bot that qualifies leads and hands them to your team" },
+        tagline: { ar: "بوت يرد 24 ساعة ويحوّل الجادّين لفريقك", en: "A 24/7 bot that hands serious leads to your team" },
+        idealFor: { ar: "العيادات والصالونات والمتاجر والشركات كثيرة الرسائل", en: "Clinics, salons, stores and companies with many messages" },
         price: 499,
+        from: false,
         period: perMonth,
         delivery: { ar: "5 أيام عمل", en: "5 business days" },
         featured: true,
         features: [
-          { ar: "شات بوت بتدفقات مصممة لنشاطك", en: "Chatbot flows designed for your business" },
+          { ar: "حتى 3 مستخدمين في صندوق محادثات مشترك", en: "Up to 3 users in a shared inbox" },
+          { ar: "شات بوت بتدفقات مصممة لنشاطك (قائمة خدمات، حجز، أسئلة)", en: "Chatbot flows designed for your business (menu, booking, FAQs)" },
           { ar: "تأهيل العملاء وتحويلهم للموظف المناسب", en: "Lead qualification and hand-over to the right person" },
-          { ar: "قوالب رسائل معتمدة من Meta", en: "Meta-approved message templates" },
-          { ar: "صندوق محادثات مشترك لفريقك", en: "Shared inbox for your team" },
-          { ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees billed by usage" }
+          { ar: "5 قوالب رسائل معتمدة من Meta", en: "5 Meta-approved message templates" },
+          { ar: "تعيين المحادثات والملاحظات الداخلية", en: "Conversation assignment and internal notes" },
+          { ar: "تقرير شهري بعدد المحادثات وسرعة الرد", en: "A monthly report on conversations and response time" }
+        ],
+        excludes: [
+          { ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees, by usage" },
+          { ar: "الحملات الجماعية (في الباقة المتقدمة)", en: "Bulk campaigns (in Advanced)" }
         ]
       },
       {
@@ -197,30 +277,94 @@ export const packageGroups: PackageGroup[] = [
         icon: "Megaphone",
         name: { ar: "المتقدمة", en: "Advanced" },
         tagline: { ar: "حملات وأتمتة كاملة مرتبطة بأنظمتك", en: "Campaigns and full automation linked to your systems" },
+        idealFor: { ar: "الفرق الكبيرة والمتاجر التي تسوّق عبر واتساب", en: "Large teams and stores that market on WhatsApp" },
         price: 999,
+        from: false,
         period: perMonth,
         delivery: { ar: "10 أيام عمل", en: "10 business days" },
         features: [
-          { ar: "حملات تسويقية بشرائح العملاء", en: "Marketing campaigns by customer segment" },
-          { ar: "ربط مع نظام العملاء والمتجر", en: "CRM and store integration" },
-          { ar: "تقارير أداء المحادثات والحملات", en: "Conversation and campaign reports" },
-          { ar: "دعم فني بأولوية", en: "Priority support" },
-          { ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees billed by usage" }
-        ]
+          { ar: "حتى 10 مستخدمين وصلاحيات لكل دور", en: "Up to 10 users with role permissions" },
+          { ar: "كل مميزات الباقة الاحترافية", en: "Everything in Professional" },
+          { ar: "حملات تسويقية بشرائح العملاء وجدولتها", en: "Segmented, scheduled marketing campaigns" },
+          { ar: "ربط مع متجرك (زد / سلة) ونظام العملاء", en: "Store (Zid / Salla) and CRM integration" },
+          { ar: "استرداد السلات المتروكة تلقائياً", en: "Automatic abandoned-cart recovery" },
+          { ar: "تقارير أداء الحملات ومدير حساب مخصص", en: "Campaign reports and a dedicated account manager" }
+        ],
+        excludes: [{ ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees, by usage" }]
       }
     ]
   },
-  ...(team?.plans
-    ? [
-        {
-          service: "dedicated-tech-team",
-          icon: "Users" as IconName,
-          title: { ar: "باقات الفريق التقني المتكامل", en: "Dedicated tech team plans" },
-          text: team.summary,
-          tiers: team.plans.map((p, i) => ({ key: ["team-monthly", "team-semiannual", "team-annual"][i] ?? `team-${i}`, icon: p.icon, name: p.name, tagline: p.for, price: [11900, 10900, 9900][i] ?? null, period: perMonth, delivery: { ar: "يبدأ الفريق خلال 7 أيام عمل", en: "The team starts within 7 business days" }, featured: p.featured, features: p.features }))
-        }
-      ]
-    : [])
+  {
+    service: "dedicated-tech-team",
+    icon: "Users",
+    title: { ar: "باقات الفريق التقني المتكامل", en: "Dedicated tech team plans" },
+    text: { ar: "فريق تقني يعمل لشركتك شهرياً بدون أعباء التوظيف.", en: "A tech team working for your company every month, without the hiring burden." },
+    notice: { ar: "الفريق في كل الباقات: مطور Full-Stack، مصمم UI/UX، ومدير مشروع — 120 ساعة عمل شهرياً توزَّع حسب أولوياتك. الفرق بين الباقات في مدة الالتزام والسعر الشهري والمزايا الإضافية.", en: "Every plan: a Full-Stack developer, a UI/UX designer and a project manager — 120 working hours a month, allocated to your priorities. Plans differ in term, monthly price and extras." },
+    tiers: [
+      {
+        key: "team-monthly",
+        icon: "CalendarClock",
+        name: { ar: "الشهري", en: "Monthly" },
+        tagline: { ar: "مرونة كاملة شهراً بشهر", en: "Full flexibility, month to month" },
+        idealFor: { ar: "مشروع قصير أو تجربة العمل معنا قبل الالتزام", en: "A short project, or trying us before committing" },
+        price: 13500,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "يبدأ الفريق خلال 7 أيام عمل", en: "The team starts within 7 business days" },
+        features: [
+          { ar: "120 ساعة عمل شهرياً للفريق كاملاً", en: "120 team hours a month" },
+          { ar: "اجتماع أسبوعي ومتابعة يومية على قناة مشتركة", en: "A weekly meeting and daily updates on a shared channel" },
+          { ar: "تعديل الأولويات ونطاق العمل كل شهر", en: "Adjust priorities and scope every month" },
+          { ar: "تقرير إنجاز شهري بالساعات والمهام", en: "A monthly report of hours and tasks" },
+          { ar: "إلغاء بإشعار قبل 30 يوماً", en: "Cancel with 30 days' notice" }
+        ],
+        excludes: [
+          { ar: "الاستضافة وتراخيص الأدوات الخارجية", en: "Hosting and third-party tool licences" },
+          { ar: "الساعات غير المستخدمة لا تُرحَّل", en: "Unused hours don't roll over" }
+        ]
+      },
+      {
+        key: "team-semiannual",
+        icon: "Calendar",
+        name: { ar: "النصف سنوي", en: "Six-month" },
+        tagline: { ar: "خطة تطوير واضحة بسعر أفضل", en: "A clear development plan at a better rate" },
+        idealFor: { ar: "الشركات التي لديها خطة تطوير لعدة أشهر", en: "Companies with a multi-month development plan" },
+        price: 12400,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "يبدأ الفريق خلال 7 أيام عمل", en: "The team starts within 7 business days" },
+        featured: true,
+        features: [
+          { ar: "120 ساعة عمل شهرياً — وفّر 8% عن الشهري", en: "120 team hours a month — 8% below monthly" },
+          { ar: "خطة تطوير مكتوبة لستة أشهر", en: "A written six-month development plan" },
+          { ar: "ترحيل حتى 20 ساعة غير مستخدمة للشهر التالي", en: "Roll over up to 20 unused hours to the next month" },
+          { ar: "مراجعة أداء ربع سنوية مع الإدارة", en: "A quarterly performance review with management" },
+          { ar: "أولوية في جدولة المهام العاجلة", en: "Priority scheduling for urgent tasks" }
+        ],
+        excludes: [{ ar: "الاستضافة وتراخيص الأدوات الخارجية", en: "Hosting and third-party tool licences" }]
+      },
+      {
+        key: "team-annual",
+        icon: "Award",
+        name: { ar: "السنوي", en: "Annual" },
+        tagline: { ar: "شريك تقني طويل المدى", en: "A long-term technology partner" },
+        idealFor: { ar: "الشركات التي تريد فريقاً تقنياً ثابتاً بدل التوظيف", en: "Companies that want a steady tech team instead of hiring" },
+        price: 11200,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "يبدأ الفريق خلال 7 أيام عمل", en: "The team starts within 7 business days" },
+        features: [
+          { ar: "120 ساعة عمل شهرياً — وفّر 17% عن الشهري", en: "120 team hours a month — 17% below monthly" },
+          { ar: "نفس أعضاء الفريق طوال السنة", en: "The same team members all year" },
+          { ar: "خارطة طريق تقنية سنوية", en: "An annual technology roadmap" },
+          { ar: "ترحيل حتى 30 ساعة غير مستخدمة", en: "Roll over up to 30 unused hours" },
+          { ar: "مراجعة جودة واختبار قبل كل إصدار", en: "QA review and testing before every release" },
+          { ar: "أعلى أولوية في الدعم", en: "Top support priority" }
+        ],
+        excludes: [{ ar: "الاستضافة وتراخيص الأدوات الخارجية", en: "Hosting and third-party tool licences" }]
+      }
+    ]
+  }
 ];
 
 /**
@@ -513,8 +657,10 @@ export const offersCopy = {
   save: { ar: "وفّر", en: "Save" } as L,
   details: { ar: "التفاصيل والطلب", en: "Details & order" } as L,
   packagesTitle: { ar: "الباقات", en: "Packages" } as L,
-  packagesSub: { ar: "كل باقة قابلة للتعديل حسب احتياجك — والسعر النهائي يُحدد بعد فهم متطلباتك.", en: "Every package can be tailored — the final price follows your requirements." } as L,
+  packagesSub: { ar: "أسعار ثابتة وواضحة، وكل باقة تذكر بالضبط ما تشمله وما لا تشمله — والباقات المتقدمة تُسعَّر حسب نطاق مشروعك.", en: "Clear, fixed prices — every package says exactly what it includes and what it doesn't; Advanced packages are priced to your scope." } as L,
   mostPopular: { ar: "الأكثر طلباً", en: "Most popular" } as L,
+  idealFor: { ar: "مناسبة لـ", en: "Best for" } as L,
+  notIncluded: { ar: "غير مشمول", en: "Not included" } as L,
   from: { ar: "يبدأ من", en: "From" } as L,
   onRequest: { ar: "السعر حسب احتياجك", en: "Priced to your needs" } as L,
   choose: { ar: "اطلب هذه الباقة", en: "Request this package" } as L,

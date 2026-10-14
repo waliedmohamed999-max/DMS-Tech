@@ -147,7 +147,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
       <section id="packages" className="section scroll-mt-24 bg-cloud">
         <div className="container-site">
           <SectionHeading title={c.packagesTitle} sub={c.packagesSub} />
-          <PackagesBrowser groups={groups} labels={{ mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery }} locale={locale} />
+          <PackagesBrowser groups={groups} labels={{ mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded }} locale={locale} />
           <p className="mt-6 text-center text-xs text-graphite">{c.vatNote}</p>
         </div>
       </section>

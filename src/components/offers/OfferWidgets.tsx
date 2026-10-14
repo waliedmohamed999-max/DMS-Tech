@@ -42,11 +42,11 @@ export function Countdown({ endsAt, labels, dark = false, big = false }: { endsA
   );
 }
 
-export type TierView = { key: string; icon: IconName; name: string; tagline: string; price: string | null; period: string | null; delivery: string; featured?: boolean; features: string[] };
-export type GroupView = { service: string; icon: IconName; title: string; text: string; tiers: TierView[] };
+export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; price: string | null; from: boolean; period: string | null; delivery: string; featured?: boolean; features: string[]; excludes: string[] };
+export type GroupView = { service: string; icon: IconName; title: string; text: string; notice: string; tiers: TierView[] };
 
 /** Packages by service (tabs), three tiers each; every tier links to its own shareable page. */
-export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[]; labels: { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string }; locale: string }) {
+export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[]; labels: { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string }; locale: string }) {
   const [active, setActive] = useState(groups[0]?.service);
   const g = groups.find((x) => x.service === active) ?? groups[0];
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
@@ -66,7 +66,13 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
           </button>
         ))}
       </div>
-      <p className="mx-auto max-w-2xl text-center text-iron">{g.text}</p>
+      <div className="mx-auto grid max-w-3xl gap-3 text-center">
+        <p className="text-iron">{g.text}</p>
+        <p className="flex items-start gap-2 rounded-xl border border-iris/20 bg-lilac/60 px-4 py-3 text-start text-sm leading-relaxed text-ink">
+          <Icon name="Lightbulb" size={17} className="mt-0.5 shrink-0 text-iris" />
+          {g.notice}
+        </p>
+      </div>
       <div className="grid items-stretch gap-5 md:grid-cols-3">
         {g.tiers.map((t) => (
           <div key={t.key} className={`relative grid content-start gap-5 rounded-card border p-7 ${t.featured ? "border-iris bg-white shadow-lg ring-4 ring-iris/10 md:-translate-y-2" : "border-mist bg-white shadow-card"}`}>
@@ -78,10 +84,13 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
               <h3 className="text-xl font-bold">{t.name}</h3>
               <p className="text-sm text-iron">{t.tagline}</p>
             </div>
+            <p className="rounded-lg bg-cloud px-3 py-2 text-[13px] text-iron">
+              <b className="font-semibold text-ink">{labels.idealFor}:</b> {t.idealFor}
+            </p>
             <p className="border-y border-mist py-3">
               {t.price ? (
                 <span className="grid">
-                  <span className="text-xs text-graphite">{labels.from}</span>
+                  {t.from && <span className="text-xs text-graphite">{labels.from}</span>}
                   <span className="flex flex-wrap items-baseline gap-1.5">
                     <span className="text-2xl font-bold tabular" dir="ltr">
                       {t.price}
@@ -104,6 +113,17 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
                 </li>
               ))}
             </ul>
+            {t.excludes.length > 0 && (
+              <div className="grid gap-1.5 border-t border-mist pt-3">
+                <span className="text-xs font-semibold text-graphite">{labels.notIncluded}</span>
+                {t.excludes.map((x) => (
+                  <span key={x} className="flex items-start gap-2 text-[13px] text-iron">
+                    <Icon name="X" size={14} className="mt-0.5 shrink-0 text-graphite" />
+                    {x}
+                  </span>
+                ))}
+              </div>
+            )}
             <Link href={`/offers/${t.key}`} className={`btn mt-auto w-full justify-center ${t.featured ? "btn-primary" : "btn-outline"}`}>
               {labels.choose} <Icon name={arrow} size={16} />
             </Link>

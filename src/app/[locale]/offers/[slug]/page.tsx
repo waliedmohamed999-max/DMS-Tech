@@ -165,7 +165,7 @@ export default async function OfferItemPage({ params }: Props) {
             <div className="grid gap-1 border-b border-mist pb-4">
               {item.price ? (
                 <>
-                  {item.kind === "package" && <span className="text-xs text-graphite">{c.from}</span>}
+                  {item.kind === "package" && item.from && <span className="text-xs text-graphite">{c.from}</span>}
                   {item.oldPrice && (
                     <span className="text-sm text-graphite line-through" dir="ltr">
                       {item.oldPrice}
@@ -189,9 +189,14 @@ export default async function OfferItemPage({ params }: Props) {
               <span className="mt-1 text-xs text-graphite">{c.vatNote}</span>
             </div>
             {item.kind === "package" && (
-              <p className="flex items-center gap-1.5 text-sm text-iron">
-                <Icon name="Clock" size={14} className="text-iris" /> {c.delivery}: <b className="font-semibold text-ink">{item.delivery}</b>
-              </p>
+              <>
+                <p className="rounded-lg bg-white px-3 py-2 text-sm text-iron">
+                  <b className="font-semibold text-ink">{c.idealFor}:</b> {item.idealFor}
+                </p>
+                <p className="flex items-center gap-1.5 text-sm text-iron">
+                  <Icon name="Clock" size={14} className="text-iris" /> {c.delivery}: <b className="font-semibold text-ink">{item.delivery}</b>
+                </p>
+              </>
             )}
             <h2 className="font-bold">{c.included}</h2>
             <ul className="grid gap-2.5">
@@ -202,6 +207,25 @@ export default async function OfferItemPage({ params }: Props) {
                 </li>
               ))}
             </ul>
+            {item.kind === "package" && (
+              <>
+                {item.excludes.length > 0 && (
+                  <div className="grid gap-1.5 border-t border-mist pt-4">
+                    <span className="text-sm font-semibold text-graphite">{c.notIncluded}</span>
+                    {item.excludes.map((x) => (
+                      <span key={x} className="flex items-start gap-2 text-sm text-iron">
+                        <Icon name="X" size={14} className="mt-0.5 shrink-0 text-graphite" />
+                        {x}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="flex items-start gap-2 rounded-xl border border-iris/20 bg-lilac/60 px-3 py-2.5 text-[13px] leading-relaxed text-ink">
+                  <Icon name="Lightbulb" size={15} className="mt-0.5 shrink-0 text-iris" />
+                  {item.notice}
+                </p>
+              </>
+            )}
             <div className="border-t border-mist pt-4">
               <ShareLink title={label} labels={{ share: c.share, copy: c.copy, copied: c.copied, shareWa: c.shareWa }} />
             </div>
