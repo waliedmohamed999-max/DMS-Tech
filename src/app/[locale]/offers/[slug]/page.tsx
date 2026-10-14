@@ -258,7 +258,7 @@ export default async function OfferItemPage({ params }: Props) {
       </section>
 
       {/* order first: the price card and the form, then the details */}
-      <section id="order" className="section scroll-mt-24">
+      <section id="order" className="scroll-mt-24 py-12 md:py-16">
         <div className="container-site grid items-start gap-10 lg:grid-cols-[1fr_1.3fr]">
           <aside className="grid gap-5 lg:sticky lg:top-28">
             {priceCard}
@@ -296,36 +296,70 @@ export default async function OfferItemPage({ params }: Props) {
         </div>
       </section>
 
-      {/* at a glance: who it is for + what is included */}
-      <section className="section bg-cloud">
-        <div className="container-site grid items-stretch gap-6 lg:grid-cols-[1fr_1.4fr]">
-          <Block icon="Users" title={d ? c.forWho : c.idealFor}>
-            <p className="leading-relaxed text-iron">
-              {d ? d.forWho : item.kind === "package" ? item.idealFor : ""}
-            </p>
-          </Block>
-          <Block icon="CircleCheck" title={c.included}>
-            <ul className="grid gap-2.5 sm:grid-cols-2">
-              {item.features.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-[15px]">
+      {/* the details in one compact section: who it suits + delivery beside what's included / not included */}
+      <section className="bg-cloud py-12 md:py-16">
+        <div className="container-site grid items-start gap-6 lg:grid-cols-3">
+          <div className="grid content-start gap-6">
+            <Block icon="Users" title={d ? c.forWho : c.idealFor}>
+              <p className="leading-relaxed text-iron">
+                {d ? d.forWho : item.kind === "package" ? item.idealFor : ""}
+              </p>
+            </Block>
+            <Block icon="Clock" title={c.delivery}>
+              <p className="text-lg font-semibold">{item.delivery}</p>
+            </Block>
+          </div>
+          <div className="grid content-start gap-6 lg:col-span-2">
+            <Block icon="CircleCheck" title={c.included}>
+              <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                {item.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-[15px]">
+                    <Icon
+                      name="CircleCheck"
+                      size={17}
+                      className="mt-0.5 shrink-0 text-iris"
+                    />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </Block>
+            {item.kind === "package" && (
+              <Block icon="CircleX" title={c.notIncluded} tone="muted">
+                <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                  {item.excludes.map((t) => (
+                    <li
+                      key={t}
+                      className="flex items-start gap-2 text-[15px] text-iron"
+                    >
+                      <Icon
+                        name="X"
+                        size={16}
+                        className="mt-0.5 shrink-0 text-graphite"
+                      />
+                      {t}
+                    </li>
+                  ))}
+                </ul>
+                <p className="flex items-start gap-2 rounded-xl border border-iris/20 bg-lilac/60 px-3 py-2.5 text-[13px] leading-relaxed text-ink">
                   <Icon
-                    name="CircleCheck"
-                    size={17}
+                    name="Lightbulb"
+                    size={15}
                     className="mt-0.5 shrink-0 text-iris"
                   />
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </Block>
+                  {item.notice}
+                </p>
+              </Block>
+            )}
+          </div>
         </div>
       </section>
 
       {d && (
-        <section className="section">
+        <section className="py-12 md:py-16">
           <div className="container-site grid gap-8">
             <h2 className="text-center text-3xl font-bold">{c.deliverables}</h2>
-            <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <ol className="grid gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
               {deliverables.map((x, i) => (
                 <li
                   key={x.title}
@@ -347,9 +381,9 @@ export default async function OfferItemPage({ params }: Props) {
         </section>
       )}
 
-      <section className="section bg-cloud">
-        <div className="container-site grid gap-5 md:grid-cols-2">
-          {d && (
+      {d && (
+        <section className="bg-cloud py-12 md:py-16">
+          <div className="container-site grid items-start gap-6 md:grid-cols-2">
             <Block icon="ClipboardList" title={c.terms}>
               <ul className="grid gap-2.5">
                 {d.terms.map((t) => (
@@ -364,52 +398,28 @@ export default async function OfferItemPage({ params }: Props) {
                 ))}
               </ul>
             </Block>
-          )}
-          <Block
-            icon="CircleX"
-            title={d ? c.excludes : c.notIncluded}
-            tone="muted"
-          >
-            <ul className="grid gap-2.5">
-              {(d
-                ? d.excludes
-                : item.kind === "package"
-                  ? item.excludes
-                  : []
-              ).map((t) => (
-                <li
-                  key={t}
-                  className="flex items-start gap-2 text-[15px] text-iron"
-                >
-                  <Icon
-                    name="X"
-                    size={16}
-                    className="mt-0.5 shrink-0 text-graphite"
-                  />
-                  {t}
-                </li>
-              ))}
-            </ul>
-            {item.kind === "package" && (
-              <p className="flex items-start gap-2 rounded-xl border border-iris/20 bg-lilac/60 px-3 py-2.5 text-[13px] leading-relaxed text-ink">
-                <Icon
-                  name="Lightbulb"
-                  size={15}
-                  className="mt-0.5 shrink-0 text-iris"
-                />
-                {item.notice}
-              </p>
-            )}
-          </Block>
-          {!d && (
-            <Block icon="Clock" title={c.delivery}>
-              <p className="text-lg font-semibold">{item.delivery}</p>
+            <Block icon="CircleX" title={c.excludes} tone="muted">
+              <ul className="grid gap-2.5">
+                {d.excludes.map((t) => (
+                  <li
+                    key={t}
+                    className="flex items-start gap-2 text-[15px] text-iron"
+                  >
+                    <Icon
+                      name="X"
+                      size={16}
+                      className="mt-0.5 shrink-0 text-graphite"
+                    />
+                    {t}
+                  </li>
+                ))}
+              </ul>
             </Block>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
-      <section className="section">
+      <section className="py-12 md:py-16">
         <div className="container-site grid gap-8">
           <h2 className="text-center text-3xl font-bold">
             <Highlight text={c.howTitle} />
