@@ -10,6 +10,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { WhatsAppFloat } from "@/components/layout/Chrome";
 import { PauseOffscreenMotion } from "@/components/layout/PauseOffscreenMotion";
+import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { Splash } from "@/components/layout/Splash";
 import "../globals.css";
 
@@ -64,8 +65,9 @@ export default async function LocaleLayout({
   const services = await getServices(locale as Locale);
   const navServices = services.map(({ slug, icon, title, summary }) => ({ slug, icon, title, summary }));
 
+  // data-scroll-behavior: Next.js turns smooth scrolling off while it jumps to the top of a new page
   return (
-    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={fontVars}>
+    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={fontVars} data-scroll-behavior="smooth">
       <body>
         <Splash locale={locale} />
         <NextIntlClientProvider>
@@ -74,6 +76,7 @@ export default async function LocaleLayout({
           <Footer services={services} />
           <WhatsAppFloat />
           <PauseOffscreenMotion />
+          <ScrollToTop />
         </NextIntlClientProvider>
       </body>
     </html>
