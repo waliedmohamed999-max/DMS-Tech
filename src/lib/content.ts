@@ -6,7 +6,7 @@ import { industries, integrations } from "@/content/industries";
 import { aiCards, capabilities, nova, phases, promises, trustCards, values } from "@/content/company";
 import { posts } from "@/content/posts";
 import { careersCopy, jobs } from "@/content/careers";
-import { activeOffers, cycleEnd, findDeal, findOffer, offerEndInstant, offers, offersCopy, packageGroups, todaysDeal, type Offer } from "@/content/offers";
+import { activeOffers, cycleEnd, findDeal, findOffer, offerEndInstant, offers, offersCopy, packageGroups, todaysDeals, type Offer } from "@/content/offers";
 import { formatMoney } from "@/lib/commercial/calc";
 import { clientProjects } from "@/content/projects";
 import { projectsCopy } from "@/content/projects-copy";
@@ -130,15 +130,14 @@ export async function getOffersCopy(locale: Locale) {
   return localize(offersCopy, locale);
 }
 export async function getPackageGroups(locale: Locale) {
-  return packageGroups.map((g) => ({ ...localize({ title: g.title, text: g.text, notice: g.notice }, locale), service: g.service, icon: g.icon, tiers: g.tiers.map((t) => ({ ...localize(t, locale), price: offerMoney(t.price, locale) })) }));
+  return packageGroups.map((g) => ({ ...localize({ title: g.title, text: g.text, notice: g.notice }, locale), service: g.service, icon: g.icon, tiers: g.tiers.map((t) => ({ ...localize(t, locale), price: offerMoney(t.price, locale) })), ...(g.journey ? { journey: localize(g.journey, locale) } : {}) }));
 }
 /** An offer with its localized details and the end of its current cycle (end of today / of this week). */
 function offerView(o: Offer, locale: Locale) {
   return { ...localize(o, locale), endsAtInstant: cycleEnd(o.cycle).toISOString(), price: offerMoney(o.price, locale), oldPrice: offerMoney(o.oldPrice, locale), saving: offerMoney(o.oldPrice - o.price, locale) };
 }
 export async function getActiveOffers(locale: Locale) {
-  const today = todaysDeal();
-  return { weekly: activeOffers().filter((o) => o.cycle === "weekly").map((o) => offerView(o, locale)), today: today ? offerView(today, locale) : null, weekEndsAt: cycleEnd("weekly").toISOString() };
+  return { weekly: activeOffers().filter((o) => o.cycle === "weekly").map((o) => offerView(o, locale)), today: todaysDeals().map((o) => offerView(o, locale)), weekEndsAt: cycleEnd("weekly").toISOString() };
 }
 /** A shareable item: a package tier, a running offer or "today" (null = unknown, ended, or a daily deal on another day). */
 export async function getOfferItem(slug: string, locale: Locale) {

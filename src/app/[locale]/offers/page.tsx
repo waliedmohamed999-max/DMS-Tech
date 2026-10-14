@@ -8,7 +8,7 @@ import { Highlight, SectionHeading } from "@/components/ui/Section";
 import { Icon } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import TechBackdrop from "@/components/ui/TechBackdrop";
-import { Countdown, PackagesBrowser } from "@/components/offers/OfferWidgets";
+import { Countdown, DealsCarousel, PackagesBrowser } from "@/components/offers/OfferWidgets";
 
 // rendered per request: the deal of the day changes at midnight and weekly offers renew every Sunday; fresh renders
 // also get the public CSP nonce (a cached re-render would no longer match the build-time script hashes)
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: c.eyebrow, description: c.sub };
 }
 
-/** Packages & offers: today's 24-hour deal, this week's offers (one countdown to Saturday midnight), then packages. */
+/** Packages & offers: today's 24-hour deals (sliding banner), this week's offers (one countdown to Saturday midnight), then packages. */
 export default async function OffersPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: raw } = await params;
   const locale = raw as Locale;
@@ -51,44 +51,10 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
         </div>
       </section>
 
-      {today && (
+      {today.length > 0 && (
         <section className="pt-12 md:pt-16">
           <div className="container-site">
-            <article className="relative grid gap-8 overflow-hidden rounded-card bg-gradient-to-br from-iris via-[#5a3fd8] to-iris-soft p-7 text-white shadow-lg md:grid-cols-[1.3fr_1fr] md:p-10">
-              <span aria-hidden className="absolute -end-20 -top-20 size-72 rounded-full bg-white/10 blur-2xl" />
-              <div className="relative grid content-start gap-4">
-                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-iris">
-                  <Icon name="Zap" size={13} /> {c.dayTitle}
-                </span>
-                <h2 className="text-2xl font-bold leading-snug md:text-3xl">{today.title}</h2>
-                <p className="text-[15px] leading-relaxed text-white/85">{today.text}</p>
-                <ul className="flex flex-wrap gap-2">
-                  {today.features.map((f) => (
-                    <li key={f} className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm">
-                      <Icon name="Check" size={14} /> {f}
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-xs text-white/70">{c.dayNote}</p>
-              </div>
-              <div className="relative grid content-center justify-items-start gap-4 rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
-                <Countdown endsAt={today.endsAtInstant} labels={{ ...cd, seconds: c.seconds }} dark big />
-                <div className="grid">
-                  <span className="text-sm text-white/70 line-through" dir="ltr">
-                    {today.oldPrice}
-                  </span>
-                  <span className="text-4xl font-bold" dir="ltr">
-                    {today.price}
-                  </span>
-                  <span className="mt-1 w-fit rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold">
-                    {c.save} {today.saving}
-                  </span>
-                </div>
-                <Link href="/offers/today" className="btn w-full justify-center bg-white text-iris hover:bg-cloud">
-                  {c.seeDeal} <Icon name={arrow} size={16} />
-                </Link>
-              </div>
-            </article>
+            <DealsCarousel deals={today} labels={{ ...cd, seconds: c.seconds, dayTitle: c.dayTitle, dayNote: c.dayNote, seeDeal: c.seeDeal, save: c.save, prev: c.prev, next: c.next }} locale={locale} />
           </div>
         </section>
       )}
@@ -147,7 +113,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
       <section id="packages" className="section scroll-mt-24 bg-cloud">
         <div className="container-site">
           <SectionHeading title={c.packagesTitle} sub={c.packagesSub} />
-          <PackagesBrowser groups={groups} labels={{ mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded }} locale={locale} />
+          <PackagesBrowser groups={groups} labels={{ mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded, journeyTitle: c.journeyTitle, journeySub: c.journeySub, journeyStep: c.journeyStep }} locale={locale} />
           <p className="mt-6 text-center text-xs text-graphite">{c.vatNote}</p>
         </div>
       </section>

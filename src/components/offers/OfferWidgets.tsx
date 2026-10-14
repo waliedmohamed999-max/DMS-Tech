@@ -42,11 +42,118 @@ export function Countdown({ endsAt, labels, dark = false, big = false }: { endsA
   );
 }
 
+export type DealSlide = { slug: string; icon: IconName; badge: string; title: string; text: string; features: string[]; price: string | null; oldPrice: string | null; saving: string | null; endsAtInstant: string };
+const SLIDE_BG = ["from-iris via-[#5a3fd8] to-iris-soft", "from-[#0f766e] via-[#0d9488] to-[#14b8a6]", "from-[#c2410c] via-[#ea580c] to-[#f59e0b]", "from-[#1e3a8a] via-[#2563eb] to-[#38bdf8]", "from-[#9d174d] via-[#db2777] to-[#f472b6]"];
+
+/**
+ * Today's 24-hour deals as a sliding banner: one service per slide, auto-advancing every 6 s (paused on hover / focus
+ * and for reduced-motion users), with arrows, dots and swipe.
+ */
+export function DealsCarousel({ deals, labels, locale }: { deals: DealSlide[]; labels: { dayTitle: string; dayNote: string; seeDeal: string; save: string; endsIn: string; days: string; hours: string; minutes: string; seconds: string; prev: string; next: string }; locale: string }) {
+  const [i, setI] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [touchX, setTouchX] = useState<number | null>(null);
+  const n = deals.length;
+  const rtl = locale === "ar";
+  const go = (k: number) => setI(((k % n) + n) % n);
+  useEffect(() => {
+    if (paused || n < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = setInterval(() => setI((x) => (x + 1) % n), 6000);
+    return () => clearInterval(id);
+  }, [paused, n]);
+  if (!n) return null;
+  const arrow = rtl ? "ArrowLeft" : "ArrowRight";
+  return (
+    <div
+      className="relative overflow-hidden rounded-card shadow-lg"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+      onTouchStart={(e) => setTouchX(e.touches[0].clientX)}
+      onTouchEnd={(e) => {
+        if (touchX === null) return;
+        const dx = e.changedTouches[0].clientX - touchX;
+        if (Math.abs(dx) > 40) go(i + ((dx < 0) !== rtl ? 1 : -1));
+        setTouchX(null);
+      }}
+      role="region"
+      aria-roledescription="carousel"
+      aria-label={labels.dayTitle}
+    >
+      <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(${(rtl ? 1 : -1) * i * 100}%)` }}>
+        {deals.map((d, k) => (
+          <article key={d.slug} aria-hidden={k !== i} className={`relative grid w-full shrink-0 gap-8 overflow-hidden bg-gradient-to-br p-7 pb-16 text-white md:grid-cols-[1.3fr_1fr] md:p-10 md:pb-16 ${SLIDE_BG[k % SLIDE_BG.length]}`}>
+            <span aria-hidden className="absolute -end-20 -top-20 size-72 rounded-full bg-white/10 blur-2xl" />
+            <div className="relative grid content-start gap-4">
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-ink">
+                  <Icon name="Zap" size={13} /> {labels.dayTitle}
+                </span>
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">{d.badge}</span>
+              </span>
+              <h2 className="flex items-start gap-3 text-2xl font-bold leading-snug md:text-3xl">
+                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white/15">
+                  <Icon name={d.icon} size={22} />
+                </span>
+                {d.title}
+              </h2>
+              <p className="text-[15px] leading-relaxed text-white/85">{d.text}</p>
+              <ul className="flex flex-wrap gap-2">
+                {d.features.map((f) => (
+                  <li key={f} className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm">
+                    <Icon name="Check" size={14} /> {f}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-white/70">{labels.dayNote}</p>
+            </div>
+            <div className="relative grid content-center justify-items-start gap-4 rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
+              <Countdown endsAt={d.endsAtInstant} labels={labels} dark big />
+              <div className="grid">
+                <span className="text-sm text-white/70 line-through" dir="ltr">
+                  {d.oldPrice}
+                </span>
+                <span className="text-4xl font-bold" dir="ltr">
+                  {d.price}
+                </span>
+                <span className="mt-1 w-fit rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold">
+                  {labels.save} {d.saving}
+                </span>
+              </div>
+              <Link href={`/offers/${d.slug}`} tabIndex={k === i ? 0 : -1} className="btn w-full justify-center bg-white text-ink hover:bg-cloud">
+                {labels.seeDeal} <Icon name={arrow} size={16} />
+              </Link>
+            </div>
+          </article>
+        ))}
+      </div>
+      {n > 1 && (
+        <div className="absolute inset-x-0 bottom-4 flex items-center justify-center gap-3">
+          <button type="button" onClick={() => go(i - 1)} aria-label={labels.prev} className="grid size-8 place-items-center rounded-full bg-white/20 text-white hover:bg-white/35">
+            <Icon name={rtl ? "ChevronRight" : "ChevronLeft"} size={16} />
+          </button>
+          <span className="flex gap-1.5">
+            {deals.map((d, k) => (
+              <button key={d.slug} type="button" onClick={() => go(k)} aria-label={d.badge} aria-current={k === i} className={`h-2 rounded-full transition-all ${k === i ? "w-7 bg-white" : "w-2 bg-white/45 hover:bg-white/70"}`} />
+            ))}
+          </span>
+          <button type="button" onClick={() => go(i + 1)} aria-label={labels.next} className="grid size-8 place-items-center rounded-full bg-white/20 text-white hover:bg-white/35">
+            <Icon name={rtl ? "ChevronLeft" : "ChevronRight"} size={16} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; price: string | null; from: boolean; period: string | null; delivery: string; featured?: boolean; features: string[]; excludes: string[] };
-export type GroupView = { service: string; icon: IconName; title: string; text: string; notice: string; tiers: TierView[] };
+export type JourneyView = { icon: IconName; title: string; text: string; tier: string };
+export type GroupView = { service: string; icon: IconName; title: string; text: string; notice: string; tiers: TierView[]; journey?: JourneyView[] };
+type BrowserLabels = { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string };
 
 /** Packages by service (tabs), three tiers each; every tier links to its own shareable page. */
-export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[]; labels: { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string }; locale: string }) {
+export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[]; labels: BrowserLabels; locale: string }) {
   const [active, setActive] = useState(groups[0]?.service);
   const g = groups.find((x) => x.service === active) ?? groups[0];
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
@@ -130,6 +237,45 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
           </div>
         ))}
       </div>
+      {g.journey && <Journey steps={g.journey} groups={groups} labels={labels} arrow={arrow} />}
+    </div>
+  );
+}
+
+/** The client journey under a group (stores: founding → first orders → ongoing growth); each step links to its package. */
+function Journey({ steps, groups, labels, arrow }: { steps: JourneyView[]; groups: GroupView[]; labels: BrowserLabels; arrow: IconName }) {
+  const tierName = (key: string) => {
+    for (const x of groups) {
+      const t = x.tiers.find((y) => y.key === key);
+      if (t) return `${x.title} — ${t.name}`;
+    }
+    return key;
+  };
+  return (
+    <div className="grid gap-6 rounded-card border border-mist bg-white p-6 md:p-9">
+      <div className="grid gap-1 text-center">
+        <h3 className="text-2xl font-bold">{labels.journeyTitle}</h3>
+        <p className="text-iron">{labels.journeySub}</p>
+      </div>
+      <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {steps.map((s, i) => (
+          <li key={s.title} className="relative grid content-start gap-2.5 rounded-2xl border border-mist bg-cloud p-5">
+            <span className="flex items-center justify-between">
+              <span className="grid size-10 place-items-center rounded-xl bg-iris text-white">
+                <Icon name={s.icon} size={18} />
+              </span>
+              <span className="text-xs font-bold text-iris">
+                {labels.journeyStep} {i + 1}
+              </span>
+            </span>
+            <b className="text-lg">{s.title}</b>
+            <p className="text-[14px] leading-relaxed text-iron">{s.text}</p>
+            <Link href={`/offers/${s.tier}`} className="link-arrow mt-auto text-sm">
+              {tierName(s.tier)} <Icon name={arrow} size={14} />
+            </Link>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }

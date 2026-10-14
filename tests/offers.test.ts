@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/server/db";
 import { captureWebsiteLead, websiteLeadSchema } from "@/server/crm/website";
 import { buildLeadMail } from "@/server/notify/lead-mail";
-import { activeOffers, cycleEnd, findDeal, offerLabel, offers, packageGroups, todaysDeal } from "@/content/offers";
+import { activeOffers, cycleEnd, DEALS_PER_DAY, findDeal, findOffer, offerLabel, offers, packageGroups, todaysDeal, todaysDeals } from "@/content/offers";
 import { resetDb, setupOrg } from "./helpers";
 
 beforeEach(async () => {
@@ -29,6 +29,14 @@ describe("packages & offers", () => {
     const store = packageGroups.find((g) => g.service === "ecommerce")!;
     expect(store.notice.ar).toContain("غير مشمول");
     expect(store.tiers.every((t) => t.excludes.some((x) => x.ar.includes("اشتراك المنصة")))).toBe(true);
+    // every store tier is ready to advertise (pixels), and the journey runs from founding to ongoing marketing
+    expect(store.tiers.every((t) => t.features.some((f) => f.ar.includes("بكسل")))).toBe(true);
+    const keys = new Set(tiers.map((t) => t.key));
+    expect(store.journey!.length).toBeGreaterThanOrEqual(5);
+    expect(store.journey!.every((j) => keys.has(j.tier))).toBe(true);
+    const mkt = packageGroups.find((g) => g.service === "digital-marketing")!;
+    expect(mkt.notice.ar).toContain("ميزانية الإعلانات غير مشمولة");
+    expect(mkt.tiers.every((t) => t.excludes.some((x) => x.ar.includes("ميزانية الإعلانات")))).toBe(true);
     // "from" prices only where the scope varies; longer team terms are cheaper per month
     expect(tiers.filter((t) => t.from).map((t) => t.key).sort()).toEqual(["store-scale", "web-pro"]);
     const team = packageGroups.find((g) => g.service === "dedicated-tech-team")!.tiers.map((t) => t.price!);
@@ -52,7 +60,13 @@ describe("packages & offers", () => {
     const d1 = todaysDeal(at("2026-10-14T12:00:00Z"))!;
     const d2 = todaysDeal(at("2026-10-15T12:00:00Z"))!;
     expect(d1.slug).not.toBe(d2.slug);
-    expect(activeOffers(at("2026-10-14T12:00:00Z")).filter((o) => o.cycle === "daily")).toHaveLength(1);
+    // several deals from different services run each day, all reachable by their own link
+    const deals = todaysDeals(at("2026-10-14T12:00:00Z"));
+    expect(deals).toHaveLength(DEALS_PER_DAY);
+    expect(new Set(deals.map((o) => o.slug)).size).toBe(DEALS_PER_DAY);
+    expect(new Set(deals.map((o) => o.service)).size).toBeGreaterThan(1);
+    expect(activeOffers(at("2026-10-14T12:00:00Z")).filter((o) => o.cycle === "daily")).toHaveLength(DEALS_PER_DAY);
+    expect(deals.every((o) => findOffer(o.slug, at("2026-10-14T12:00:00Z"))?.slug === o.slug)).toBe(true);
     // a daily deal is a real discount and cheaper than any weekly offer for the same service
     for (const day of offers.filter((o) => o.cycle === "daily")) {
       expect(day.price).toBeLessThan(day.oldPrice);
