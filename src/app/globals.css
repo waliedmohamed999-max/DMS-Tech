@@ -192,7 +192,7 @@
 .sv-float { animation: svFloat 4s ease-in-out infinite; }
 .sv-pop { animation: svFloat 4s ease-in-out infinite, svPop 4s ease-in-out infinite; }
 .sv-bar { transform-origin: bottom; animation: svBar 3.6s ease-in-out infinite; }
-.sv-msg { animation: svMsg 6s ease-in-out infinite both; }
+.sv-msg { animation: svEnter 0.6s ease-out both; }
 .sv-grow { transform-origin: left; animation: svGrow 3s ease-out both; }
 [dir="rtl"] .sv-grow { transform-origin: right; }
 .sv-enter { animation: svEnter 0.45s ease-out both; }

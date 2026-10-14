@@ -319,6 +319,22 @@ function Journey({ steps, groups, labels, arrow }: { steps: JourneyView[]; group
   );
 }
 
+/** Opens a chat with the company WhatsApp number, pre-filled with what the client wants, its price and this page link. */
+export function WhatsAppOrder({ phone, lines, label, className = "" }: { phone: string; lines: string[]; label: string; className?: string }) {
+  return (
+    <button
+      type="button"
+      className={`btn justify-center bg-[#25d366] text-white hover:bg-[#1ebe5b] ${className}`}
+      onClick={() => {
+        const text = [...lines, window.location.href.split("#")[0]].join("\n");
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+      }}
+    >
+      <BrandIcon slug="whatsapp" size={18} /> {label}
+    </button>
+  );
+}
+
 /** Copy the page link / send it on WhatsApp (for the team sharing an offer with a client). */
 export function ShareLink({ title, labels }: { title: string; labels: { share: string; copy: string; copied: string; shareWa: string } }) {
   const [copied, setCopied] = useState(false);
