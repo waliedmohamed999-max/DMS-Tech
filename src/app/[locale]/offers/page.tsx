@@ -120,7 +120,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
             <SectionHeading title={c.offersTitle} sub={c.weeklyNote}>
               <Countdown endsAt={offers.weekEndsAt} labels={cd} />
             </SectionHeading>
-            <div className="grid gap-6 lg:grid-cols-3">
+            <div className="m-rail grid gap-6 lg:grid-cols-3">
               {offers.weekly.map((o) => (
                 <article key={o.slug} className="card grid content-start overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
                   <ServiceVisual service={o.service} locale={locale} className="h-52 rounded-none border-b border-mist" />
