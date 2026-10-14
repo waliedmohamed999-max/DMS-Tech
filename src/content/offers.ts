@@ -5,8 +5,8 @@ import { services } from "./services";
 /**
  * Packages, limited-time offers and private deals (/offers, /offers/[slug], /offers/deal/[token]).
  *
- * PRICES: `price` is null until the company sets one — the page then says "request a quote" instead of a number.
- * Never put a price here that the company has not approved.
+ * PRICES (SAR, before VAT): set by the owner on 2026-10-14 at mid-market agency level; `price: null` shows "priced to
+ * your needs" instead. Never change a price here without the company's approval.
  * OFFERS / DEALS: shown only between startsAt and endsAt / until expiresAt. Entries with `preview: true` are design
  * examples rendered in development only — they never appear on the live site.
  * Every package, offer and deal has a stable `key`; the website form sends it and the server resolves it here (see
@@ -19,6 +19,7 @@ export type Offer = { slug: string; service: string; icon: IconName; badge: L; t
 export type Deal = { token: string; client: L; title: L; text: L; items: { label: L; price: number | null }[]; total: number | null; expiresAt: string; preview?: boolean };
 
 const perMonth: L = { ar: "شهرياً", en: "per month" };
+const oneTime: L = { ar: "دفعة واحدة", en: "one-time" };
 const team = services.find((s) => s.slug === "dedicated-tech-team");
 
 export const packageGroups: PackageGroup[] = [
@@ -33,8 +34,8 @@ export const packageGroups: PackageGroup[] = [
         icon: "Monitor",
         name: { ar: "الأساسية", en: "Starter" },
         tagline: { ar: "حضور رقمي احترافي لشركتك", en: "A professional online presence" },
-        price: null,
-        period: null,
+        price: 3500,
+        period: oneTime,
         features: [
           { ar: "موقع تعريفي حتى 5 صفحات", en: "Company website, up to 5 pages" },
           { ar: "تصميم متجاوب مع الجوال", en: "Mobile-responsive design" },
@@ -48,8 +49,8 @@ export const packageGroups: PackageGroup[] = [
         icon: "Rocket",
         name: { ar: "الاحترافية", en: "Professional" },
         tagline: { ar: "موقع يجلب العملاء ويُدار بسهولة", en: "A site that brings clients and is easy to run" },
-        price: null,
-        period: null,
+        price: 8900,
+        period: oneTime,
         featured: true,
         features: [
           { ar: "حتى 15 صفحة بالعربية والإنجليزية", en: "Up to 15 pages in Arabic and English" },
@@ -65,8 +66,8 @@ export const packageGroups: PackageGroup[] = [
         icon: "Layers",
         name: { ar: "المتقدمة", en: "Advanced" },
         tagline: { ar: "نظام أو تطبيق مصمم على مقاس عملك", en: "A system or app built around your business" },
-        price: null,
-        period: null,
+        price: 24000,
+        period: oneTime,
         features: [
           { ar: "تطبيق ويب أو نظام إدارة مخصص", en: "Custom web app or management system" },
           { ar: "تطبيق جوال iOS و Android عند الحاجة", en: "iOS and Android app when needed" },
@@ -88,8 +89,8 @@ export const packageGroups: PackageGroup[] = [
         icon: "ShoppingBag",
         name: { ar: "الانطلاق", en: "Launch" },
         tagline: { ar: "ابدأ البيع أونلاين بسرعة", en: "Start selling online fast" },
-        price: null,
-        period: null,
+        price: 2900,
+        period: oneTime,
         features: [
           { ar: "إعداد المتجر على زد أو سلة", en: "Store set up on Zid or Salla" },
           { ar: "رفع وتنظيم المنتجات الأولى", en: "Your first products uploaded and organised" },
@@ -102,8 +103,8 @@ export const packageGroups: PackageGroup[] = [
         icon: "TrendingUp",
         name: { ar: "النمو", en: "Growth" },
         tagline: { ar: "متجر يبيع أكثر ويُدار بسهولة", en: "A store that sells more and runs smoothly" },
-        price: null,
-        period: null,
+        price: 6900,
+        period: oneTime,
         featured: true,
         features: [
           { ar: "تصميم مخصص لصفحات المتجر", en: "Custom store page design" },
@@ -118,8 +119,8 @@ export const packageGroups: PackageGroup[] = [
         icon: "Building2",
         name: { ar: "التوسع", en: "Scale" },
         tagline: { ar: "للعلامات الكبيرة والمبيعات العالية", en: "For larger brands and high volumes" },
-        price: null,
-        period: null,
+        price: 15000,
+        period: oneTime,
         features: [
           { ar: "متجر مخصص أو على شوبيفاي", en: "Custom or Shopify store" },
           { ar: "ربط مع أنظمة المخزون والمحاسبة", en: "Inventory and accounting integration" },
@@ -140,12 +141,13 @@ export const packageGroups: PackageGroup[] = [
         icon: "MessageSquareMore",
         name: { ar: "الأساسية", en: "Basic" },
         tagline: { ar: "لا تفوّت أي رسالة", en: "Never miss a message" },
-        price: null,
-        period: null,
+        price: 299,
+        period: perMonth,
         features: [
           { ar: "ربط رقمك بواتساب للأعمال الرسمي", en: "Your number on the official WhatsApp Business Platform" },
           { ar: "رسالة ترحيب ورد آلي", en: "Welcome message and auto-reply" },
-          { ar: "ردود سريعة للأسئلة المتكررة", en: "Quick replies for frequent questions" }
+          { ar: "ردود سريعة للأسئلة المتكررة", en: "Quick replies for frequent questions" },
+          { ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees billed by usage" }
         ]
       },
       {
@@ -153,14 +155,15 @@ export const packageGroups: PackageGroup[] = [
         icon: "Bot",
         name: { ar: "الاحترافية", en: "Professional" },
         tagline: { ar: "بوت يؤهل العملاء ويحوّلهم لفريقك", en: "A bot that qualifies leads and hands them to your team" },
-        price: null,
-        period: null,
+        price: 799,
+        period: perMonth,
         featured: true,
         features: [
           { ar: "شات بوت بتدفقات مصممة لنشاطك", en: "Chatbot flows designed for your business" },
           { ar: "تأهيل العملاء وتحويلهم للموظف المناسب", en: "Lead qualification and hand-over to the right person" },
           { ar: "قوالب رسائل معتمدة من Meta", en: "Meta-approved message templates" },
-          { ar: "صندوق محادثات مشترك لفريقك", en: "Shared inbox for your team" }
+          { ar: "صندوق محادثات مشترك لفريقك", en: "Shared inbox for your team" },
+          { ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees billed by usage" }
         ]
       },
       {
@@ -168,13 +171,14 @@ export const packageGroups: PackageGroup[] = [
         icon: "Megaphone",
         name: { ar: "المتقدمة", en: "Advanced" },
         tagline: { ar: "حملات وأتمتة كاملة مرتبطة بأنظمتك", en: "Campaigns and full automation linked to your systems" },
-        price: null,
-        period: null,
+        price: 1690,
+        period: perMonth,
         features: [
           { ar: "حملات تسويقية بشرائح العملاء", en: "Marketing campaigns by customer segment" },
           { ar: "ربط مع نظام العملاء والمتجر", en: "CRM and store integration" },
           { ar: "تقارير أداء المحادثات والحملات", en: "Conversation and campaign reports" },
-          { ar: "دعم فني بأولوية", en: "Priority support" }
+          { ar: "دعم فني بأولوية", en: "Priority support" },
+          { ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees billed by usage" }
         ]
       }
     ]
@@ -186,7 +190,7 @@ export const packageGroups: PackageGroup[] = [
           icon: "Users" as IconName,
           title: { ar: "باقات الفريق التقني المتكامل", en: "Dedicated tech team plans" },
           text: team.summary,
-          tiers: team.plans.map((p, i) => ({ key: ["team-monthly", "team-semiannual", "team-annual"][i] ?? `team-${i}`, icon: p.icon, name: p.name, tagline: p.for, price: null, period: perMonth, featured: p.featured, features: p.features }))
+          tiers: team.plans.map((p, i) => ({ key: ["team-monthly", "team-semiannual", "team-annual"][i] ?? `team-${i}`, icon: p.icon, name: p.name, tagline: p.for, price: [14900, 12900, 10900][i] ?? null, period: perMonth, featured: p.featured, features: p.features }))
         }
       ]
     : [])
@@ -194,22 +198,57 @@ export const packageGroups: PackageGroup[] = [
 
 export const offers: Offer[] = [
   {
-    slug: "store-launch-example",
+    slug: "store-q4-2026",
     service: "ecommerce",
     icon: "ShoppingCart",
-    badge: { ar: "مثال للتصميم", en: "Design example" },
-    title: { ar: "عرض إطلاق المتاجر", en: "Store launch offer" },
-    text: { ar: "مثال لعرض محدود المدة — يظهر على جهازك فقط ولا يظهر على الموقع الحقيقي.", en: "An example limited-time offer — shown on your machine only, never on the live site." },
+    badge: { ar: "وفّر 2,000 ريال", en: "Save SAR 2,000" },
+    title: { ar: "عرض الربع الأخير: متجرك جاهز قبل موسم التخفيضات", en: "Q4 offer: your store ready before the sales season" },
+    text: { ar: "باقة النمو الكاملة لمتجرك على زد أو سلة بسعر خاص، لتلحق بموسم الجمعة البيضاء ونهاية السنة.", en: "The full Growth store package on Zid or Salla at a special price — in time for White Friday and year-end." },
     features: [
-      { ar: "إعداد المتجر بالكامل", en: "Full store set up" },
-      { ar: "ربط الدفع والشحن", en: "Payments and shipping connected" },
+      { ar: "كل مميزات باقة النمو", en: "Everything in the Growth package" },
+      { ar: "تجهيز المتجر خلال 10 أيام عمل", en: "Store ready within 10 business days" },
       { ar: "شهر دعم إضافي مجاناً", en: "An extra month of support, free" }
     ],
-    startsAt: "2026-01-01",
-    endsAt: "2030-12-31",
-    price: null,
-    oldPrice: null,
-    preview: true
+    startsAt: "2026-10-14",
+    endsAt: "2026-12-31",
+    price: 4900,
+    oldPrice: 6900
+  },
+  {
+    slug: "whatsapp-3for2",
+    service: "whatsapp-automation",
+    icon: "MessagesSquare",
+    badge: { ar: "3 أشهر بسعر شهرين", en: "3 months for the price of 2" },
+    title: { ar: "عرض واتساب الاحترافي: 3 أشهر بسعر شهرين", en: "WhatsApp Professional: 3 months for the price of 2" },
+    text: { ar: "شات بوت يرد ويؤهل عملاءك على مدار الساعة، مع صندوق محادثات لفريقك — جرّبه 3 أشهر وادفع شهرين فقط.", en: "A chatbot that answers and qualifies your clients around the clock, with a shared inbox — try it for 3 months, pay for 2." },
+    features: [
+      { ar: "كل مميزات الباقة الاحترافية لمدة 3 أشهر", en: "Everything in Professional for 3 months" },
+      { ar: "إعداد وربط الرقم الرسمي مجاناً", en: "Free set-up on the official number" },
+      { ar: "تصميم أول تدفق شات بوت لنشاطك", en: "Your first chatbot flow designed for you" },
+      { ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees billed by usage" }
+    ],
+    startsAt: "2026-10-14",
+    endsAt: "2026-11-30",
+    price: 1598,
+    oldPrice: 2397
+  },
+  {
+    slug: "digital-launch-bundle",
+    service: "web-development",
+    icon: "Rocket",
+    badge: { ar: "صفقة متكاملة — وفّر 2,797 ريال", en: "Bundle — save SAR 2,797" },
+    title: { ar: "صفقة الانطلاق الرقمي: موقع + متجر + واتساب", en: "Digital launch bundle: website + store + WhatsApp" },
+    text: { ar: "كل ما تحتاجه شركتك لتبدأ البيع أونلاين في صفقة واحدة: موقع احترافي، ومتجر جاهز، وواتساب يرد على عملائك.", en: "Everything your business needs to start selling online, in one deal: a professional website, a ready store and WhatsApp that answers your clients." },
+    features: [
+      { ar: "موقع الشركة — الباقة الاحترافية", en: "Company website — Professional" },
+      { ar: "متجر إلكتروني — باقة الانطلاق", en: "Online store — Launch" },
+      { ar: "واتساب الأساسية — 3 أشهر", en: "WhatsApp Basic — 3 months" },
+      { ar: "مدير مشروع واحد لكل الأعمال", en: "One project manager for everything" }
+    ],
+    startsAt: "2026-10-14",
+    endsAt: "2026-12-31",
+    price: 9900,
+    oldPrice: 12697
   }
 ];
 
@@ -220,11 +259,11 @@ export const deals: Deal[] = [
     title: { ar: "عرض خاص: موقع ومتجر وواتساب", en: "Special offer: website, store and WhatsApp" },
     text: { ar: "مثال لصفقة خاصة بعميل واحد — رابطها لا يظهر في الموقع ولا في محركات البحث.", en: "An example single-client deal — its link is not listed on the site or in search engines." },
     items: [
-      { label: { ar: "موقع الشركة — الباقة الاحترافية", en: "Company website — Professional" }, price: null },
-      { label: { ar: "متجر إلكتروني — باقة النمو", en: "Online store — Growth" }, price: null },
-      { label: { ar: "حلول واتساب — الباقة الاحترافية", en: "WhatsApp — Professional" }, price: null }
+      { label: { ar: "موقع الشركة — الباقة الاحترافية", en: "Company website — Professional" }, price: 8900 },
+      { label: { ar: "متجر إلكتروني — باقة النمو", en: "Online store — Growth" }, price: 6900 },
+      { label: { ar: "حلول واتساب — الباقة الاحترافية (3 أشهر)", en: "WhatsApp — Professional (3 months)" }, price: 2397 }
     ],
-    total: null,
+    total: 15900,
     expiresAt: "2030-12-31",
     preview: true
   }

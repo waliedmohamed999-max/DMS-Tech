@@ -100,9 +100,11 @@ export default async function OfferItemPage({ params }: Props) {
                       {item.oldPrice}
                     </span>
                   )}
-                  <span className="text-3xl font-bold" dir="ltr">
-                    {item.price}
-                    {item.period && <span className="text-base font-medium text-iron"> / {item.period}</span>}
+                  <span className="flex flex-wrap items-baseline gap-1.5">
+                    <span className="text-3xl font-bold" dir="ltr">
+                      {item.price}
+                    </span>
+                    {item.period && <span className="text-base font-medium text-iron">/ {item.period}</span>}
                   </span>
                 </>
               ) : (

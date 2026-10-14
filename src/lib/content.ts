@@ -124,7 +124,8 @@ export async function getServiceExtrasCopy(locale: Locale) {
 }
 
 // Packages, offers and private deals (src/content/offers.ts)
-const offerMoney = (v: number | null, locale: Locale) => (v === null ? null : formatMoney(v.toFixed(2), locale, "SAR"));
+// marketing prices are whole riyals: "3,500 ر.س", not "3,500.00 ر.س"
+const offerMoney = (v: number | null, locale: Locale) => (v === null ? null : formatMoney(v.toFixed(2), locale, "SAR").replace(/[.٫]0{2}(?!d)/, ""));
 export async function getOffersCopy(locale: Locale) {
   return localize(offersCopy, locale);
 }

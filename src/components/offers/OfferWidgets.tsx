@@ -81,9 +81,11 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
               {t.price ? (
                 <span className="grid">
                   <span className="text-xs text-graphite">{labels.from}</span>
-                  <span className="text-2xl font-bold tabular" dir="ltr">
-                    {t.price}
-                    {t.period && <span className="text-sm font-medium text-iron"> / {t.period}</span>}
+                  <span className="flex flex-wrap items-baseline gap-1.5">
+                    <span className="text-2xl font-bold tabular" dir="ltr">
+                      {t.price}
+                    </span>
+                    {t.period && <span className="text-sm font-medium text-iron">/ {t.period}</span>}
                   </span>
                 </span>
               ) : (
