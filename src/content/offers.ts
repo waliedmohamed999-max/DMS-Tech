@@ -478,32 +478,37 @@ export const offers: Offer[] = [
     icon: "ShoppingCart",
     badge: { ar: "عرض الأسبوع — من الصفر لأول طلب", en: "Offer of the week — from zero to first order" },
     title: { ar: "متجرك جاهز للبيع + أول شهر تسويق", en: "Your store, ready to sell + your first marketing month" },
-    text: { ar: "باقة النمو الكاملة مع أول شهر تسويق: متجر بهويتك، البكسل والكتالوج مربوطين، حملة الافتتاح وتصاميمها، ثم شهر كامل من إدارة الحملات والسوشيال ميديا حتى تصلك الطلبات.", en: "The full Growth package plus your first marketing month: a store in your brand, pixels and catalogue connected, the opening campaign and its designs, then a full month of campaign and social media management until orders come in." },
-    forWho: { ar: "لأصحاب المشاريع الذين يبدؤون من الصفر ويريدون جهة واحدة تأخذهم من تأسيس المتجر حتى أول الطلبات.", en: "For business owners starting from zero who want one partner to take them from founding the store to the first orders." },
+    text: { ar: "باقة النمو للمتاجر (4,499) مع أول شهر من تسويق «البداية» (1,499) بسعر واحد: متجر بهويتك على زد أو سلة، الدفع بمدى وأبل باي وتابي وتمارا، الشحن مربوط، البكسل والكتالوج جاهزين، ثم شهر كامل نشغّل فيه حملاتك وحساباتك حتى تصلك الطلبات.", en: "The store Growth package (4,499) plus the first month of Marketing Starter (1,499) at one price: a branded store on Zid or Salla, mada, Apple Pay, Tabby and Tamara payments, shipping connected, pixels and catalogue ready, then a full month running your campaigns and accounts until orders arrive." },
+    forWho: { ar: "لأصحاب المشاريع في المملكة الذين يبدؤون من الصفر — أو ينتقلون من البيع على إنستغرام وواتساب — ويريدون جهة واحدة تأخذهم من تأسيس المتجر حتى أول الطلبات.", en: "For business owners in Saudi Arabia starting from zero — or moving from selling on Instagram and WhatsApp — who want one partner from founding the store to the first orders." },
     features: [
-      { ar: "كل مميزات باقة النمو للمتاجر", en: "Everything in the store Growth package" },
-      { ar: "أول شهر من باقة تسويق «البداية»", en: "The first month of the Marketing Starter plan" },
-      { ar: "بكسل + كتالوج + حملة الافتتاح", en: "Pixels + catalogue + opening campaign" },
-      { ar: "شهر دعم فني إضافي مجاناً", en: "An extra month of support, free" }
+      { ar: "متجر بتصميم مخصص وحتى 100 منتج", en: "A custom-designed store with up to 100 products" },
+      { ar: "مدى وأبل باي وتابي وتمارا والدفع عند الاستلام", en: "mada, Apple Pay, Tabby, Tamara and cash on delivery" },
+      { ar: "بكسل سناب وتيك توك وميتا + ربط الكتالوج", en: "Snap, TikTok and Meta pixels + catalogue sync" },
+      { ar: "حملة الافتتاح و10 تصاميم إطلاق", en: "The opening campaign and 10 launch designs" },
+      { ar: "أول شهر تسويق: 12 منشوراً وحملة بتحسين أسبوعي", en: "First marketing month: 12 posts and a weekly-optimised campaign" }
     ],
     deliverables: [
-      { title: { ar: "المتجر", en: "The store" }, text: { ar: "تصميم مخصص بهويتك، رفع حتى 100 منتج بالخيارات، وربط الدفع والشحن والدفع عند الاستلام.", en: "A custom design in your brand, up to 100 products with options, payments, shipping and cash on delivery connected." } },
-      { title: { ar: "التتبع", en: "Tracking" }, text: { ar: "بكسل سناب وتيك توك وميتا وتحليلات Google، وربط كتالوج المنتجات بإنستغرام وتيك توك وسناب.", en: "Snap, TikTok and Meta pixels plus Google Analytics, and the product catalogue synced to Instagram, TikTok and Snap." } },
-      { title: { ar: "الإطلاق", en: "Launch" }, text: { ar: "10 تصاميم افتتاح، كوبونات الخصم الأولى، وتجهيز الحسابات الإعلانية وإطلاق حملة الافتتاح.", en: "10 opening designs, the first discount coupons, ad accounts set up and the opening campaign launched." } },
-      { title: { ar: "أول شهر تسويق", en: "First marketing month" }, text: { ar: "إدارة حسابين و12 منشوراً وحملة إعلانية بتحسين أسبوعي وتقرير بالطلبات وتكلفة الطلب.", en: "Two accounts, 12 posts and an ad campaign with weekly optimisation, plus a report on orders and cost per order." } },
+      { title: { ar: "المتجر", en: "The store" }, text: { ar: "تصميم مخصص للرئيسية وصفحة المنتج بهويتك، رفع حتى 100 منتج بالخيارات والتصنيفات، وصفحات الاسترجاع والشحن والخصوصية.", en: "A custom home and product page in your brand, up to 100 products with options and categories, and returns, shipping and privacy pages." } },
+      { title: { ar: "الدفع والشحن", en: "Payments & shipping" }, text: { ar: "مدى وأبل باي والبطاقات، تابي وتمارا للتقسيط، الدفع عند الاستلام، وربط شركات الشحن مثل سمسا وأرامكس وسبل.", en: "mada, Apple Pay and cards, Tabby and Tamara instalments, cash on delivery, and shipping such as SMSA, Aramex and SPL." } },
+      { title: { ar: "التوثيق والضريبة", en: "Verification & VAT" }, text: { ar: "مساعدتك في توثيق المتجر عبر المركز السعودي للأعمال، وضبط الضريبة والفاتورة على المنصة إن كنت مسجلاً في ضريبة القيمة المضافة.", en: "Help verifying the store through the Saudi Business Center, and VAT and invoice settings on the platform if you are VAT-registered." } },
+      { title: { ar: "التتبع", en: "Tracking" }, text: { ar: "بكسل سناب وتيك توك وميتا بتتبع الإضافة للسلة والشراء، Google Analytics، وربط الكتالوج بإنستغرام وتيك توك وسناب.", en: "Snap, TikTok and Meta pixels tracking add-to-cart and purchase, Google Analytics, and the catalogue synced to Instagram, TikTok and Snap." } },
+      { title: { ar: "الإطلاق", en: "Launch" }, text: { ar: "10 تصاميم افتتاح، كوبونات الخصم الأولى، تجهيز الحسابات الإعلانية وإطلاق حملة الافتتاح.", en: "10 opening designs, the first discount coupons, ad accounts set up and the opening campaign launched." } },
+      { title: { ar: "أول شهر تسويق", en: "First marketing month" }, text: { ar: "إدارة حسابين، 12 منشوراً بالتصميم والنص، حملة على منصة واحدة بـ 4 تصاميم إعلانية وتحسين أسبوعي، وتقرير بالطلبات وتكلفة الطلب الواحد.", en: "Two accounts, 12 designed posts, a one-platform campaign with 4 ad designs and weekly optimisation, and a report on orders and cost per order." } },
       { title: { ar: "واتساب", en: "WhatsApp" }, text: { ar: "زر واتساب في المتجر وإشعار بكل طلب جديد على رقمك.", en: "A WhatsApp button in the store and an alert for every new order." } },
-      { title: { ar: "التدريب", en: "Training" }, text: { ar: "جلسة أونلاين لفريقك على الطلبات والمنتجات والكوبونات وقراءة التقارير.", en: "An online session for your team on orders, products, coupons and reading reports." } }
+      { title: { ar: "التدريب والدعم", en: "Training & support" }, text: { ar: "جلسة أونلاين لفريقك على الطلبات والمنتجات والكوبونات وقراءة التقارير، ودعم فني شهرين.", en: "An online session for your team on orders, products, coupons and reports, and two months of support." } }
     ],
-    delivery: { ar: "المتجر خلال 10 أيام عمل، ثم يبدأ شهر التسويق مباشرة", en: "The store in 10 business days, then the marketing month starts right away" },
+    delivery: { ar: "المتجر خلال 10 أيام عمل من استلام المنتجات والشعار، ثم يبدأ شهر التسويق مباشرة", en: "The store in 10 business days from receiving your products and logo, then the marketing month starts right away" },
     terms: [
-      { ar: "اشتراك منصة زد أو سلة وميزانية الإعلانات على حساب العميل وباسمه", en: "The Zid or Salla subscription and the ad budget are in the client's name and paid by the client" },
+      { ar: "اشتراك منصة زد أو سلة وميزانية الإعلانات على حساب العميل وباسمه (نوصي بـ 1,500 ريال للإعلانات في الشهر الأول)", en: "The Zid or Salla subscription and the ad budget are in the client's name and paid by the client (we recommend SAR 1,500 of ads in month one)" },
       { ar: "الدفع: 50% عند البدء و50% عند تسليم المتجر", en: "Payment: 50% to start, 50% on store delivery" },
-      { ar: "بعد الشهر الأول تستمر باقة التسويق بسعرها المعتاد أو تتوقف بلا التزام", en: "After the first month the marketing plan continues at its normal price, or stops with no commitment" },
+      { ar: "جولتا تعديلات على تصميم المتجر", en: "Two revision rounds on the store design" },
+      { ar: "بعد الشهر الأول تستمر باقة التسويق بسعرها المعتاد (1,499 شهرياً) أو تتوقف بلا التزام", en: "After the first month marketing continues at its normal price (1,499/month) or stops with no commitment" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
     ],
     excludes: [
-      { ar: "تصوير المنتجات", en: "Product photography" },
-      { ar: "رسوم بوابات الدفع وشركات الشحن", en: "Payment gateway and shipping fees" }
+      { ar: "تصوير المنتجات (متاح في باقة التسويق «الإدارة الكاملة»)", en: "Product photography (in the Full management marketing plan)" },
+      { ar: "رسوم بوابات الدفع وشركات الشحن وتابي وتمارا", en: "Payment gateway, shipping, Tabby and Tamara fees" },
+      { ar: "اشتراك المنصة وتطبيقاتها المدفوعة", en: "The platform subscription and its paid apps" }
     ],
     price: 3999,
     oldPrice: 5998
@@ -515,27 +520,32 @@ export const offers: Offer[] = [
     icon: "MessagesSquare",
     badge: { ar: "عرض الأسبوع — 3 أشهر بسعر شهرين", en: "This week — 3 months for 2" },
     title: { ar: "واتساب الاحترافي: بوت يرد على عملائك 24 ساعة", en: "WhatsApp Professional: a bot that answers your clients 24/7" },
-    text: { ar: "جرّب الباقة الاحترافية 3 أشهر وادفع شهرين: شات بوت يرد ويؤهل العملاء ويحوّل الجادّين لفريقك، مع صندوق محادثات مشترك على رقمك الرسمي.", en: "Try Professional for 3 months and pay for 2: a chatbot that answers, qualifies clients and hands the serious ones to your team, with a shared inbox on your official number." },
-    forWho: { ar: "للعيادات والصالونات والمتاجر والشركات التي تصلها رسائل كثيرة على واتساب ولا تستطيع الرد عليها كلها بسرعة.", en: "For clinics, salons, stores and companies that get many WhatsApp messages and can't answer them all quickly." },
+    text: { ar: "الباقة الاحترافية (499 شهرياً) لمدة 3 أشهر بسعر شهرين: رقمك الرسمي على واتساب للأعمال، شات بوت يرد بالعربي والإنجليزي ويؤهل العملاء ويحوّل الجادّين لفريقك، وصندوق محادثات مشترك — والإعداد مجاني.", en: "Professional (499/month) for 3 months at the price of 2: your official WhatsApp Business number, a chatbot that answers in Arabic and English, qualifies clients and hands the serious ones to your team, and a shared inbox — with free set-up." },
+    forWho: { ar: "للعيادات والصالونات والمطاعم والمتاجر والشركات العقارية والخدمية التي تصلها رسائل كثيرة على واتساب ولا تستطيع الرد عليها كلها بسرعة.", en: "For clinics, salons, restaurants, stores, real-estate and service companies that get many WhatsApp messages and can't answer them all quickly." },
     features: [
-      { ar: "الباقة الاحترافية لمدة 3 أشهر", en: "Professional for 3 months" },
-      { ar: "الإعداد والربط بالرقم الرسمي مجاناً", en: "Free set-up on your official number" },
-      { ar: "تصميم أول تدفق شات بوت لنشاطك", en: "Your first chatbot flow designed for you" }
+      { ar: "الباقة الاحترافية 3 أشهر (توفير 499 ريال)", en: "Professional for 3 months (save SAR 499)" },
+      { ar: "رقمك الرسمي باسم نشاطك والإعداد مجاناً", en: "Your official number under your business name, free set-up" },
+      { ar: "شات بوت بالعربي والإنجليزي مصمم لنشاطك", en: "An Arabic and English chatbot designed for your business" },
+      { ar: "حتى 3 موظفين في صندوق محادثات واحد", en: "Up to 3 staff in one shared inbox" },
+      { ar: "5 قوالب رسائل معتمدة من Meta", en: "5 Meta-approved message templates" }
     ],
     deliverables: [
-      { title: { ar: "الرقم الرسمي", en: "Official number" }, text: { ar: "ربط رقمك على WhatsApp Business Platform والتحقق من اسم نشاطك.", en: "Your number on the WhatsApp Business Platform with your business name verified." } },
-      { title: { ar: "شات بوت", en: "Chatbot" }, text: { ar: "تدفق رد آلي مصمم لنشاطك: ترحيب، قائمة خدمات، أسئلة متكررة، وتحويل للموظف المناسب.", en: "An auto-reply flow designed for your business: welcome, service menu, FAQs and hand-over to the right person." } },
-      { title: { ar: "صندوق محادثات", en: "Shared inbox" }, text: { ar: "صندوق واحد لفريقك حتى 3 موظفين، مع تعيين المحادثات والملاحظات الداخلية.", en: "One inbox for up to 3 team members, with assignment and internal notes." } },
-      { title: { ar: "قوالب الرسائل", en: "Message templates" }, text: { ar: "إعداد واعتماد 3 قوالب رسائل من Meta (ترحيب، تذكير، متابعة).", en: "Three Meta-approved templates set up (welcome, reminder, follow-up)." } }
+      { title: { ar: "الرقم الرسمي", en: "Official number" }, text: { ar: "ربط رقمك على WhatsApp Business Platform، وتوثيق النشاط لدى Meta بالسجل التجاري، وظهور اسم نشاطك للعملاء.", en: "Your number on the WhatsApp Business Platform, business verification with Meta using your commercial registration, and your business name shown to clients." } },
+      { title: { ar: "شات بوت", en: "Chatbot" }, text: { ar: "تدفق رد آلي بالعربي والإنجليزي: ترحيب، قائمة خدمات أو منتجات، أسعار، مواقع الفروع، الأسئلة المتكررة، وتحويل للموظف المناسب.", en: "An Arabic and English auto-reply flow: welcome, service or product menu, prices, branch locations, FAQs and hand-over to the right person." } },
+      { title: { ar: "تأهيل العملاء", en: "Lead qualification" }, text: { ar: "البوت يسأل عن الاسم والمدينة والخدمة المطلوبة قبل التحويل، فيصل لفريقك عميل جاهز.", en: "The bot asks for name, city and the service needed before hand-over, so your team gets a ready client." } },
+      { title: { ar: "صندوق محادثات", en: "Shared inbox" }, text: { ar: "صندوق واحد لفريقك حتى 3 موظفين، مع تعيين المحادثات والملاحظات الداخلية وأوقات العمل بتوقيت الرياض.", en: "One inbox for up to 3 staff, with assignment, internal notes and working hours on Riyadh time." } },
+      { title: { ar: "قوالب الرسائل", en: "Message templates" }, text: { ar: "إعداد واعتماد 5 قوالب من Meta: ترحيب، تأكيد حجز أو طلب، تذكير بموعد، متابعة، وعرض.", en: "5 Meta-approved templates: welcome, booking or order confirmation, appointment reminder, follow-up and offer." } },
+      { title: { ar: "التقارير", en: "Reports" }, text: { ar: "تقرير شهري بعدد المحادثات وسرعة الرد وعدد العملاء المحوّلين لفريقك.", en: "A monthly report on conversations, response time and clients handed to your team." } }
     ],
     delivery: { ar: "5 أيام عمل بعد اعتماد Meta لحسابك", en: "5 business days after Meta approves your account" },
     terms: [
+      { ar: "يتطلب سجلاً تجارياً أو وثيقة عمل حر سارية لتوثيق الحساب لدى Meta", en: "A valid commercial registration or freelance document is needed for Meta verification" },
       { ar: "الدفع مقدماً عن الأشهر الثلاثة", en: "The three months are paid upfront" },
-      { ar: "بعد الأشهر الثلاثة يتجدد الاشتراك بسعر الباقة العادي أو يُلغى بلا التزام", en: "After three months it renews at the normal price or can be cancelled with no commitment" },
+      { ar: "بعد الأشهر الثلاثة يتجدد الاشتراك بسعر الباقة العادي (499 شهرياً) أو يُلغى بلا التزام", en: "After three months it renews at the normal price (499/month) or can be cancelled with no commitment" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
     ],
     excludes: [
-      { ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees, billed by usage" },
+      { ar: "رسوم رسائل Meta حسب الاستخدام (الرد خلال 24 ساعة من رسالة العميل مجاني ضمن حدود Meta)", en: "Meta message fees by usage (replying within 24 hours of a client's message is free within Meta's limits)" },
       { ar: "الحملات التسويقية الجماعية (متاحة في الباقة المتقدمة)", en: "Bulk marketing campaigns (in the Advanced package)" }
     ],
     price: 998,
@@ -546,32 +556,37 @@ export const offers: Offer[] = [
     cycle: "weekly",
     service: "web-development",
     icon: "Rocket",
-    badge: { ar: "صفقة الأسبوع", en: "Bundle of the week" },
+    badge: { ar: "صفقة الأسبوع — وفّر 30%", en: "Bundle of the week — save 30%" },
     title: { ar: "صفقة الانطلاق الرقمي: موقع + متجر + واتساب", en: "Digital launch bundle: website + store + WhatsApp" },
-    text: { ar: "كل ما تحتاجه شركتك لتبدأ البيع أونلاين في صفقة واحدة ومدير مشروع واحد: موقع شركة احترافي، متجر جاهز، وواتساب يرد على عملائك 3 أشهر.", en: "Everything your business needs to sell online, in one deal with one project manager: a professional company website, a ready store and WhatsApp answering your clients for 3 months." },
-    forWho: { ar: "للشركات الجديدة أو التي تبدأ حضورها الرقمي من الصفر وتريد كل شيء مرتبطاً ببعضه من البداية.", en: "For new companies, or companies starting their online presence from scratch, that want everything connected from day one." },
+    text: { ar: "كل ما تحتاجه شركتك لتبدأ أونلاين في صفقة واحدة ومدير مشروع واحد: موقع احترافي بالعربي والإنجليزي (5,999)، متجر جاهز للبيع والإعلان (1,999)، وواتساب يرد على عملائك 3 أشهر (597) — بدل 8,595 ريال.", en: "Everything your business needs online, in one deal with one project manager: a professional Arabic and English website (5,999), a store ready to sell and advertise (1,999) and WhatsApp answering clients for 3 months (597) — instead of SAR 8,595." },
+    forWho: { ar: "للشركات والمؤسسات الجديدة في المملكة، أو التي تبدأ حضورها الرقمي من الصفر، وتريد الموقع والمتجر وواتساب مرتبطين ببعضهم من اليوم الأول.", en: "For new companies in Saudi Arabia, or those starting online from scratch, that want website, store and WhatsApp connected from day one." },
     features: [
-      { ar: "موقع الشركة — الباقة الاحترافية", en: "Company website — Professional" },
-      { ar: "متجر إلكتروني — باقة الانطلاق", en: "Online store — Launch" },
-      { ar: "واتساب الأساسية — 3 أشهر", en: "WhatsApp Basic — 3 months" }
+      { ar: "موقع الشركة — الباقة الاحترافية (حتى 15 صفحة)", en: "Company website — Professional (up to 15 pages)" },
+      { ar: "استضافة ونطاق .com للسنة الأولى", en: "Hosting and a .com domain for the first year" },
+      { ar: "متجر إلكتروني — باقة الانطلاق مع البكسل", en: "Online store — Launch, with pixels" },
+      { ar: "واتساب الأساسية — 3 أشهر", en: "WhatsApp Basic — 3 months" },
+      { ar: "مدير مشروع واحد لكل الأعمال", en: "One project manager for everything" }
     ],
     deliverables: [
-      { title: { ar: "موقع الشركة", en: "Company website" }, text: { ar: "حتى 15 صفحة بالعربية والإنجليزية، لوحة تحكم لتعديل المحتوى، مدونة، وتهيئة لمحركات البحث.", en: "Up to 15 pages in Arabic and English, a content panel, a blog and SEO set-up." } },
-      { title: { ar: "المتجر", en: "Store" }, text: { ar: "متجر على زد أو سلة مع رفع حتى 30 منتجاً وربط الدفع والشحن.", en: "A Zid or Salla store with up to 30 products, payments and shipping connected." } },
-      { title: { ar: "واتساب", en: "WhatsApp" }, text: { ar: "رقمك الرسمي مع رسالة ترحيب ورد آلي وردود سريعة لمدة 3 أشهر.", en: "Your official number with a welcome message, auto-reply and quick replies for 3 months." } },
-      { title: { ar: "مدير مشروع", en: "Project manager" }, text: { ar: "شخص واحد يتابع معك كل الأعمال وجدولها حتى التسليم.", en: "One person who runs everything with you until delivery." } }
+      { title: { ar: "موقع الشركة", en: "Company website" }, text: { ar: "حتى 15 صفحة بالعربية والإنجليزية بتصميم مخصص، لوحة تحكم لتعديل المحتوى، مدونة و3 صفحات هبوط للحملات، وتهيئة متقدمة لمحركات البحث.", en: "Up to 15 custom-designed pages in Arabic and English, a content panel, a blog, 3 campaign landing pages and advanced SEO." } },
+      { title: { ar: "الاستضافة والنطاق", en: "Hosting & domain" }, text: { ar: "استضافة سحابية ونطاق .com باسمك للسنة الأولى، مع شهادة SSL.", en: "Cloud hosting and a .com domain in your name for the first year, with SSL." } },
+      { title: { ar: "المتجر", en: "Store" }, text: { ar: "متجر على زد أو سلة مع رفع حتى 30 منتجاً، مدى وأبل باي والشحن، صفحات السياسات، وبكسل سناب وتيك توك وميتا.", en: "A Zid or Salla store with up to 30 products, mada, Apple Pay and shipping, policy pages, and Snap, TikTok and Meta pixels." } },
+      { title: { ar: "واتساب", en: "WhatsApp" }, text: { ar: "رقمك الرسمي باسم نشاطك مع رسالة ترحيب ورد خارج أوقات العمل و10 ردود سريعة لمدة 3 أشهر.", en: "Your official number under your business name, with welcome and out-of-hours messages and 10 quick replies for 3 months." } },
+      { title: { ar: "الربط بينها", en: "Connected" }, text: { ar: "زر المتجر وواتساب في الموقع، ونماذج الموقع تصل لبريدك وواتساب، وتحليلات Google على الموقع والمتجر.", en: "Store and WhatsApp buttons on the site, site forms delivered to your e-mail and WhatsApp, and Google Analytics on site and store." } },
+      { title: { ar: "مدير مشروع", en: "Project manager" }, text: { ar: "شخص واحد يتابع معك كل الأعمال وجدولها حتى التسليم، مع تحديث أسبوعي.", en: "One person running everything with you until delivery, with a weekly update." } }
     ],
     delivery: { ar: "25 يوم عمل للموقع والمتجر معاً", en: "25 business days for the website and store together" },
     terms: [
-      { ar: "الدفع: 40% عند البدء، 40% عند تسليم التصميم، 20% عند الإطلاق", en: "Payment: 40% to start, 40% on design sign-off, 20% at launch" },
-      { ar: "النطاق والاستضافة سنة كاملة على حساب العميل وباسمه", en: "Domain and one year of hosting in the client's name, paid by the client" },
+      { ar: "الدفع: 40% عند البدء، 40% عند اعتماد التصميم، 20% عند الإطلاق", en: "Payment: 40% to start, 40% on design sign-off, 20% at launch" },
+      { ar: "جولتا تعديلات على تصميم الموقع ودعم فني 3 أشهر", en: "Two design revision rounds and 3 months of support" },
+      { ar: "تجديد الاستضافة والنطاق بعد السنة الأولى على حساب العميل", en: "Hosting and domain renewal after year one is paid by the client" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
     ],
     excludes: [
       { ar: "اشتراك منصة المتجر ورسوم رسائل Meta", en: "The store platform subscription and Meta message fees" },
-      { ar: "التصوير وكتابة المحتوى", en: "Photography and copywriting" }
+      { ar: "كتابة المحتوى والتصوير وميزانية الإعلانات", en: "Copywriting, photography and ad budget" }
     ],
-    price: 6499,
+    price: 5999,
     oldPrice: 8595
   },
   {
