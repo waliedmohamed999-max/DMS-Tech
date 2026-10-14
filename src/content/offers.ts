@@ -781,7 +781,7 @@ export const offers: Offer[] = [
     service: "digital-marketing",
     icon: "Target",
     badge: { ar: "صفقة اليوم — إعلانات", en: "Deal of the day — ads" },
-    title: { ar: "البكسل + الحسابات الإعلانية + أول حملة بـ 599 ريال", en: "Pixels + ad accounts + your first campaign for SAR 599" },
+    title: { ar: "البكسل + الحسابات الإعلانية + أول حملة بـ 1,499 ريال", en: "Pixels + ad accounts + your first campaign for SAR 1,499" },
     text: { ar: "نجهز متجرك أو موقعك للإعلان صح: نركّب البكسل ونتأكد أن كل شراء يُقاس، ونجهز الحسابات الإعلانية ونطلق أول حملة.", en: "We get your store or site ready to advertise properly: pixels installed so every purchase is measured, ad accounts set up and your first campaign launched." },
     forWho: { ar: "لمن يعلن بدون قياس أو يريد البدء بالإعلانات بشكل صحيح من أول ريال.", en: "For anyone advertising without measurement, or starting ads the right way from the first riyal." },
     features: [
@@ -800,8 +800,8 @@ export const offers: Offer[] = [
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
     excludes: [{ ar: "ميزانية الإعلانات وإدارة الحملة بعد إطلاقها", en: "Ad budget and managing the campaign after launch" }],
-    price: 599,
-    oldPrice: 999
+    price: 1499,
+    oldPrice: 2499
   },
   {
     slug: "day-app-ui",
