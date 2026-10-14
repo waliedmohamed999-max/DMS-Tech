@@ -725,18 +725,18 @@ export const offers: Offer[] = [
     service: "digital-marketing",
     icon: "Megaphone",
     badge: { ar: "صفقة اليوم — تسويق", en: "Deal of the day — marketing" },
-    title: { ar: "أول شهر تسويق لمتجرك بـ 999 ريال", en: "Your store's first marketing month for SAR 999" },
-    text: { ar: "باقة تسويق «البداية» لشهر كامل بسعر اليوم: ندير حسابين وننشر 12 منشوراً ونشغّل حملتك الإعلانية ونحسّنها كل أسبوع.", en: "The Marketing Starter plan for a full month at today's price: two accounts, 12 posts, and your ad campaign run and optimised every week." },
-    forWho: { ar: "للمتاجر والمشاريع التي تريد تجربة إدارة التسويق معنا قبل الالتزام.", en: "For stores and businesses that want to try our marketing management before committing." },
+    title: { ar: "أول شهر تسويق لمتجرك بـ 1,999 ريال", en: "Your store's first marketing month for SAR 1,999" },
+    text: { ar: "باقة «نمو المبيعات» لشهر كامل بسعر اليوم: ندير 3 حسابات، 20 منشوراً و4 فيديوهات قصيرة، وحملاتك على سناب وتيك توك وميتا مع إعادة استهداف من ترك السلة.", en: "The Sales Growth plan for a full month at today's price: 3 accounts, 20 posts and 4 short videos, and your Snap, TikTok and Meta campaigns with abandoned-cart retargeting." },
+    forWho: { ar: "للمتاجر والمشاريع التي تريد تجربة إدارة التسويق الكاملة معنا قبل الالتزام.", en: "For stores and businesses that want to try our full marketing management before committing." },
     features: [
-      { ar: "12 منشوراً بالتصميم والنص", en: "12 designed and written posts" },
-      { ar: "حملة على منصة واحدة", en: "A campaign on one platform" },
+      { ar: "20 منشوراً و4 فيديوهات قصيرة", en: "20 posts and 4 short videos" },
+      { ar: "حملات على سناب وتيك توك وميتا", en: "Campaigns on Snap, TikTok and Meta" },
       { ar: "تقرير بالطلبات وتكلفتها", en: "A report on orders and their cost" }
     ],
     deliverables: [
-      { title: { ar: "المحتوى", en: "Content" }, text: { ar: "خطة محتوى للشهر و12 منشوراً على حسابين.", en: "A monthly content plan and 12 posts on two accounts." } },
-      { title: { ar: "الإعلانات", en: "Ads" }, text: { ar: "حملة على سناب أو تيك توك أو ميتا بـ 4 تصاميم إعلانية وتحسين أسبوعي.", en: "A Snap, TikTok or Meta campaign with 4 ad designs and weekly optimisation." } },
-      { title: { ar: "القياس", en: "Measurement" }, text: { ar: "فحص البكسل وتقرير نهاية الشهر بالطلبات وتكلفة الطلب الواحد.", en: "A pixel check and an end-of-month report on orders and cost per order." } }
+      { title: { ar: "المحتوى", en: "Content" }, text: { ar: "خطة محتوى للشهر، 20 منشوراً و4 فيديوهات قصيرة (من تصويرك ونحن نحررها) على 3 حسابات.", en: "A monthly content plan, 20 posts and 4 short videos (you film, we edit) on 3 accounts." } },
+      { title: { ar: "الإعلانات", en: "Ads" }, text: { ar: "حملات على سناب وتيك توك وميتا بـ 8 تصاميم إعلانية، وإعادة استهداف زوار المتجر ومن ترك السلة، وتحسين أسبوعي.", en: "Snap, TikTok and Meta campaigns with 8 ad designs, retargeting of visitors and abandoned carts, and weekly optimisation." } },
+      { title: { ar: "القياس", en: "Measurement" }, text: { ar: "فحص البكسل وتقرير كل أسبوعين بالطلبات وتكلفة الطلب الواحد.", en: "A pixel check and a report every two weeks on orders and cost per order." } }
     ],
     delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
     terms: [
@@ -744,8 +744,8 @@ export const offers: Offer[] = [
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
     excludes: [{ ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" }],
-    price: 999,
-    oldPrice: 1499
+    price: 1999,
+    oldPrice: 2999
   },
   {
     slug: "day-social",
