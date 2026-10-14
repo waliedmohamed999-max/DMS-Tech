@@ -89,6 +89,16 @@ export default function Header({ services }: { services: NavService[] }) {
     </Link>
   );
 
+  // the offers link moves (flowing gradient, shine, bouncing badge) so every visitor notices it
+  const offerLink = (label: string, className = "") => (
+    <Link href={offersNav.href} className={`nav-offer relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill px-3.5 py-2 text-[15px] font-semibold text-white ${className}`}>
+      <span aria-hidden className="nav-offer-shine" />
+      <Icon name="Zap" size={15} className="nav-offer-icon relative" />
+      <span className="relative">{label}</span>
+      <span className="nav-offer-badge">{offersNav.badge[lang]}</span>
+    </Link>
+  );
+
   return (
     <header className={`sticky top-0 z-50 border-b transition-colors md:backdrop-blur duration-300 ${dark ? "border-transparent bg-obsidian text-white" : "border-mist bg-white/95 text-ink shadow-card"}`}>
       <div className="container-site flex h-[72px] items-center gap-6">
@@ -173,13 +183,14 @@ export default function Header({ services }: { services: NavService[] }) {
             </Dropdown>
           </div>
 
-          {plain(offersNav.href, offersNav.title[lang])}
+          <span className="mx-1">{offerLink(offersNav.title[lang])}</span>
           {plain("/careers", t("careers"))}
           {plain("/contact", t("contact"))}
           {plain("/blog", t("blog"))}
         </nav>
 
         <div className="ms-auto flex items-center gap-2 xl:ms-2">
+          {offerLink(offersNav.short[lang], "xl:hidden !px-3 !text-sm")}
           <LocaleSwitch dark={dark} className="hidden sm:inline-flex" />
           <Link
             href="/quote"
@@ -213,7 +224,7 @@ export default function Header({ services }: { services: NavService[] }) {
           ]}
         />
         <MobileGroup label={t("clients")} items={clientLinks} />
-        <MobileItem href={offersNav.href} label={offersNav.title[lang]} />
+        <div className="py-1.5">{offerLink(offersNav.title[lang], "w-full justify-center !py-3 text-base")}</div>
         <MobileItem href="/careers" label={t("careers")} />
         <MobileItem href="/contact" label={t("contact")} />
         <MobileItem href="/blog" label={t("blog")} />
