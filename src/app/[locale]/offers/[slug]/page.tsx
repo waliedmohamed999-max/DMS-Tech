@@ -167,8 +167,11 @@ export default async function OfferItemPage({ params }: Props) {
                 <>
                   {item.kind === "package" && item.from && <span className="text-xs text-graphite">{c.from}</span>}
                   {item.oldPrice && (
-                    <span className="text-sm text-graphite line-through" dir="ltr">
-                      {item.oldPrice}
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="text-xl font-semibold text-graphite line-through decoration-2" dir="ltr">
+                        {item.oldPrice}
+                      </span>
+                      {item.percent && <span className="rounded-lg bg-iris px-2.5 py-0.5 text-base font-extrabold text-white">{c.off} {item.percent}%</span>}
                     </span>
                   )}
                   <span className="flex flex-wrap items-baseline gap-1.5">

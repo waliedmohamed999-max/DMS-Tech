@@ -42,14 +42,14 @@ export function Countdown({ endsAt, labels, dark = false, big = false }: { endsA
   );
 }
 
-export type DealSlide = { slug: string; icon: IconName; badge: string; title: string; text: string; features: string[]; price: string | null; oldPrice: string | null; saving: string | null; endsAtInstant: string };
+export type DealSlide = { slug: string; icon: IconName; badge: string; title: string; text: string; features: string[]; price: string | null; oldPrice: string | null; saving: string | null; percent: number; endsAtInstant: string };
 const SLIDE_BG = ["from-iris via-[#5a3fd8] to-iris-soft", "from-[#0f766e] via-[#0d9488] to-[#14b8a6]", "from-[#c2410c] via-[#ea580c] to-[#f59e0b]", "from-[#1e3a8a] via-[#2563eb] to-[#38bdf8]", "from-[#9d174d] via-[#db2777] to-[#f472b6]"];
 
 /**
  * Today's 24-hour deals as a sliding banner: one service per slide, auto-advancing every 6 s (paused on hover / focus
  * and for reduced-motion users), with arrows, dots and swipe.
  */
-export function DealsCarousel({ deals, labels, locale }: { deals: DealSlide[]; labels: { dayTitle: string; dayNote: string; seeDeal: string; save: string; endsIn: string; days: string; hours: string; minutes: string; seconds: string; prev: string; next: string }; locale: string }) {
+export function DealsCarousel({ deals, labels, locale }: { deals: DealSlide[]; labels: { dayTitle: string; dayNote: string; seeDeal: string; save: string; off: string; endsIn: string; days: string; hours: string; minutes: string; seconds: string; prev: string; next: string }; locale: string }) {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const [touchX, setTouchX] = useState<number | null>(null);
@@ -110,14 +110,19 @@ export function DealsCarousel({ deals, labels, locale }: { deals: DealSlide[]; l
             </div>
             <div className="relative grid content-center justify-items-start gap-4 rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
               <Countdown endsAt={d.endsAtInstant} labels={labels} dark big />
-              <div className="grid">
-                <span className="text-sm text-white/70 line-through" dir="ltr">
-                  {d.oldPrice}
+              <div className="grid w-full gap-2">
+                <span className="flex flex-wrap items-center gap-3">
+                  <span className="text-2xl font-semibold text-white/75 line-through decoration-2" dir="ltr">
+                    {d.oldPrice}
+                  </span>
+                  <span className="rounded-lg bg-white px-3 py-1 text-lg font-extrabold text-ink shadow">
+                    {labels.off} {d.percent}%
+                  </span>
                 </span>
-                <span className="text-4xl font-bold" dir="ltr">
+                <span className="text-5xl font-bold" dir="ltr">
                   {d.price}
                 </span>
-                <span className="mt-1 w-fit rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold">
+                <span className="w-fit rounded-full bg-white/20 px-2.5 py-0.5 text-sm font-semibold">
                   {labels.save} {d.saving}
                 </span>
               </div>

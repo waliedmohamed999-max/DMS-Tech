@@ -54,7 +54,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
       {today.length > 0 && (
         <section className="pt-12 md:pt-16">
           <div className="container-site">
-            <DealsCarousel deals={today} labels={{ ...cd, seconds: c.seconds, dayTitle: c.dayTitle, dayNote: c.dayNote, seeDeal: c.seeDeal, save: c.save, prev: c.prev, next: c.next }} locale={locale} />
+            <DealsCarousel deals={today} labels={{ ...cd, seconds: c.seconds, dayTitle: c.dayTitle, dayNote: c.dayNote, seeDeal: c.seeDeal, save: c.save, off: c.off, prev: c.prev, next: c.next }} locale={locale} />
           </div>
         </section>
       )}
@@ -73,7 +73,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
                       <Icon name={o.icon} size={20} />
                     </span>
                     <span className="rounded-full bg-mint px-3 py-1 text-xs font-bold text-fern">
-                      {c.save} {o.saving}
+                      {c.off} {o.percent}% · {c.save} {o.saving}
                     </span>
                   </div>
                   <span className="text-xs font-semibold text-iris">{o.badge}</span>
@@ -92,7 +92,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
                   </p>
                   <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-mist pt-4">
                     <span className="grid">
-                      <span className="text-sm text-graphite line-through" dir="ltr">
+                      <span className="text-base font-semibold text-graphite line-through decoration-2" dir="ltr">
                         {o.oldPrice}
                       </span>
                       <span className="text-2xl font-bold" dir="ltr">

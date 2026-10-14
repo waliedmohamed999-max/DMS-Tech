@@ -601,7 +601,7 @@ export const offers: Offer[] = [
     ],
     excludes: [{ ar: "النطاق والاستضافة وكتابة المحتوى", en: "Domain, hosting and copywriting" }],
     price: 1799,
-    oldPrice: 2499
+    oldPrice: 2879
   },
   {
     slug: "day-store",
@@ -634,7 +634,7 @@ export const offers: Offer[] = [
       { ar: "إدارة الحملات وميزانية الإعلانات", en: "Campaign management and ad budget" }
     ],
     price: 1399,
-    oldPrice: 1999
+    oldPrice: 2239
   },
   {
     slug: "day-whatsapp",
@@ -661,7 +661,7 @@ export const offers: Offer[] = [
     ],
     excludes: [{ ar: "رسوم رسائل Meta حسب الاستخدام", en: "Meta message fees, billed by usage" }],
     price: 349,
-    oldPrice: 597
+    oldPrice: 559
   },
   {
     slug: "day-automation",
@@ -689,7 +689,7 @@ export const offers: Offer[] = [
     ],
     excludes: [{ ar: "اشتراكات الأدوات الخارجية ورسوم الذكاء الاصطناعي حسب الاستخدام", en: "Third-party tool subscriptions and AI usage fees" }],
     price: 1299,
-    oldPrice: 2199
+    oldPrice: 2079
   },
   {
     slug: "day-brand",
@@ -717,7 +717,7 @@ export const offers: Offer[] = [
     ],
     excludes: [{ ar: "تسجيل العلامة التجارية والمطبوعات", en: "Trademark registration and print" }],
     price: 999,
-    oldPrice: 1799
+    oldPrice: 1599
   },
   {
     slug: "day-marketing",
@@ -745,7 +745,7 @@ export const offers: Offer[] = [
     ],
     excludes: [{ ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" }],
     price: 1999,
-    oldPrice: 2999
+    oldPrice: 3199
   },
   {
     slug: "day-social",
@@ -773,7 +773,7 @@ export const offers: Offer[] = [
     ],
     excludes: [{ ar: "النشر وإدارة الحسابات والفيديو", en: "Publishing, account management and video" }],
     price: 1999,
-    oldPrice: 2999
+    oldPrice: 3199
   },
   {
     slug: "day-ads-setup",
@@ -801,7 +801,7 @@ export const offers: Offer[] = [
     ],
     excludes: [{ ar: "ميزانية الإعلانات وإدارة الحملة بعد إطلاقها", en: "Ad budget and managing the campaign after launch" }],
     price: 1499,
-    oldPrice: 2499
+    oldPrice: 2399
   },
   {
     slug: "day-app-ui",
@@ -932,6 +932,7 @@ export const offersCopy = {
   excludes: { ar: "لا يشمل العرض", en: "Not included" } as L,
   seconds: { ar: "ثانية", en: "s" } as L,
   save: { ar: "وفّر", en: "Save" } as L,
+  off: { ar: "خصم", en: "off" } as L,
   details: { ar: "التفاصيل والطلب", en: "Details & order" } as L,
   packagesTitle: { ar: "الباقات", en: "Packages" } as L,
   packagesSub: { ar: "أسعار ثابتة وواضحة، وكل باقة تذكر بالضبط ما تشمله وما لا تشمله — والباقات المتقدمة تُسعَّر حسب نطاق مشروعك.", en: "Clear, fixed prices — every package says exactly what it includes and what it doesn't; Advanced packages are priced to your scope." } as L,

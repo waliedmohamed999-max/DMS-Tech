@@ -134,7 +134,7 @@ export async function getPackageGroups(locale: Locale) {
 }
 /** An offer with its localized details and the end of its current cycle (end of today / of this week). */
 function offerView(o: Offer, locale: Locale) {
-  return { ...localize(o, locale), endsAtInstant: cycleEnd(o.cycle).toISOString(), price: offerMoney(o.price, locale), oldPrice: offerMoney(o.oldPrice, locale), saving: offerMoney(o.oldPrice - o.price, locale) };
+  return { ...localize(o, locale), endsAtInstant: cycleEnd(o.cycle).toISOString(), price: offerMoney(o.price, locale), oldPrice: offerMoney(o.oldPrice, locale), saving: offerMoney(o.oldPrice - o.price, locale), percent: Math.round((1 - o.price / o.oldPrice) * 100) };
 }
 export async function getActiveOffers(locale: Locale) {
   return { weekly: activeOffers().filter((o) => o.cycle === "weekly").map((o) => offerView(o, locale)), today: todaysDeals().map((o) => offerView(o, locale)), weekEndsAt: cycleEnd("weekly").toISOString() };
@@ -155,6 +155,7 @@ export async function getOfferItem(slug: string, locale: Locale) {
         price: offerMoney(t.price, locale),
         oldPrice: null,
         saving: null,
+        percent: null,
         endsAtInstant: null,
         details: null
       };
@@ -162,7 +163,7 @@ export async function getOfferItem(slug: string, locale: Locale) {
   const o = findOffer(slug);
   if (!o) return null;
   const v = offerView(o, locale);
-  return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: v.badge, name: v.title, tagline: v.text, features: v.features, period: null, delivery: v.delivery, icon: o.icon, price: v.price, oldPrice: v.oldPrice, saving: v.saving, endsAtInstant: v.endsAtInstant, cycle: o.cycle, details: { forWho: v.forWho, deliverables: v.deliverables, terms: v.terms, excludes: v.excludes } };
+  return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: v.badge, name: v.title, tagline: v.text, features: v.features, period: null, delivery: v.delivery, icon: o.icon, price: v.price, oldPrice: v.oldPrice, saving: v.saving, percent: v.percent, endsAtInstant: v.endsAtInstant, cycle: o.cycle, details: { forWho: v.forWho, deliverables: v.deliverables, terms: v.terms, excludes: v.excludes } };
 }
 /** "ended" for a past weekly offer, "notToday" for a daily deal on another day, null when the slug never existed. */
 export const offerUnavailable = (slug: string) => {
