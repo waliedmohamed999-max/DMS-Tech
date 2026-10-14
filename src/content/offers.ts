@@ -34,7 +34,8 @@ export type Tier = {
 /** One step of a client journey shown under a group's tiers; `tier` is the package that covers it. */
 export type JourneyStep = { icon: IconName; title: L; text: L; tier: string };
 /** `notice`: one sentence shown above the tiers (e.g. the store platform subscription is not included). */
-export type PackageGroup = { service: string; icon: IconName; title: L; text: L; notice: L; tiers: Tier[]; journey?: JourneyStep[] };
+/** `short`: the tab / hero tile name · `highlights`: three things the service delivers, shown beside its visual. */
+export type PackageGroup = { service: string; icon: IconName; title: L; short: L; text: L; highlights: L[]; notice: L; tiers: Tier[]; journey?: JourneyStep[] };
 export type Offer = {
   slug: string;
   /** weekly: Sunday → Saturday, renews every week · daily: one deal per Riyadh day (24 hours) */
@@ -63,7 +64,9 @@ export const packageGroups: PackageGroup[] = [
     service: "web-development",
     icon: "CodeXml",
     title: { ar: "باقات المواقع والتطبيقات", en: "Website & app packages" },
+    short: { ar: "مواقع وتطبيقات", en: "Websites & apps" },
     text: { ar: "من موقع تعريفي أنيق إلى نظام أو تطبيق متكامل.", en: "From an elegant company site to a complete system or app." },
+    highlights: [{ ar: "تصميم مخصص بهويتك يعمل على الجوال", en: "A custom design in your brand that works on mobile" }, { ar: "سرعة وتهيئة لمحركات البحث من اليوم الأول", en: "Speed and SEO from day one" }, { ar: "ملكية كاملة للموقع والكود", en: "Full ownership of the site and code" }],
     notice: { ar: "الأسعار تشمل التصميم والبرمجة والإطلاق. المحتوى (النصوص والصور) يقدمه العميل، ونساعدك في صياغته عند الحاجة.", en: "Prices cover design, development and launch. Content (text and images) comes from the client; we can help write it." },
     tiers: [
       {
@@ -146,7 +149,9 @@ export const packageGroups: PackageGroup[] = [
     service: "ecommerce",
     icon: "ShoppingCart",
     title: { ar: "باقات المتاجر الإلكترونية", en: "Online store packages" },
+    short: { ar: "متاجر إلكترونية", en: "Online stores" },
     text: { ar: "متجر جاهز للبيع والإعلان على زد أو سلة أو شوبيفاي — من التأسيس حتى أول طلب، ثم نكمل معك التسويق شهرياً.", en: "A store ready to sell and advertise on Zid, Salla or Shopify — from founding to the first order, then monthly marketing with you." },
+    highlights: [{ ar: "متجر على زد أو سلة أو شوبيفاي جاهز للبيع", en: "A Zid, Salla or Shopify store ready to sell" }, { ar: "مدى وأبل باي وتابي وتمارا والشحن مربوطة", en: "mada, Apple Pay, Tabby, Tamara and shipping connected" }, { ar: "البكسل والكتالوج جاهزين للإعلان", en: "Pixels and catalogue ready for ads" }],
     notice: { ar: "مهم: اشتراك منصة زد أو سلة أو شوبيفاي غير مشمول في الباقات — يُدفع للمنصة مباشرة وباسمك، ليبقى المتجر ملكك بالكامل. وكذلك ميزانية الإعلانات تُدفع لمنصات الإعلان من حسابك. نساعدك في اختيار باقة المنصة المناسبة لحجم مبيعاتك.", en: "Important: the Zid, Salla or Shopify subscription is not included — you pay the platform directly, in your name, so the store stays fully yours. Ad budgets are likewise paid to the ad platforms from your account. We help you choose the right platform plan." },
     tiers: [
       {
@@ -239,7 +244,9 @@ export const packageGroups: PackageGroup[] = [
     service: "digital-marketing",
     icon: "Megaphone",
     title: { ar: "باقات تسويق المتاجر الشهرية", en: "Monthly store marketing plans" },
+    short: { ar: "تسويق المتاجر", en: "Store marketing" },
     text: { ar: "بعد الإطلاق نكمل معك: حملات إعلانية وسوشيال ميديا ونتائج تُقاس بالطلبات، لا بالإعجابات.", en: "After launch we keep going with you: ad campaigns and social media, measured in orders — not likes." },
+    highlights: [{ ar: "حملات على سناب وتيك توك وميتا وجوجل", en: "Campaigns on Snap, TikTok, Meta and Google" }, { ar: "محتوى وتصاميم وفيديوهات شهرية", en: "Monthly content, designs and videos" }, { ar: "تقارير بالطلبات وتكلفة الطلب، لا بالإعجابات", en: "Reports on orders and cost per order — not likes" }],
     notice: { ar: "ميزانية الإعلانات غير مشمولة — تُدفع مباشرة لمنصات الإعلان من حسابك وباسمك ونحن ندير الحملات (نوصي بـ 1,500 ريال شهرياً على الأقل). نوصي بـ 3 أشهر لتظهر النتائج، والإلغاء بإشعار قبل 30 يوماً.", en: "Ad budget is not included — you pay the ad platforms directly from your own account and we run the campaigns (we recommend at least SAR 1,500 a month). We recommend 3 months for results; cancel with 30 days' notice." },
     tiers: [
       {
@@ -320,7 +327,9 @@ export const packageGroups: PackageGroup[] = [
     service: "whatsapp-automation",
     icon: "MessagesSquare",
     title: { ar: "باقات حلول واتساب", en: "WhatsApp solution packages" },
+    short: { ar: "حلول واتساب", en: "WhatsApp" },
     text: { ar: "رد أسرع ومبيعات أكثر على القناة التي يفضلها عملاؤك.", en: "Faster replies and more sales on your clients' favourite channel." },
+    highlights: [{ ar: "رقمك الرسمي باسم نشاطك", en: "Your official number under your business name" }, { ar: "بوت يرد ويحجز ويؤهل العملاء 24 ساعة", en: "A bot that answers, books and qualifies 24/7" }, { ar: "صندوق محادثات واحد لكل فريقك", en: "One inbox for your whole team" }],
     notice: { ar: "اشتراك شهري بلا عقد طويل، والإعداد مجاني. رسوم الرسائل التي تتقاضاها Meta تُحتسب حسب استخدامك الفعلي، والرد على العميل خلال 24 ساعة من رسالته مجاني ضمن الحدود التي تحددها Meta.", en: "A monthly subscription with no long contract, and free set-up. Meta's own message fees follow your actual usage; replying within 24 hours of a client's message is free within Meta's limits." },
     tiers: [
       {
@@ -395,7 +404,9 @@ export const packageGroups: PackageGroup[] = [
     service: "dedicated-tech-team",
     icon: "Users",
     title: { ar: "باقات الفريق التقني المتكامل", en: "Dedicated tech team plans" },
+    short: { ar: "فريق تقني", en: "Tech team" },
     text: { ar: "فريق تقني يعمل لشركتك شهرياً بدون أعباء التوظيف.", en: "A tech team working for your company every month, without the hiring burden." },
+    highlights: [{ ar: "مطور ومصمم ومدير مشروع لشركتك", en: "A developer, designer and project manager for you" }, { ar: "120 ساعة شهرياً حسب أولوياتك", en: "120 hours a month on your priorities" }, { ar: "بلا أعباء توظيف أو تأمينات", en: "No hiring or payroll burden" }],
     notice: { ar: "الفريق في كل الباقات: مطور Full-Stack، مصمم UI/UX، ومدير مشروع — 120 ساعة عمل شهرياً توزَّع حسب أولوياتك. الفرق بين الباقات في مدة الالتزام والسعر الشهري والمزايا الإضافية.", en: "Every plan: a Full-Stack developer, a UI/UX designer and a project manager — 120 working hours a month, allocated to your priorities. Plans differ in term, monthly price and extras." },
     tiers: [
       {
@@ -982,6 +993,39 @@ export const offersCopy = {
   dealTotal: { ar: "الإجمالي", en: "Total" } as L,
   dealOnRequest: { ar: "يُحدد السعر بعد مناقشة التفاصيل معكم", en: "Pricing follows a short discussion with you" } as L,
   dealValid: { ar: "صالح حتى", en: "Valid until" } as L,
+  heroPoints: [
+    { ar: "أسعار معلنة بلا رسوم خفية", en: "Published prices, no hidden fees" },
+    { ar: "الدفع على دفعات", en: "Pay in instalments" },
+    { ar: "فاتورة ضريبية معتمدة", en: "A ZATCA-compliant tax invoice" },
+    { ar: "ملكية كاملة لكل ما نبنيه لك", en: "You fully own everything we build" }
+  ],
+  pickService: { ar: "اختر خدمتك", en: "Pick your service" } as L,
+  startsAt: { ar: "يبدأ من", en: "From" } as L,
+  aboutService: { ar: "تعرّف على الخدمة", en: "About this service" } as L,
+  todayTile: { ar: "صفقات اليوم", en: "Today's deals" } as L,
+  todayTileText: { ar: "4 صفقات تتجدد كل 24 ساعة", en: "4 deals renewed every 24 hours" } as L,
+  whyTitle: { ar: "لماذا يختار عملاؤنا *باقاتنا*؟", en: "Why clients choose *our packages*" } as L,
+  whySub: { ar: "كل باقة مكتوبة بالتفصيل قبل أن تدفع ريالاً واحداً.", en: "Every package is written in detail before you pay a single riyal." } as L,
+  why: [
+    { icon: "Tag", title: { ar: "سعر واضح من البداية", en: "A clear price from the start" }, text: { ar: "تعرف ما تشمله الباقة وما لا تشمله — لا مفاجآت في الفاتورة.", en: "You know what's included and what isn't — no surprises on the invoice." } },
+    { icon: "ShieldCheck", title: { ar: "ملكية كاملة", en: "Full ownership" }, text: { ar: "المتجر والموقع والحسابات باسمك، ونسلمك كل شيء موثقاً.", en: "The store, site and accounts are in your name, handed over documented." } },
+    { icon: "CalendarClock", title: { ar: "مدة تنفيذ مكتوبة", en: "A written delivery time" }, text: { ar: "لكل باقة مدة محددة، ومدير مشروع يتابع معك حتى التسليم.", en: "Every package has a set time and a project manager until delivery." } },
+    { icon: "ClipboardList", title: { ar: "فاتورة ضريبية", en: "Tax invoice" }, text: { ar: "فواتير متوافقة مع هيئة الزكاة والضريبة والجمارك.", en: "Invoices compliant with ZATCA." } },
+    { icon: "LifeBuoy", title: { ar: "دعم بعد الإطلاق", en: "Support after launch" }, text: { ar: "دعم فني مشمول في كل باقة، ونكمل معك بالتسويق والتطوير.", en: "Support is included in every package, and we keep growing with you." } },
+    { icon: "MessagesSquare", title: { ar: "تواصل بالعربي", en: "We speak your language" }, text: { ar: "فريق يفهم السوق السعودي ويرد عليك على واتساب.", en: "A team that knows the Saudi market and answers you on WhatsApp." } }
+  ],
+  faqTitle: { ar: "أسئلة *متكررة*", en: "Frequently asked *questions*" } as L,
+  faqs: [
+    { q: { ar: "هل اشتراك زد أو سلة مشمول في باقات المتاجر؟", en: "Is the Zid or Salla subscription included?" }, a: { ar: "لا. اشتراك المنصة يُدفع لها مباشرة وباسمك ليبقى المتجر ملكك، ونساعدك في اختيار الباقة المناسبة لحجم مبيعاتك.", en: "No. You pay the platform directly in your name so the store stays yours; we help you pick the right plan." } },
+    { q: { ar: "هل ميزانية الإعلانات ضمن باقات التسويق؟", en: "Is the ad budget part of the marketing plans?" }, a: { ar: "لا. الميزانية تُدفع لمنصات الإعلان من حسابك مباشرة، ونحن ندير الحملات ونحسنها. نوصي بـ 1,500 ريال شهرياً على الأقل للبداية.", en: "No. You pay the ad platforms directly; we run and optimise the campaigns. We recommend at least SAR 1,500 a month to start." } },
+    { q: { ar: "كيف يتم الدفع؟", en: "How do I pay?" }, a: { ar: "المشاريع تُدفع على دفعات (عادة 50% عند البدء و50% عند التسليم)، والباقات الشهرية تُدفع شهرياً. نصدر فاتورة ضريبية لكل دفعة.", en: "Projects are paid in instalments (usually 50% to start, 50% on delivery); monthly plans are paid monthly. Every payment gets a tax invoice." } },
+    { q: { ar: "هل الأسعار تشمل ضريبة القيمة المضافة؟", en: "Do prices include VAT?" }, a: { ar: "الأسعار المعروضة قبل ضريبة القيمة المضافة 15%.", en: "Prices shown exclude 15% VAT." } },
+    { q: { ar: "كيف أحصل على سعر العرض أو الصفقة؟", en: "How do I get an offer's price?" }, a: { ar: "أرسل الطلب من صفحة العرض قبل انتهاء العداد، ويُثبَّت لك السعر حتى لو بدأنا التنفيذ بعدها.", en: "Send the request from the offer page before the countdown ends and the price is locked, even if work starts later." } },
+    { q: { ar: "هل يمكن تعديل الباقة لتناسبني؟", en: "Can a package be tailored to me?" }, a: { ar: "نعم. اطلب عرض سعر مخصص وسنبني لك باقة حسب احتياجك وميزانيتك.", en: "Yes. Ask for a custom quote and we'll build a package around your needs and budget." } },
+    { q: { ar: "ماذا يحدث بعد انتهاء الدعم الفني؟", en: "What happens after support ends?" }, a: { ar: "يمكنك الاستمرار معنا بباقة صيانة أو تسويق أو فريق تقني شهري، أو إدارة كل شيء بنفسك — كل شيء باسمك.", en: "Continue with a maintenance, marketing or monthly team plan, or run everything yourself — it's all in your name." } }
+  ],
+  ctaTitle: { ar: "لم تجد ما يناسبك تماماً؟", en: "Didn't find exactly what you need?" } as L,
+  ctaText: { ar: "كلمنا على واتساب أو اطلب عرض سعر مخصص — نرد عليك خلال ساعات العمل.", en: "Message us on WhatsApp or request a custom quote — we reply within working hours." } as L,
   journeyTitle: { ar: "رحلتك معنا: من التأسيس إلى الطلبات… ونكمل", en: "Your journey with us: from founding to orders… and beyond" } as L,
   journeySub: { ar: "كل خطوة لها باقة تغطيها — ابدأ من حيث أنت الآن.", en: "Every step has a package that covers it — start wherever you are." } as L,
   journeyStep: { ar: "الخطوة", en: "Step" } as L,

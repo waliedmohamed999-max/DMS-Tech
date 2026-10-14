@@ -188,6 +188,22 @@
 @keyframes offerWiggle { 0%, 70%, 100% { transform: rotate(0); } 76% { transform: rotate(-16deg); } 84% { transform: rotate(14deg); } 92% { transform: rotate(-8deg); } }
 @keyframes offerBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 
+/* packages & offers: service scenes (ServiceVisual) and hero tiles */
+.sv-float { animation: svFloat 4s ease-in-out infinite; }
+.sv-pop { animation: svFloat 4s ease-in-out infinite, svPop 4s ease-in-out infinite; }
+.sv-bar { transform-origin: bottom; animation: svBar 3.6s ease-in-out infinite; }
+.sv-msg { animation: svMsg 6s ease-in-out infinite both; }
+.sv-grow { transform-origin: left; animation: svGrow 3s ease-out both; }
+[dir="rtl"] .sv-grow { transform-origin: right; }
+.sv-enter { animation: svEnter 0.45s ease-out both; }
+.hero-tile { animation: svEnter 0.6s ease-out both; }
+@keyframes svFloat { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+@keyframes svPop { 0%, 8% { scale: 0.85; opacity: 0; } 14%, 86% { scale: 1; opacity: 1; } 94%, 100% { scale: 0.92; opacity: 0; } }
+@keyframes svBar { 0% { transform: scaleY(0.35); } 40%, 100% { transform: scaleY(1); } }
+@keyframes svMsg { 0%, 4% { opacity: 0; transform: translateY(6px); } 12%, 88% { opacity: 1; transform: none; } 96%, 100% { opacity: 0; } }
+@keyframes svGrow { from { transform: scaleX(0); } }
+@keyframes svEnter { from { opacity: 0; transform: translateY(10px); } }
+
 [data-motion-paused],
 [data-motion-paused] * {
   animation-play-state: paused !important;

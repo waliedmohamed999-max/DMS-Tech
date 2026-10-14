@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
+import { ServiceVisual } from "@/components/offers/ServiceVisual";
 
 /** Time left until `endsAt` (an ISO instant); `labels.seconds` adds a ticking seconds box (24-hour deals).
  * Renders nothing until mounted, so server and client markup agree. */
@@ -154,13 +155,25 @@ export function DealsCarousel({ deals, labels, locale }: { deals: DealSlide[]; l
 
 export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; price: string | null; from: boolean; period: string | null; delivery: string; featured?: boolean; features: string[]; excludes: string[] };
 export type JourneyView = { icon: IconName; title: string; text: string; tier: string };
-export type GroupView = { service: string; icon: IconName; title: string; text: string; notice: string; tiers: TierView[]; journey?: JourneyView[] };
-type BrowserLabels = { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string };
+export type GroupView = { service: string; icon: IconName; title: string; short: string; text: string; highlights: string[]; notice: string; startsAt: { price: string | null; period: string | null } | null; tiers: TierView[]; journey?: JourneyView[] };
+type BrowserLabels = { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string };
 
 /** Packages by service (tabs), three tiers each; every tier links to its own shareable page. */
 export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[]; labels: BrowserLabels; locale: string }) {
   const [active, setActive] = useState(groups[0]?.service);
   const g = groups.find((x) => x.service === active) ?? groups[0];
+  // the hero tiles link to #pkg-<service>: open that tab and bring the packages into view
+  useEffect(() => {
+    const open = () => {
+      const want = window.location.hash.startsWith("#pkg-") ? window.location.hash.slice(5) : null;
+      if (!want || !groups.some((x) => x.service === want)) return;
+      setActive(want);
+      document.getElementById("packages")?.scrollIntoView({ behavior: "smooth" });
+    };
+    open();
+    window.addEventListener("hashchange", open);
+    return () => window.removeEventListener("hashchange", open);
+  }, [groups]);
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
   if (!g) return null;
   return (
@@ -174,16 +187,37 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
             onClick={() => setActive(x.service)}
             className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${x.service === g.service ? "border-iris bg-iris text-white" : "border-mist bg-white text-ink hover:border-iris/40"}`}
           >
-            <Icon name={x.icon} size={15} /> {x.title}
+            <Icon name={x.icon} size={15} /> {x.short}
           </button>
         ))}
       </div>
-      <div className="mx-auto grid max-w-3xl gap-3 text-center">
-        <p className="text-iron">{g.text}</p>
-        <p className="flex items-start gap-2 rounded-xl border border-iris/20 bg-lilac/60 px-4 py-3 text-start text-sm leading-relaxed text-ink">
-          <Icon name="Lightbulb" size={17} className="mt-0.5 shrink-0 text-iris" />
-          {g.notice}
-        </p>
+      {/* the service at a glance: what it delivers, beside a scene that shows it */}
+      <div key={g.service} className="sv-enter grid items-center gap-6 rounded-card border border-mist bg-white p-5 shadow-card md:grid-cols-[1.1fr_1fr] md:p-8">
+        <div className="grid content-start gap-4">
+          <span className="flex items-center gap-3">
+            <span className="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-iris to-iris-soft text-white shadow-[0_0_0_5px_rgba(98,77,227,.12)]">
+              <Icon name={g.icon} size={22} />
+            </span>
+            <h3 className="text-2xl font-bold">{g.title}</h3>
+          </span>
+          <p className="leading-relaxed text-iron">{g.text}</p>
+          <ul className="grid gap-2">
+            {g.highlights.map((h) => (
+              <li key={h} className="flex items-start gap-2 font-medium">
+                <Icon name="CircleCheck" size={18} className="mt-0.5 shrink-0 text-iris" />
+                {h}
+              </li>
+            ))}
+          </ul>
+          <p className="flex items-start gap-2 rounded-xl border border-iris/20 bg-lilac/60 px-4 py-3 text-sm leading-relaxed text-ink">
+            <Icon name="Lightbulb" size={17} className="mt-0.5 shrink-0 text-iris" />
+            {g.notice}
+          </p>
+          <Link href={`/services/${g.service}`} className="link-arrow w-fit text-sm">
+            {labels.aboutService} <Icon name={arrow} size={14} />
+          </Link>
+        </div>
+        <ServiceVisual service={g.service} locale={locale} className="h-72 md:h-80" />
       </div>
       <div className="grid items-stretch gap-5 md:grid-cols-3">
         {g.tiers.map((t) => (

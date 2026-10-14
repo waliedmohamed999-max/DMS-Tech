@@ -130,7 +130,14 @@ export async function getOffersCopy(locale: Locale) {
   return localize(offersCopy, locale);
 }
 export async function getPackageGroups(locale: Locale) {
-  return packageGroups.map((g) => ({ ...localize({ title: g.title, text: g.text, notice: g.notice }, locale), service: g.service, icon: g.icon, tiers: g.tiers.map((t) => ({ ...localize(t, locale), price: offerMoney(t.price, locale) })), ...(g.journey ? { journey: localize(g.journey, locale) } : {}) }));
+  return packageGroups.map((g) => ({
+    ...localize({ title: g.title, short: g.short, text: g.text, notice: g.notice, highlights: g.highlights }, locale),
+    // the lowest priced tier, for the hero tiles ("from 1,999")
+    startsAt: (() => {
+      const t = g.tiers.filter((x) => x.price !== null).sort((a, b) => a.price! - b.price!)[0];
+      return t ? { price: offerMoney(t.price, locale), period: t.period ? localize(t.period, locale) : null } : null;
+    })(),
+    service: g.service, icon: g.icon, tiers: g.tiers.map((t) => ({ ...localize(t, locale), price: offerMoney(t.price, locale) })), ...(g.journey ? { journey: localize(g.journey, locale) } : {}) }));
 }
 /** An offer with its localized details and the end of its current cycle (end of today / of this week). */
 function offerView(o: Offer, locale: Locale) {
