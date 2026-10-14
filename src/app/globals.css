@@ -204,22 +204,20 @@
 @keyframes svGrow { from { transform: scaleX(0); } }
 @keyframes svEnter { from { opacity: 0; transform: translateY(10px); } }
 
-/* phones: offer and package cards sit two side by side and swipe sideways (scaled down so each keeps its layout) */
+/* phones: offer and package cards become a one-card slider (CardSlider adds the arrows and dots) */
 @media (max-width: 767px) {
-  .m-rail {
+  .card-slider {
     grid-template-columns: none;
     grid-auto-flow: column;
-    grid-auto-columns: calc(50% - 6px);
-    gap: 12px;
+    grid-auto-columns: 100%;
+    gap: 16px;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    margin-inline: -16px;
-    padding: 14px 16px 10px;
-    scroll-padding-inline: 16px;
+    padding-top: 14px;
     scrollbar-width: none;
   }
-  .m-rail::-webkit-scrollbar { display: none; }
-  .m-rail > * { scroll-snap-align: start; zoom: 0.74; transform: none !important; }
+  .card-slider::-webkit-scrollbar { display: none; }
+  .card-slider > * { scroll-snap-align: start; scroll-snap-stop: always; transform: none !important; }
 }
 
 [data-motion-paused],

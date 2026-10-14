@@ -5,6 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import { ServiceVisual } from "@/components/offers/ServiceVisual";
+import { CardSlider } from "@/components/offers/CardSlider";
 
 /** Time left until `endsAt` (an ISO instant); `labels.seconds` adds a ticking seconds box (24-hour deals).
  * Renders nothing until mounted, so server and client markup agree. */
@@ -156,7 +157,7 @@ export function DealsCarousel({ deals, labels, locale }: { deals: DealSlide[]; l
 export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; price: string | null; from: boolean; period: string | null; delivery: string; featured?: boolean; features: string[]; excludes: string[] };
 export type JourneyView = { icon: IconName; title: string; text: string; tier: string };
 export type GroupView = { service: string; icon: IconName; title: string; short: string; text: string; highlights: string[]; notice: string; startsAt: { price: string | null; period: string | null } | null; tiers: TierView[]; journey?: JourneyView[] };
-type BrowserLabels = { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string };
+type BrowserLabels = { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string; prev: string; next: string };
 
 /** Packages by service (tabs), three tiers each; every tier links to its own shareable page. */
 export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[]; labels: BrowserLabels; locale: string }) {
@@ -219,7 +220,7 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
         </div>
         <ServiceVisual service={g.service} locale={locale} className="h-72 md:h-80" />
       </div>
-      <div className="m-rail grid items-stretch gap-5 md:grid-cols-3">
+      <CardSlider key={`tiers-${g.service}`} className="grid items-stretch gap-5 md:grid-cols-3" labels={{ prev: labels.prev, next: labels.next }} rtl={locale === "ar"}>
         {g.tiers.map((t) => (
           <div key={t.key} className={`relative grid content-start gap-5 rounded-card border p-7 ${t.featured ? "border-iris bg-white shadow-lg ring-4 ring-iris/10 md:-translate-y-2" : "border-mist bg-white shadow-card"}`}>
             {t.featured && <span className="absolute -top-3 start-6 rounded-full bg-iris px-3 py-1 text-xs font-semibold text-white">{labels.mostPopular}</span>}
@@ -278,7 +279,7 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
             </Link>
           </div>
         ))}
-      </div>
+      </CardSlider>
       {g.journey && <Journey steps={g.journey} groups={groups} labels={labels} arrow={arrow} />}
     </div>
   );

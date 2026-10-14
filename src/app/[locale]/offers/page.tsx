@@ -10,6 +10,7 @@ import { BrandIcon } from "@/components/ui/Brand";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { Countdown, DealsCarousel, PackagesBrowser } from "@/components/offers/OfferWidgets";
 import { ServiceVisual } from "@/components/offers/ServiceVisual";
+import { CardSlider } from "@/components/offers/CardSlider";
 
 // rendered per request: the deals of the day change at midnight and weekly offers renew every Sunday; fresh renders
 // also get the public CSP nonce (a cached re-render would no longer match the build-time script hashes)
@@ -120,7 +121,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
             <SectionHeading title={c.offersTitle} sub={c.weeklyNote}>
               <Countdown endsAt={offers.weekEndsAt} labels={cd} />
             </SectionHeading>
-            <div className="m-rail grid gap-6 lg:grid-cols-3">
+            <CardSlider className="grid gap-6 lg:grid-cols-3" labels={{ prev: c.prev, next: c.next }} rtl={locale === "ar"}>
               {offers.weekly.map((o) => (
                 <article key={o.slug} className="card grid content-start overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
                   <ServiceVisual service={o.service} locale={locale} className="h-52 rounded-none border-b border-mist" />
@@ -168,7 +169,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
                   </div>
                 </article>
               ))}
-            </div>
+            </CardSlider>
           </div>
         </section>
       )}
@@ -178,7 +179,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
           <SectionHeading title={c.packagesTitle} sub={c.packagesSub} />
           <PackagesBrowser
             groups={groups}
-            labels={{ mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded, journeyTitle: c.journeyTitle, journeySub: c.journeySub, journeyStep: c.journeyStep, aboutService: c.aboutService }}
+            labels={{ mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded, journeyTitle: c.journeyTitle, journeySub: c.journeySub, journeyStep: c.journeyStep, aboutService: c.aboutService, prev: c.prev, next: c.next }}
             locale={locale}
           />
           <p className="mt-6 text-center text-xs text-graphite">{c.vatNote}</p>
