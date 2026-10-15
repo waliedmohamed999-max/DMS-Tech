@@ -606,7 +606,7 @@ export const offers: Offer[] = [
     service: "web-development",
     icon: "Monitor",
     badge: { ar: "صفقة اليوم — 24 ساعة فقط", en: "Deal of the day — 24 hours only" },
-    title: { ar: "موقع تعريفي لشركتك بـ 1,799 ريال", en: "A company website for SAR 1,799" },
+    title: { ar: "موقع تعريفي لشركتك بـ 1,499 ريالاً", en: "A company website for SAR 1,499" },
     text: { ar: "الباقة الأساسية كاملة بأقل سعر: موقع أنيق حتى 5 صفحات، متجاوب مع الجوال، بنموذج تواصل وزر واتساب — جاهز خلال أسبوع.", en: "The full Starter package at the lowest price: an elegant site of up to 5 pages, mobile-ready, with a contact form and WhatsApp button — ready in a week." },
     forWho: { ar: "للشركات الصغيرة والمهنيين (المكاتب والعيادات والمقاولون) الذين يحتاجون حضوراً احترافياً بسرعة.", en: "For small companies and professionals (offices, clinics, contractors) who need a professional presence fast." },
     features: [
@@ -626,8 +626,8 @@ export const offers: Offer[] = [
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
     excludes: [{ ar: "النطاق والاستضافة وكتابة المحتوى", en: "Domain, hosting and copywriting" }],
-    price: 1799,
-    oldPrice: 2879
+    price: 1499,
+    oldPrice: 2499
   },
   {
     slug: "day-store",
@@ -635,7 +635,7 @@ export const offers: Offer[] = [
     service: "ecommerce",
     icon: "ShoppingBag",
     badge: { ar: "صفقة اليوم — 24 ساعة فقط", en: "Deal of the day — 24 hours only" },
-    title: { ar: "متجرك على زد أو سلة بـ 1,399 ريال", en: "Your Zid or Salla store for SAR 1,399" },
+    title: { ar: "متجرك على زد أو سلة بـ 1,199 ريالاً", en: "Your Zid or Salla store for SAR 1,199" },
     text: { ar: "باقة الانطلاق بأقل سعر: نجهز متجرك ونرفع منتجاتك الأولى ونربط الدفع والشحن، لتبدأ البيع خلال 5 أيام.", en: "Launch at the lowest price: we set up your store, upload your first products and connect payments and shipping so you sell within 5 days." },
     forWho: { ar: "لمن يبيع على إنستغرام أو واتساب ويريد متجراً حقيقياً بأقل تكلفة.", en: "For sellers on Instagram or WhatsApp who want a real store at the lowest cost." },
     features: [
@@ -659,8 +659,8 @@ export const offers: Offer[] = [
       { ar: "التصميم المخصص (متاح في باقة النمو)", en: "Custom design (in the Growth package)" },
       { ar: "إدارة الحملات وميزانية الإعلانات", en: "Campaign management and ad budget" }
     ],
-    price: 1399,
-    oldPrice: 2239
+    price: 1199,
+    oldPrice: 1999
   },
   {
     slug: "day-whatsapp",
@@ -687,7 +687,7 @@ export const offers: Offer[] = [
     ],
     excludes: [{ ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, billed by usage" }],
     price: 349,
-    oldPrice: 559
+    oldPrice: 597
   },
   {
     slug: "day-automation",
@@ -751,7 +751,7 @@ export const offers: Offer[] = [
     service: "digital-marketing",
     icon: "Megaphone",
     badge: { ar: "صفقة اليوم — تسويق", en: "Deal of the day — marketing" },
-    title: { ar: "أول شهر تسويق لمتجرك بـ 1,999 ريال", en: "Your store's first marketing month for SAR 1,999" },
+    title: { ar: "أول شهر من باقة «نمو المبيعات» بـ 1,999 ريالاً", en: "Your first Sales Growth month for SAR 1,999" },
     text: { ar: "باقة «نمو المبيعات» لشهر كامل بسعر اليوم: ندير 3 حسابات، 20 منشوراً و4 فيديوهات قصيرة، وحملاتك على سناب وتيك توك وميتا مع إعادة استهداف من ترك السلة.", en: "The Sales Growth plan for a full month at today's price: 3 accounts, 20 posts and 4 short videos, and your Snap, TikTok and Meta campaigns with abandoned-cart retargeting." },
     forWho: { ar: "للمتاجر والمشاريع التي تريد تجربة إدارة التسويق الكاملة معنا قبل الالتزام.", en: "For stores and businesses that want to try our full marketing management before committing." },
     features: [
@@ -771,7 +771,7 @@ export const offers: Offer[] = [
     ],
     excludes: [{ ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" }],
     price: 1999,
-    oldPrice: 3199
+    oldPrice: 2999
   },
   {
     slug: "day-social",
@@ -779,27 +779,32 @@ export const offers: Offer[] = [
     service: "digital-marketing",
     icon: "Share2",
     badge: { ar: "صفقة اليوم — سوشيال ميديا", en: "Deal of the day — social media" },
-    title: { ar: "30 تصميم سوشيال ميديا بـ 1,999 ريال", en: "30 social media designs for SAR 1,999" },
-    text: { ar: "شهر كامل من المنشورات بهويتك: تصاميم ونصوص جاهزة للنشر على إنستغرام وتيك توك وسناب وإكس.", en: "A full month of posts in your brand: designs and captions ready for Instagram, TikTok, Snap and X." },
-    forWho: { ar: "لمن يدير حساباته بنفسه ويحتاج محتوى احترافياً منتظماً.", en: "For those who run their own accounts and need regular, professional content." },
+    title: { ar: "شهر سوشيال ميديا كامل: 30 منشوراً بالتصميم والنشر بـ 1,999 ريالاً", en: "A full social media month: 30 posts designed and published for SAR 1,999" },
+    text: { ar: "شهر كامل من المحتوى بهويتك: 30 منشوراً بالتصميم والنص، و4 فيديوهات قصيرة نحررها، وننشرها ونجدولها لك على 3 حسابات.", en: "A full month of content in your brand: 30 designed and written posts, 4 short videos we edit, published and scheduled on 3 accounts." },
+    forWho: { ar: "لمن يريد حسابات نشطة باحترافية كل يوم دون أن يشغل نفسه بالتصميم والنشر — بدون حملات إعلانية.", en: "For anyone who wants professionally active accounts every day without handling design and posting — without ad campaigns." },
     features: [
-      { ar: "30 تصميماً بهويتك", en: "30 designs in your brand" },
-      { ar: "نص لكل منشور مع الهاشتاقات", en: "A caption with hashtags for each post" },
-      { ar: "مقاسات المنشور والستوري", en: "Post and story sizes" }
+      { ar: "30 منشوراً بالتصميم والنص", en: "30 designed and written posts" },
+      { ar: "4 فيديوهات قصيرة (ريلز) نحررها", en: "4 short videos (reels) we edit" },
+      { ar: "النشر والجدولة على 3 حسابات", en: "Publishing and scheduling on 3 accounts" }
     ],
     deliverables: [
       { title: { ar: "خطة المحتوى", en: "Content plan" }, text: { ar: "جدول شهري بالأفكار والمواعيد المناسبة لجمهورك.", en: "A monthly calendar of ideas and the right posting times." } },
       { title: { ar: "التصاميم", en: "Designs" }, text: { ar: "30 تصميماً بمقاسي المنشور والستوري، مع جولة تعديل.", en: "30 designs in post and story sizes, with a revision round." } },
-      { title: { ar: "النصوص", en: "Captions" }, text: { ar: "نص تسويقي لكل منشور بالعربية مع الهاشتاقات.", en: "A marketing caption for each post in Arabic, with hashtags." } }
+      { title: { ar: "النصوص", en: "Captions" }, text: { ar: "نص تسويقي لكل منشور بالعربية مع الهاشتاقات.", en: "A marketing caption for each post in Arabic, with hashtags." } },
+      { title: { ar: "الفيديو", en: "Video" }, text: { ar: "تحرير 4 فيديوهات قصيرة من تصويرك بالنصوص والموسيقى المناسبة.", en: "4 short videos edited from your footage, with captions and music." } },
+      { title: { ar: "النشر", en: "Publishing" }, text: { ar: "نجدول وننشر المحتوى على 3 حسابات (مثل إنستغرام وتيك توك وسناب) في أفضل الأوقات لجمهورك.", en: "We schedule and publish on 3 accounts (e.g. Instagram, TikTok and Snap) at your audience's best times." } }
     ],
     delivery: { ar: "7 أيام عمل", en: "7 business days" },
     terms: [
       { ar: "جولة تعديل واحدة على الدفعة كاملة", en: "One revision round on the whole batch" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
-    excludes: [{ ar: "النشر وإدارة الحسابات والفيديو", en: "Publishing, account management and video" }],
+    excludes: [
+      { ar: "الحملات الإعلانية والرد على الرسائل (في باقات التسويق الشهرية)", en: "Ad campaigns and replying to messages (in the monthly marketing plans)" },
+      { ar: "تصوير الفيديو (التصوير منك ونحن نحرره)", en: "Filming (you film, we edit)" }
+    ],
     price: 1999,
-    oldPrice: 3199
+    oldPrice: 2999
   },
   {
     slug: "day-ads-setup",
@@ -807,27 +812,33 @@ export const offers: Offer[] = [
     service: "digital-marketing",
     icon: "Target",
     badge: { ar: "صفقة اليوم — إعلانات", en: "Deal of the day — ads" },
-    title: { ar: "البكسل + الحسابات الإعلانية + أول حملة بـ 1,499 ريال", en: "Pixels + ad accounts + your first campaign for SAR 1,499" },
-    text: { ar: "نجهز متجرك أو موقعك للإعلان بالشكل الصحيح: نركّب البكسل ونتأكد أن كل شراء يُقاس، ونجهز الحسابات الإعلانية ونطلق أول حملة.", en: "We get your store or site ready to advertise properly: pixels installed so every purchase is measured, ad accounts set up and your first campaign launched." },
+    title: { ar: "جاهز للإعلان: البكسل + الكتالوج + حملتين وإدارتها أسبوعين بـ 1,499 ريالاً", en: "Ready to advertise: pixels + catalogue + two campaigns managed for two weeks, SAR 1,499" },
+    text: { ar: "نجهز متجرك أو موقعك للإعلان بالشكل الصحيح: نركّب البكسل ونربط كتالوج منتجاتك، ثم نطلق حملتين على منصتين وندير ونحسّن أداءهما أسبوعين كاملين.", en: "We get your store or site ready to advertise properly: pixels installed and your catalogue connected, then two campaigns on two platforms launched and optimised for two full weeks." },
     forWho: { ar: "لمن يعلن بدون قياس أو يريد البدء بالإعلانات بشكل صحيح من أول ريال.", en: "For anyone advertising without measurement, or starting ads the right way from the first riyal." },
     features: [
-      { ar: "بكسل سناب وتيك توك وميتا", en: "Snap, TikTok and Meta pixels" },
-      { ar: "تتبع الإضافة للسلة والشراء", en: "Add-to-cart and purchase tracking" },
-      { ar: "إطلاق أول حملة على منصة واحدة", en: "First campaign launched on one platform" }
+      { ar: "بكسل سناب وتيك توك وميتا مع تتبع الشراء", en: "Snap, TikTok and Meta pixels with purchase tracking" },
+      { ar: "ربط كتالوج المنتجات", en: "Product catalogue connected" },
+      { ar: "حملتان على منصتين و4 تصاميم إعلانية", en: "Two campaigns on two platforms and 4 ad designs" },
+      { ar: "إدارة وتحسين أسبوعين", en: "Two weeks of management and optimisation" }
     ],
     deliverables: [
       { title: { ar: "البكسل والتتبع", en: "Pixels & tracking" }, text: { ar: "تركيب البكسل وتجربة أحداث المشاهدة والإضافة للسلة والشراء، وربط تحليلات جوجل.", en: "Pixels installed, view / add-to-cart / purchase events tested, Google Analytics connected." } },
       { title: { ar: "الحسابات الإعلانية", en: "Ad accounts" }, text: { ar: "إنشاء أو ترتيب حساباتك الإعلانية وربطها بالمتجر وطرق الدفع.", en: "Your ad accounts created or tidied and linked to the store and payment methods." } },
-      { title: { ar: "أول حملة", en: "First campaign" }, text: { ar: "إعداد الجمهور والإعلانات وإطلاق حملة على منصة واحدة بتصميمين.", en: "Audience and ads set up and a campaign launched on one platform with two designs." } }
+      { title: { ar: "الكتالوج", en: "Catalogue" }, text: { ar: "ربط منتجات متجرك بكتالوج ميتا وتيك توك وسناب لإعلانات المنتجات الديناميكية.", en: "Your store products synced to the Meta, TikTok and Snap catalogues for dynamic product ads." } },
+      { title: { ar: "الحملات", en: "Campaigns" }, text: { ar: "إعداد الجمهور وإطلاق حملتين على منصتين بـ 4 تصاميم إعلانية.", en: "Audiences set up and two campaigns launched on two platforms with 4 ad designs." } },
+      { title: { ar: "أسبوعا إدارة", en: "Two weeks of management" }, text: { ar: "متابعة يومية وتحسين الإعلانات والميزانية أسبوعين، وتقرير بالطلبات وتكلفة الطلب في النهاية.", en: "Daily monitoring and ad / budget optimisation for two weeks, ending with a report on orders and cost per order." } }
     ],
-    delivery: { ar: "3 أيام عمل", en: "3 business days" },
+    delivery: { ar: "التجهيز خلال 3 أيام عمل، ثم أسبوعا إدارة", en: "Set up in 3 business days, then two weeks of management" },
     terms: [
-      { ar: "منصة إعلانية واحدة للحملة الأولى", en: "One ad platform for the first campaign" },
+      { ar: "منصتان إعلانيتان يختارهما العميل", en: "Two ad platforms of the client's choice" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
-    excludes: [{ ar: "ميزانية الإعلانات وإدارة الحملة بعد إطلاقها", en: "Ad budget and managing the campaign after launch" }],
+    excludes: [
+      { ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" },
+      { ar: "الإدارة بعد الأسبوعين (في باقات التسويق الشهرية)", en: "Management after two weeks (in the monthly marketing plans)" }
+    ],
     price: 1499,
-    oldPrice: 2399
+    oldPrice: 2499
   },
   {
     slug: "day-app-ui",

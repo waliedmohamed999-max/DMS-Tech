@@ -49,6 +49,23 @@ describe("packages & offers", () => {
     expect(offerLabel("offer:store-launch-example")).toBeNull();
   });
 
+  it("7. a deal never contradicts the packages: its struck price is the real package price and it costs less", () => {
+    const price = (key: string) => packageGroups.flatMap((g) => g.tiers).find((t) => t.key === key)!.price!;
+    const deal = (slug: string) => offers.find((o) => o.slug === slug)!;
+    // deal → what it really costs as a package (WhatsApp: 3 months of Basic)
+    const refs: [string, number][] = [["day-website", price("web-starter")], ["day-store", price("store-launch")], ["day-whatsapp", price("wa-basic") * 3], ["day-marketing", price("mkt-growth")]];
+    for (const [slug, ref] of refs) {
+      expect(deal(slug).oldPrice).toBe(ref);
+      expect(deal(slug).price).toBeLessThan(ref);
+    }
+    // weekly offers: struck price = the sum of the packages inside
+    expect(deal("store-week").oldPrice).toBe(price("store-growth") + price("mkt-start"));
+    expect(deal("whatsapp-week").oldPrice).toBe(price("wa-pro") * 3);
+    expect(deal("launch-bundle-week").oldPrice).toBe(price("web-growth") + price("store-launch") + price("wa-basic") * 3);
+    // a smaller deal never costs more than a bigger one of the same kind
+    expect(deal("day-store").price).toBeLessThan(deal("day-ads-setup").price);
+  });
+
   it("5. weekly offers end Saturday midnight (Riyadh); the deal of the day changes at midnight and is cheaper than the weekly offers", () => {
     const at = (iso: string) => new Date(iso);
     // Wednesday 14 Oct 2026, 15:00 Riyadh → the week ends Sunday 18 Oct 00:00 Riyadh (= Sat 21:00 UTC)
