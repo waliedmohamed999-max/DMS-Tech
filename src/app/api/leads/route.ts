@@ -9,6 +9,13 @@ import { emailWebsiteLead } from "@/server/notify/lead-mail";
 
 const MAX_BODY = 16_000;
 
+/** The network a request comes from (IPv4 /24, IPv6 /48): one sender rotating addresses still shares one budget. */
+function ipPrefix(ip: string) {
+  if (ip.includes(":")) return ip.split(":").slice(0, 3).join(":");
+  const p = ip.split(".");
+  return p.length === 4 ? p.slice(0, 3).join(".") : ip;
+}
+
 /**
  * Public quote/contact endpoint → CRM lead.
  * - DB-backed rate limit (works across serverless instances): 5 / 10 min per IP, 30 / hour globally per IP prefix
@@ -33,7 +40,7 @@ async function handle(request: NextRequest) {
   const len = Number(request.headers.get("content-length") ?? 0);
   if (len > MAX_BODY) return NextResponse.json({ ok: false, error: "too_large" }, { status: 413 });
 
-  if (!(await hit(`web-lead:ip:${ip}`, 5, 10 * 60 * 1000))) {
+  if (!(await hit(`web-lead:ip:${ip}`, 5, 10 * 60 * 1000)) || !(await hit(`web-lead:net:${ipPrefix(ip)}`, 30, 60 * 60 * 1000))) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
 

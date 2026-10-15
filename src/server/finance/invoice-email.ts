@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { prisma } from "../db";
 import { requirePermission, systemCtx, type Ctx } from "../context";
+import { enforceLimit } from "../security/limits";
 import { conflict, notFound } from "../errors";
 import { unitOfWork } from "../events/bus";
 import { addDays, todayIn } from "../commercial/dates";
@@ -173,6 +174,7 @@ export async function invoiceEmailDefaults(ctx: Ctx, id: string) {
 /** "Send to client" (first send or a manual reminder). Throws EMAIL_NOT_CONFIGURED / EMAIL_FAILED so the UI can say so. */
 export async function emailInvoice(ctx: Ctx, id: string, raw: unknown) {
   requirePermission(ctx, "finance.invoices.send");
+  await enforceLimit("invoiceEmail", ctx.userId);
   const input = sendSchema.parse(raw);
   const inv = await loadInvoice(ctx.organizationId, id, await invoiceWhere(ctx));
   if (!(SENDABLE as readonly string[]).includes(inv.status)) throw conflict(`INVOICE_NOT_SENDABLE:${inv.status}`);

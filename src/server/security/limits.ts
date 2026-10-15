@@ -9,7 +9,9 @@ export const LIMITS = {
   upload: { limit: 30, windowMs: 10 * 60_000 },
   integrationTest: { limit: 10, windowMs: 10 * 60_000 },
   passwordChange: { limit: 5, windowMs: 15 * 60_000 },
-  operatorRetry: { limit: 60, windowMs: 10 * 60_000 }
+  operatorRetry: { limit: 60, windowMs: 10 * 60_000 },
+  /** e-mails leave from the company domain: a hijacked account must not be able to spam through it */
+  invoiceEmail: { limit: 20, windowMs: 10 * 60_000 }
 } as const;
 
 export async function enforceLimit(kind: keyof typeof LIMITS, actor: string) {
