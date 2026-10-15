@@ -132,7 +132,7 @@ export const packageGroups: PackageGroup[] = [
         features: [
           { ar: "ورشة تحليل متطلبات ووثيقة نطاق مكتوبة قبل البدء", en: "A requirements workshop and a written scope before we start" },
           { ar: "تطبيق ويب أو نظام إدارة بصلاحيات لكل دور", en: "A web app or management system with role permissions" },
-          { ar: "تطبيق جوال للآيفون والأندرويد عند الحاجة", en: "iOS and Android app when needed" },
+          { ar: "تطبيق جوال للآيفون والأندرويد عند الحاجة (يُسعَّر حسب متطلباته)", en: "iOS and Android app when needed (priced to its requirements)" },
           { ar: "ربط مع أنظمتك: المحاسبة وإدارة العملاء وبوابات الدفع", en: "Integrations with your systems (accounting, CRM, payments) via API" },
           { ar: "لوحات تقارير ومؤشرات للإدارة", en: "Reports and KPI dashboards for management" },
           { ar: "ملكية كاملة للكود وتسليم موثق", en: "Full code ownership and documented hand-over" },
@@ -841,32 +841,36 @@ export const offers: Offer[] = [
     oldPrice: 2499
   },
   {
-    slug: "day-app-ui",
+    slug: "day-landing",
     cycle: "daily",
-    service: "ux-ui-design",
-    icon: "Smartphone",
-    badge: { ar: "صفقة اليوم — تصميم تطبيقات", en: "Deal of the day — app design" },
-    title: { ar: "تصميم واجهات تطبيقك حتى 15 شاشة بـ 2,499 ريال", en: "Your app's UI, up to 15 screens, for SAR 2,499" },
-    text: { ar: "حوّل فكرة تطبيقك إلى تصميم كامل قابل للتجربة: رحلة المستخدم، الشاشات، ونموذج تفاعلي تعرضه على المستثمرين أو المطورين.", en: "Turn your app idea into a complete, clickable design: user journey, screens and an interactive prototype to show investors or developers." },
-    forWho: { ar: "لأصحاب الأفكار والشركات الناشئة قبل بدء البرمجة.", en: "For founders and start-ups before development begins." },
+    service: "web-development",
+    icon: "MousePointerClick",
+    badge: { ar: "صفقة اليوم — صفحة هبوط", en: "Deal of the day — landing page" },
+    title: { ar: "صفحة هبوط احترافية لحملتك الإعلانية بـ 999 ريالاً", en: "A professional landing page for your ad campaign, SAR 999" },
+    text: { ar: "صفحة واحدة مصممة لتحويل زوار إعلانك إلى طلبات: عرض واضح، وزر طلب وواتساب، ونموذج يصل لبريدك، وبكسل يقيس كل طلب — أسرع وأرخص من موقع كامل.", en: "One page built to turn ad visitors into orders: a clear offer, order and WhatsApp buttons, a form to your inbox and a pixel that measures every order — faster and cheaper than a full site." },
+    forWho: { ar: "لمن يطلق حملة على سناب أو تيك توك أو جوجل لمنتج أو خدمة أو عرض محدد، ويريد صفحة تبيع بدل إرسال الزوار للصفحة الرئيسية.", en: "For anyone running a Snap, TikTok or Google campaign for one product, service or offer who wants a page that sells instead of sending visitors to the home page." },
     features: [
-      { ar: "حتى 15 شاشة", en: "Up to 15 screens" },
-      { ar: "نموذج تفاعلي قابل للتجربة", en: "An interactive Figma prototype" },
-      { ar: "ملفات جاهزة للمطورين", en: "Developer-ready files" }
+      { ar: "صفحة واحدة بتصميم مخصص", en: "One custom-designed page" },
+      { ar: "زر واتساب ونموذج طلب", en: "WhatsApp button and order form" },
+      { ar: "بكسل الإعلانات وتحليلات جوجل", en: "Ad pixels and Google Analytics" }
     ],
     deliverables: [
-      { title: { ar: "رحلة المستخدم", en: "User journey" }, text: { ar: "تخطيط الشاشات والتنقل بينها قبل التصميم.", en: "Screens and navigation mapped before design." } },
-      { title: { ar: "التصميم", en: "Design" }, text: { ar: "حتى 15 شاشة بهويتك للجوال، مع جولتي تعديل.", en: "Up to 15 mobile screens in your brand, with two revision rounds." } },
-      { title: { ar: "التسليم", en: "Hand-over" }, text: { ar: "نموذج تفاعلي وملف تصميم منظم جاهز للمطورين.", en: "An interactive prototype and an organised Figma file with components." } }
+      { title: { ar: "التصميم", en: "Design" }, text: { ar: "صفحة بهويتك متجاوبة مع الجوال: العرض، المميزات، آراء العملاء، الأسئلة المتكررة، وزر الطلب.", en: "A mobile-first page in your brand: the offer, benefits, testimonials, FAQs and the order button." } },
+      { title: { ar: "الطلبات", en: "Orders" }, text: { ar: "نموذج يصل لبريدك وزر واتساب برسالة جاهزة باسم العرض.", en: "A form to your inbox and a WhatsApp button with a ready message naming the offer." } },
+      { title: { ar: "القياس", en: "Measurement" }, text: { ar: "بكسل سناب وتيك توك وميتا وتحليلات جوجل مع تتبع كل طلب.", en: "Snap, TikTok and Meta pixels plus Google Analytics, tracking every order." } },
+      { title: { ar: "النشر", en: "Publishing" }, text: { ar: "رفعها على نطاقك أو نطاق فرعي، مع شهادة الأمان وتحسين السرعة.", en: "Published on your domain or a sub-domain, with SSL and speed optimisation." } }
     ],
-    delivery: { ar: "14 يوم عمل", en: "14 business days" },
+    delivery: { ar: "5 أيام عمل من استلام المحتوى", en: "5 business days from receiving the content" },
     terms: [
-      { ar: "جولتان من التعديلات", en: "Two revision rounds" },
+      { ar: "صفحة واحدة بلغة واحدة وجولة تعديل واحدة", en: "One page in one language, one revision round" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
-    excludes: [{ ar: "برمجة التطبيق (متاحة في باقات المواقع والتطبيقات)", en: "App development (in the website & app packages)" }],
-    price: 2499,
-    oldPrice: 3999
+    excludes: [
+      { ar: "الاستضافة والنطاق (إن لم تكن لديك)", en: "Hosting and domain (if you don't have them)" },
+      { ar: "إدارة الحملة وميزانية الإعلانات", en: "Campaign management and ad budget" }
+    ],
+    price: 999,
+    oldPrice: 1799
   }
 ];
 
