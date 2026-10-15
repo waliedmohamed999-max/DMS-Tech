@@ -362,6 +362,8 @@ export function ServiceVisual({ service, locale, className = "" }: { service: st
     <div aria-hidden className={`sv relative overflow-hidden rounded-2xl bg-gradient-to-br from-lilac via-white to-cloud ${className}`} dir={l === "ar" ? "rtl" : "ltr"}>
       <span className="absolute -end-10 -top-10 size-40 rounded-full bg-iris/10 blur-2xl" />
       <Scene l={l} />
+      {/* sample screens, not a real client: labelled so nobody reads them as results */}
+      <span className="absolute bottom-2 start-2 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-medium text-graphite backdrop-blur-sm">{pick(l, "مثال توضيحي", "Illustration")}</span>
     </div>
   );
 }

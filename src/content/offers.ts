@@ -444,7 +444,7 @@ export const packageGroups: PackageGroup[] = [
     short: { ar: "حلول واتساب", en: "WhatsApp" },
     text: { ar: "رد أسرع ومبيعات أكثر على القناة التي يفضلها عملاؤك.", en: "Faster replies and more sales on your clients' favourite channel." },
     highlights: [{ ar: "رقمك الرسمي باسم نشاطك", en: "Your official number under your business name" }, { ar: "بوت يرد ويحجز ويؤهل العملاء 24 ساعة", en: "A bot that answers, books and qualifies 24/7" }, { ar: "صندوق محادثات واحد لكل فريقك", en: "One inbox for your whole team" }],
-    notice: { ar: "اشتراك شهري بلا عقد طويل، والإعداد مجاني. رسوم الرسائل التي تتقاضاها ميتا تُحتسب حسب استخدامك الفعلي، والرد على العميل خلال 24 ساعة من رسالته مجاني ضمن الحدود التي تحددها ميتا.", en: "A monthly subscription with no long contract, and free set-up. Meta's own message fees follow your actual usage; replying within 24 hours of a client's message is free within Meta's limits." },
+    notice: { ar: "اشتراك شهري بلا عقد طويل، والإعداد مجاني. رسوم الرسائل التي تتقاضاها ميتا تُحتسب حسب استخدامك الفعلي، والرد على العميل خلال 24 ساعة من رسالته مجاني ضمن الحدود التي تحددها ميتا. اعتماد الحساب وقوالب الرسائل يخضع لموافقة ميتا.", en: "A monthly subscription with no long contract, and free set-up. Meta's own message fees follow your actual usage; replying within 24 hours of a client's message is free within Meta's limits. Account and template approval is subject to Meta." },
     tiers: [
       {
         key: "wa-basic",
