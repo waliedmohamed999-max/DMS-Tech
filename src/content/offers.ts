@@ -462,78 +462,85 @@ export const packageGroups: PackageGroup[] = [
     segment: "smb",
     service: "whatsapp-automation",
     icon: "MessagesSquare",
-    title: { ar: "باقات واتساب والأتمتة", en: "WhatsApp solution packages" },
-    short: { ar: "حلول واتساب", en: "WhatsApp" },
-    text: { ar: "رد أسرع ومبيعات أكثر على القناة التي يفضلها عملاؤك.", en: "Faster replies and more sales on your clients' favourite channel." },
-    highlights: [{ ar: "رقمك الرسمي باسم نشاطك", en: "Your official number under your business name" }, { ar: "بوت يرد ويحجز ويؤهل العملاء 24 ساعة", en: "A bot that answers, books and qualifies 24/7" }, { ar: "صندوق محادثات واحد لكل فريقك", en: "One inbox for your whole team" }],
-    notice: { ar: "اشتراك شهري بلا عقد طويل، والإعداد مجاني. رسوم الرسائل التي تتقاضاها ميتا تُحتسب حسب استخدامك الفعلي، والرد على العميل خلال 24 ساعة من رسالته مجاني ضمن الحدود التي تحددها ميتا. اعتماد الحساب وقوالب الرسائل يخضع لموافقة ميتا.", en: "A monthly subscription with no long contract, and free set-up. Meta's own message fees follow your actual usage; replying within 24 hours of a client's message is free within Meta's limits. Account and template approval is subject to Meta." },
+    title: { ar: "باقات واتساب للأعمال", en: "WhatsApp for business plans" },
+    short: { ar: "واتساب للأعمال", en: "WhatsApp" },
+    text: { ar: "حوّل واتساب من رسائل متراكمة إلى قناة مبيعات وخدمة عملاء منظمة: رقم رسمي موثق، وفريق يعمل من صندوق واحد، وردود ومسارات آلية، وتقارير تقيس سرعة الرد والطلبات.", en: "Turn WhatsApp from a pile of messages into an organised sales and service channel: a verified official number, a team working from one inbox, automated replies and flows, and reports on response time and orders." },
+    highlights: [
+      { ar: "رقم رسمي موثق باسم نشاطك عبر منصة واتساب للأعمال", en: "A verified official number under your business name on the WhatsApp Business Platform" },
+      { ar: "صندوق محادثات واحد لفريقك مع توزيع المحادثات", en: "One shared inbox for your team with conversation routing" },
+      { ar: "مسارات آلية تعمل على مدار الساعة وتحوّل للموظف عند الحاجة", en: "Automated flows around the clock, handing over to staff when needed" }
+    ],
+    notice: { ar: "الأسعار اشتراك شهري قبل الضريبة، والحد الأدنى 3 أشهر، والإعداد مشمول. رسوم محادثات ميتا تُدفع حسب الاستخدام الفعلي وباسمك (الرد خلال 24 ساعة من رسالة العميل مجاني ضمن حدود ميتا). اعتماد الحساب وقوالب الرسائل يخضع لموافقة ميتا.", en: "Prices are monthly subscriptions before VAT, minimum 3 months, set-up included. Meta's conversation fees are paid by actual usage in your name (replying within 24 hours of a client's message is free within Meta's limits). Account and template approval is subject to Meta." },
     tiers: [
       {
         key: "wa-basic",
         icon: "MessageSquareMore",
-        name: { ar: "الأساسية", en: "Basic" },
-        tagline: { ar: "لا تفوّت أي رسالة", en: "Never miss a message" },
-        idealFor: { ar: "الأنشطة الصغيرة التي تنظم رسائل واتساب لأول مرة", en: "Small businesses organising WhatsApp for the first time" },
-        price: 199,
+        name: { ar: "الانطلاق", en: "Launch" },
+        tagline: { ar: "رقم رسمي منظم وفريق يرد من مكان واحد", en: "An organised official number and a team replying from one place" },
+        idealFor: { ar: "الأنشطة التي تنتقل من واتساب الجوال إلى واتساب الأعمال الرسمي", en: "Businesses moving from WhatsApp on a phone to the official business platform" },
+        price: 599,
         from: false,
         period: perMonth,
-        delivery: { ar: "يومان عمل", en: "2 business days" },
+        delivery: { ar: "3 أيام عمل بعد اعتماد ميتا", en: "3 business days after Meta approval" },
         features: [
-          { ar: "ربط رقمك بمنصة واتساب للأعمال الرسمية", en: "Your number on the official WhatsApp Business Platform" },
-          { ar: "مستخدم واحد", en: "One user" },
-          { ar: "رسالة ترحيب ورد خارج أوقات العمل", en: "Welcome and out-of-hours messages" },
-          { ar: "10 ردود سريعة جاهزة للأسئلة المتكررة", en: "10 ready quick replies for frequent questions" },
-          { ar: "دعم فني عبر واتساب", en: "Support on WhatsApp" }
+          { ar: "ربط رقمك بمنصة واتساب للأعمال وتوثيق نشاطك لدى ميتا", en: "Your number on the WhatsApp Business Platform, business verified with Meta" },
+          { ar: "صندوق محادثات مشترك حتى مستخدمين اثنين", en: "A shared inbox for up to 2 users" },
+          { ar: "قائمة ترحيب آلية بالخدمات والفروع وأوقات العمل", en: "An automated welcome menu with services, branches and hours" },
+          { ar: "رد خارج أوقات العمل و20 رداً سريعاً جاهزاً", en: "Out-of-hours replies and 20 ready quick replies" },
+          { ar: "تصنيف المحادثات وملاحظات داخلية", en: "Conversation labels and internal notes" },
+          { ar: "تقرير شهري بعدد المحادثات وسرعة الرد", en: "A monthly report on conversations and response time" }
         ],
         excludes: [
-          { ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, by usage" },
-          { ar: "الشات بوت والحملات", en: "Chatbot and campaigns" }
+          { ar: "رسوم محادثات ميتا حسب الاستخدام", en: "Meta conversation fees, by usage" },
+          { ar: "الشات بوت والحملات (في الباقات الأعلى)", en: "Chatbot and campaigns (in the higher plans)" }
         ]
       },
       {
         key: "wa-pro",
         icon: "Bot",
         name: { ar: "الاحترافية", en: "Professional" },
-        tagline: { ar: "بوت يرد 24 ساعة ويحوّل الجادّين لفريقك", en: "A 24/7 bot that hands serious leads to your team" },
-        idealFor: { ar: "العيادات والصالونات والمتاجر والشركات كثيرة الرسائل", en: "Clinics, salons, stores and companies with many messages" },
-        price: 499,
+        tagline: { ar: "بوت يرد ويحجز ويؤهل العملاء ويوزعهم على فريقك", en: "A bot that answers, books, qualifies and routes clients to your team" },
+        idealFor: { ar: "العيادات والمتاجر والعقار والشركات الخدمية كثيرة الاستفسارات", en: "Clinics, stores, real estate and service companies with many enquiries" },
+        price: 1299,
         from: false,
         period: perMonth,
-        delivery: { ar: "5 أيام عمل", en: "5 business days" },
+        delivery: { ar: "7 أيام عمل بعد اعتماد ميتا", en: "7 business days after Meta approval" },
         featured: true,
         features: [
-          { ar: "حتى 3 مستخدمين في صندوق محادثات مشترك", en: "Up to 3 users in a shared inbox" },
-          { ar: "شات بوت بتدفقات مصممة لنشاطك (قائمة خدمات، حجز، أسئلة)", en: "Chatbot flows designed for your business (menu, booking, FAQs)" },
-          { ar: "تأهيل العملاء وتحويلهم للموظف المناسب", en: "Lead qualification and hand-over to the right person" },
-          { ar: "5 قوالب رسائل معتمدة من ميتا", en: "5 Meta-approved message templates" },
-          { ar: "تعيين المحادثات والملاحظات الداخلية", en: "Conversation assignment and internal notes" },
-          { ar: "تقرير شهري بعدد المحادثات وسرعة الرد", en: "A monthly report on conversations and response time" }
+          { ar: "حتى 5 مستخدمين مع توزيع المحادثات على الأقسام", en: "Up to 5 users with routing by department" },
+          { ar: "شات بوت بمسارات مصممة لنشاطك: خدمات، أسعار، حجز، طلبات", en: "A chatbot with flows designed for you: services, prices, booking, orders" },
+          { ar: "تأهيل العملاء (الاسم، المدينة، الخدمة) وتحويلهم بملخص", en: "Lead qualification (name, city, service) and hand-over with a summary" },
+          { ar: "10 قوالب رسائل معتمدة: تأكيد، تذكير، متابعة", en: "10 approved templates: confirmation, reminder, follow-up" },
+          { ar: "رسائل جماعية للعملاء الموافقين حتى 2,000 رسالة شهرياً", en: "Broadcasts to opted-in clients, up to 2,000 messages a month" },
+          { ar: "ربط مع سلة أو زد أو جداول جوجل", en: "Integration with Salla, Zid or Google Sheets" },
+          { ar: "تقارير أداء الفريق والحملات شهرياً", en: "Monthly team and campaign reports" }
         ],
         excludes: [
-          { ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, by usage" },
-          { ar: "الحملات الجماعية (في الباقة المتقدمة)", en: "Bulk campaigns (in Advanced)" }
+          { ar: "رسوم محادثات ميتا حسب الاستخدام", en: "Meta conversation fees, by usage" },
+          { ar: "الذكاء الاصطناعي وتكامل أنظمة العملاء (في أتمتة الأعمال)", en: "AI and CRM integration (in Business automation)" }
         ]
       },
       {
         key: "wa-advanced",
-        icon: "Megaphone",
+        icon: "Workflow",
         name: { ar: "أتمتة الأعمال", en: "Business automation" },
-        tagline: { ar: "واتساب مربوط بنظامك وتدفقات عمل تلقائية", en: "WhatsApp linked to your system with automatic workflows" },
-        idealFor: { ar: "الفرق والشركات التي تريد ربط المحادثات بعملياتها", en: "Teams and companies that want conversations tied to their operations" },
-        price: 1499,
+        tagline: { ar: "واتساب مربوط بأنظمتك ومساعد ذكي وأتمتة كاملة", en: "WhatsApp linked to your systems, an AI assistant and full automation" },
+        idealFor: { ar: "الشركات متعددة الفروع والمتاجر ذات الطلبات العالية", en: "Multi-branch companies and high-volume stores" },
+        price: 2999,
         from: true,
         period: perMonth,
-        delivery: { ar: "بعد تحليل النطاق — عادة 2 إلى 3 أسابيع", en: "After scope analysis — usually 2–3 weeks" },
+        delivery: { ar: "بعد تحليل النطاق — عادة 3 إلى 4 أسابيع", en: "After scope analysis — usually 3–4 weeks" },
         features: [
-          { ar: "كل مميزات الباقة الاحترافية", en: "Everything in Professional" },
-          { ar: "تدفقات عمل تلقائية (طلبات، حجوزات، متابعة)", en: "Automatic workflows (orders, bookings, follow-up)" },
-          { ar: "تكامل مع نظام عملاء واحد", en: "Integration with one CRM" },
-          { ar: "إشعارات للفريق عند الأحداث المهمة", en: "Team alerts on key events" },
-          { ar: "تقرير أداء شهري", en: "A monthly performance report" }
+          { ar: "كل مميزات الاحترافية وحتى 15 مستخدماً", en: "Everything in Professional and up to 15 users" },
+          { ar: "مساعد ذكاء اصطناعي يجيب من ملفاتك بالعربي والإنجليزي", en: "An AI assistant answering from your files in Arabic and English" },
+          { ar: "تكامل مع نظام العملاء أو نظام المبيعات (CRM / ERP)", en: "Integration with your CRM or sales system (CRM / ERP)" },
+          { ar: "استرداد السلات المتروكة وإشعارات الطلب والشحن", en: "Abandoned-cart recovery and order / shipping notifications" },
+          { ar: "توزيع المحادثات على الفروع والفرق تلقائياً", en: "Automatic routing across branches and teams" },
+          { ar: "مدير حساب مخصص ومراجعة شهرية للأداء", en: "A dedicated account manager and monthly performance review" }
         ],
         excludes: [
-          { ar: "رسوم رسائل ميتا ورسوم مزود الخدمة حسب الاستخدام", en: "Meta message and provider fees, by usage" },
-          { ar: "أي تكامل إضافي يُسعَّر حسب النطاق", en: "Extra integrations priced by scope" }
+          { ar: "رسوم محادثات ميتا ورسوم الذكاء الاصطناعي حسب الاستخدام", en: "Meta conversation and AI usage fees" },
+          { ar: "التكاملات الإضافية تُسعَّر حسب النطاق", en: "Extra integrations priced by scope" }
         ]
       }
     ]
@@ -1316,29 +1323,29 @@ export const offers: Offer[] = [
     service: "whatsapp-automation",
     icon: "Bot",
     badge: { ar: "صفقة اليوم — واتساب للأعمال", en: "Deal of the day — WhatsApp for business" },
-    title: { ar: "واتساب الاحترافي 3 أشهر بـ 999 ريالاً: بوت يرد ويؤهل ويحوّل لفريقك", en: "WhatsApp Professional, 3 months for SAR 999: a bot that answers, qualifies and hands over" },
-    text: { ar: "باقة «الاحترافية» (499 شهرياً) لمدة 3 أشهر بسعر اليوم: رقمك الرسمي، ومسارات محادثة مصممة لنشاطك، وتأهيل العملاء وتحويل الجادّين للموظف المناسب، وصندوق محادثات مشترك لفريقك.", en: "The Professional plan (499/month) for 3 months at today's price: your official number, conversation flows designed for your business, lead qualification and hand-over to the right person, and a shared inbox for your team." },
+    title: { ar: "واتساب الاحترافي 3 أشهر بـ 2,499 ريالاً بدل 3,897: بوت يرد ويؤهل ويوزع على فريقك", en: "WhatsApp Professional, 3 months for SAR 2,499 instead of 3,897: a bot that answers, qualifies and routes" },
+    text: { ar: "باقة «الاحترافية» (1,299 شهرياً) لمدة 3 أشهر بسعر اليوم: رقمك الرسمي، ومسارات محادثة مصممة لنشاطك، وتأهيل العملاء وتحويل الجادّين للموظف المناسب، وصندوق محادثات مشترك لفريقك.", en: "The Professional plan (1,299/month) for 3 months at today's price: your official number, conversation flows designed for your business, lead qualification and hand-over to the right person, and a shared inbox for your team." },
     forWho: { ar: "للعيادات والمتاجر والشركات العقارية والخدمية التي تصلها رسائل كثيرة ولا تستطيع الرد عليها كلها بسرعة.", en: "For clinics, stores, real-estate and service companies with more messages than they can answer quickly." },
     features: [
       { ar: "مسارات محادثة مصممة لنشاطك", en: "Conversation flows designed for your business" },
       { ar: "تأهيل العملاء وتحويلهم لفريقك", en: "Lead qualification and hand-over to your team" },
-      { ar: "حتى 3 موظفين في صندوق واحد", en: "Up to 3 staff in one inbox" }
+      { ar: "حتى 5 موظفين ورسائل جماعية للعملاء", en: "Up to 5 staff and broadcasts to clients" }
     ],
     deliverables: [
       { title: { ar: "الرقم الرسمي", en: "Official number" }, text: { ar: "ربط رقمك بمنصة واتساب للأعمال وتوثيق نشاطك لدى ميتا.", en: "Your number on the WhatsApp Business Platform with your business verified by Meta." } },
       { title: { ar: "مسارات المحادثة", en: "Conversation flows" }, text: { ar: "قائمة خدمات أو منتجات، وأسئلة متكررة، وحجز أو طلب، بالعربي والإنجليزي.", en: "A service or product menu, FAQs and booking or ordering, in Arabic and English." } },
       { title: { ar: "التأهيل والتحويل", en: "Qualification & hand-over" }, text: { ar: "يسأل عن الاسم والمدينة والخدمة، ثم يحوّل المحادثة للموظف المناسب مع ملخص.", en: "Asks for name, city and service, then hands the chat to the right person with a summary." } },
-      { title: { ar: "الفريق والتقارير", en: "Team & reports" }, text: { ar: "صندوق مشترك حتى 3 موظفين، و5 قوالب رسائل، وتقرير شهري بالمحادثات وسرعة الرد.", en: "A shared inbox for up to 3 staff, 5 message templates and a monthly report on conversations and response time." } }
+      { title: { ar: "الفريق والتقارير", en: "Team & reports" }, text: { ar: "صندوق مشترك حتى 5 موظفين، و10 قوالب رسائل، ورسائل جماعية حتى 2,000 شهرياً، وربط مع سلة أو زد، وتقرير شهري.", en: "A shared inbox for up to 5 staff, 10 templates, broadcasts up to 2,000 a month, Salla / Zid integration and a monthly report." } }
     ],
     delivery: { ar: "5 أيام عمل بعد اعتماد ميتا لحسابك", en: "5 business days after Meta approves your account" },
     terms: [
-      { ar: "الدفع مقدماً عن الأشهر الثلاثة، وبعدها بسعر الباقة (499 شهرياً) أو الإلغاء بلا التزام", en: "The three months are paid upfront; then the plan price (499/month) or cancel with no commitment" },
+      { ar: "الدفع مقدماً عن الأشهر الثلاثة، وبعدها بسعر الباقة (1,299 شهرياً) أو الإلغاء بلا التزام", en: "The three months are paid upfront; then the plan price (1,299/month) or cancel with no commitment" },
       { ar: "اعتماد الحساب وقوالب الرسائل يخضع لموافقة ميتا", en: "Account and template approval is subject to Meta" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
     excludes: [{ ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, billed by usage" }],
-    price: 999,
-    oldPrice: 1497
+    price: 2499,
+    oldPrice: 3897
   },
   {
     slug: "day-integration",
