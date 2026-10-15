@@ -62,7 +62,7 @@ describe("packages & offers", () => {
       "web-week": price("web-growth"),
       "marketing-week": price("mkt-growth") + price("social-engage"),
       "ai-agent-week": price("ai-assistant"),
-      "whatsapp-year-week": price("wa-pro") * 12,
+      "whatsapp-year-week": packageGroups.flatMap((g) => g.tiers).find((x) => x.key === "wa-pro")!.annual!,
       "system-week": price("app-mvp"),
       "day-automation": price("ai-auto-starter"),
       "day-website": price("web-starter"),

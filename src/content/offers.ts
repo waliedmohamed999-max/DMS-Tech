@@ -265,7 +265,7 @@ export const packageGroups: PackageGroup[] = [
       { icon: "ShoppingBag", title: { ar: "بناء المتجر", en: "Building the store" }, text: { ar: "تصميم المتجر ورفع المنتجات وربط الدفع والشحن.", en: "Store design, products uploaded, payments and shipping connected." }, tier: "store-growth" },
       { icon: "Target", title: { ar: "التجهيز للإعلان", en: "Ready to advertise" }, text: { ar: "البكسل والتحليلات وكتالوج المنتجات والحسابات الإعلانية — كل طلب يُقاس.", en: "Pixels, analytics, the product catalogue and ad accounts — every order is measured." }, tier: "store-growth" },
       { icon: "Rocket", title: { ar: "الإطلاق", en: "Launch" }, text: { ar: "تصاميم الافتتاح وكوبونات الخصم وأول حملة إعلانية.", en: "Opening designs, discount coupons and the first ad campaign." }, tier: "store-growth" },
-      { icon: "MessagesSquare", title: { ar: "أول الطلبات", en: "First orders" }, text: { ar: "واتساب يرد على العملاء ويبلغك بكل طلب ويسترجع السلات المتروكة.", en: "WhatsApp answers clients, alerts you to every order and recovers abandoned carts." }, tier: "wa-pro" },
+      { icon: "MessagesSquare", title: { ar: "أول الطلبات", en: "First orders" }, text: { ar: "واتساب يرد على العملاء ويؤهلهم ويبلغك بكل طلب جديد.", en: "WhatsApp answers and qualifies clients and alerts you to every new order." }, tier: "wa-pro" },
       { icon: "TrendingUp", title: { ar: "النمو المستمر", en: "Ongoing growth" }, text: { ar: "إدارة الحملات والسوشيال ميديا شهرياً بتقارير تقيس الطلبات والعائد.", en: "Monthly campaign and social media management with reports on orders and return." }, tier: "mkt-growth" }
     ]
   },
@@ -631,7 +631,7 @@ export const packageGroups: PackageGroup[] = [
         ],
         excludes: [
           { ar: "رسوم استخدام الذكاء الاصطناعي ورسائل ميتا حسب الاستخدام", en: "AI usage and Meta message fees, by usage" },
-          { ar: "اشتراك واتساب للأعمال (في باقات حلول واتساب)", en: "The WhatsApp Business subscription (in the WhatsApp packages)" }
+          { ar: "اشتراك واتساب للأعمال (في باقات واتساب للأعمال)", en: "The WhatsApp Business subscription (in the WhatsApp packages)" }
         ]
       },
       {
@@ -1107,8 +1107,8 @@ export const offers: Offer[] = [
     service: "whatsapp-automation",
     icon: "Bot",
     badge: { ar: "عرض الأسبوع — اشتراك سنوي", en: "Offer of the week — yearly plan" },
-    title: { ar: "واتساب الاحترافي لسنة كاملة بـ 10,999 ريالاً بدل 15,588", en: "WhatsApp Professional for a full year: SAR 10,999 instead of 15,588" },
-    text: { ar: "باقة «الاحترافية» (1,299 شهرياً) لـ 12 شهراً بسعر الأسبوع — أقل من سعر 9 أشهر: بوت بمسارات لنشاطك، وتأهيل العملاء وتحويلهم بملخص، وحملات للعملاء الموافقين، وربط مع سلة أو زد.", en: "The Professional plan (1,299/month) for 12 months at this week's price — less than 9 months: a bot with flows for your business, lead qualification and hand-over, campaigns to opted-in clients and Salla / Zid integration." },
+    title: { ar: "واتساب الاحترافي لسنة كاملة بـ 9,999 ريالاً بدل 12,990", en: "WhatsApp Professional for a full year: SAR 9,999 instead of 12,990" },
+    text: { ar: "الاشتراك السنوي لباقة «الاحترافية» (12,990) بسعر الأسبوع — أقل من سعر 8 أشهر بالاشتراك الشهري: بوت بمسارات لنشاطك، وتأهيل العملاء وتحويلهم بملخص، وحملات للعملاء الموافقين، وربط مع سلة أو زد.", en: "The yearly Professional plan (12,990) at this week's price — less than 8 monthly payments: a bot with flows for your business, lead qualification and hand-over, campaigns to opted-in clients and Salla / Zid integration." },
     forWho: { ar: "للأنشطة التي تعتمد على واتساب يومياً وتريد أفضل سعر وثبات الخدمة طوال السنة.", en: "For businesses that rely on WhatsApp every day and want the best price and a stable service all year." },
     features: [
       { ar: "12 شهراً من الباقة الاحترافية", en: "12 months of Professional" },
@@ -1133,8 +1133,8 @@ export const offers: Offer[] = [
       { ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, by usage" },
       { ar: "مستخدمون إضافيون (حسب الطلب)", en: "Extra users (on request)" }
     ],
-    price: 10999,
-    oldPrice: 15588
+    price: 9999,
+    oldPrice: 12990
   },
   {
     slug: "system-week",
@@ -1207,7 +1207,7 @@ export const offers: Offer[] = [
     icon: "Monitor",
     badge: { ar: "صفقة اليوم — 24 ساعة فقط", en: "Deal of the day — 24 hours only" },
     title: { ar: "موقع تعريفي لشركتك بـ 1,499 ريالاً", en: "A company website for SAR 1,499" },
-    text: { ar: "الباقة الأساسية كاملة بأقل سعر: موقع أنيق حتى 5 صفحات، متجاوب مع الجوال، بنموذج تواصل وزر واتساب — جاهز خلال أسبوع.", en: "The full Starter package at the lowest price: an elegant site of up to 5 pages, mobile-ready, with a contact form and WhatsApp button — ready in a week." },
+    text: { ar: "باقة «الانطلاق» للمواقع كاملة بأقل سعر: موقع أنيق حتى 5 صفحات، متجاوب مع الجوال، بنموذج تواصل وزر واتساب — جاهز خلال أسبوع.", en: "The full Starter package at the lowest price: an elegant site of up to 5 pages, mobile-ready, with a contact form and WhatsApp button — ready in a week." },
     forWho: { ar: "للشركات الصغيرة والمهنيين (المكاتب والعيادات والمقاولون) الذين يحتاجون حضوراً احترافياً بسرعة.", en: "For small companies and professionals (offices, clinics, contractors) who need a professional presence fast." },
     features: [
       { ar: "حتى 5 صفحات", en: "Up to 5 pages" },
@@ -1545,11 +1545,11 @@ export const deals: Deal[] = [
     title: { ar: "عرض خاص: موقع ومتجر وواتساب", en: "Special offer: website, store and WhatsApp" },
     text: { ar: "مثال لصفقة خاصة بعميل واحد — رابطها لا يظهر في الموقع ولا في محركات البحث.", en: "An example single-client deal — its link is not listed on the site or in search engines." },
     items: [
-      { label: { ar: "موقع الشركة — الباقة الاحترافية", en: "Company website — Professional" }, price: 8900 },
-      { label: { ar: "متجر إلكتروني — باقة النمو", en: "Online store — Growth" }, price: 6900 },
-      { label: { ar: "حلول واتساب — الباقة الاحترافية (3 أشهر)", en: "WhatsApp — Professional (3 months)" }, price: 2397 }
+      { label: { ar: "موقع الشركة — باقة الأعمال", en: "Company website — Business" }, price: 5999 },
+      { label: { ar: "متجر إلكتروني — باقة النمو", en: "Online store — Growth" }, price: 4499 },
+      { label: { ar: "واتساب للأعمال — الاحترافية (3 أشهر)", en: "WhatsApp — Professional (3 months)" }, price: 3897 }
     ],
-    total: 15900,
+    total: 11999,
     expiresAt: "2030-12-31",
     preview: true
   }
