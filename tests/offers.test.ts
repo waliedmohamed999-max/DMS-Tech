@@ -169,5 +169,9 @@ describe("packages & offers", () => {
     const m = buildLeadMail(websiteLeadSchema.parse(lead({ offer: "pkg:wa-pro" })), { saved: true });
     expect(m.text).toContain("الباقة / العرض: باقات واتساب والأتمتة — الاحترافية");
     expect(m.text).toContain("النموذج: الباقات والعروض");
+    // the offer page answers and the ad source are in the e-mail too
+    const m2 = buildLeadMail(websiteLeadSchema.parse(lead({ offer: "pkg:store-launch", details: { hasStore: "نعم — سلة" }, utm: { utm_source: "snapchat" } })), { saved: true });
+    expect(m2.text).toContain("حساب سلة أو زد: نعم — سلة");
+    expect(m2.text).toContain("الحملة: utm_source=snapchat");
   });
 });

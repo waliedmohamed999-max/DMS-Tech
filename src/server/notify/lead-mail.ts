@@ -3,7 +3,7 @@ import type { websiteLeadSchema } from "@/server/crm/website";
 import { serviceLabel, SERVICE_KEYS } from "@/lib/crm/services";
 import { services } from "@/content/services";
 import { chatbot } from "@/content/chatbot";
-import { offerLabel } from "@/content/offers";
+import { LEAD_DETAIL_LABELS, offerLabel, type LeadDetailKey } from "@/content/offers";
 import { site } from "@/content/site";
 import { buildMessage, isEmail, oneLine, sendMail, type MailResult } from "./mailer";
 
@@ -56,6 +56,8 @@ export function buildLeadMail(d: Lead, meta: { ip?: string | null; leadNumber?: 
     ["الصفحة", d.page],
     ["جاء من", d.referrer],
     ["الحملة", utm],
+    // the offer page answers (whitelisted keys, labels from src/content/offers.ts)
+    ...Object.entries(d.details ?? {}).filter(([, v]) => v).map(([k, v]): [string, string] => [LEAD_DETAIL_LABELS[k as LeadDetailKey] ?? k, v ?? ""]),
     ["رقم العميل في النظام", meta.leadNumber ?? ""],
     ["الوقت", time],
     ["IP", meta.ip ?? ""]
