@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { Icon } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import { site } from "@/content/site";
+import { ATTRIBUTION_KEY, readAttribution } from "@/components/layout/AttributionCapture";
 
 type Status = "idle" | "sending" | "success" | "error";
 
@@ -16,17 +17,23 @@ const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // budget option values sent to the CRM (labels come from the message files, same order)
 const BUDGET_KEYS = ["undecided", "lt-10k", "10k-30k", "30k-100k", "gt-100k"];
 
-/** Attribution sent with every submission: utm_* params, referrer and page (no cookies, no tracking ids). */
+/**
+ * Attribution sent with every submission: the campaign of this URL, or the one the visit started from (utm_* and ad
+ * click ids, kept in session storage by AttributionCapture), plus referrer and page. No cookies.
+ */
 function attribution() {
   if (typeof window === "undefined") return {};
-  const q = new URLSearchParams(window.location.search);
-  const utm: Record<string, string> = {};
-  for (const k of ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"]) {
-    const v = q.get(k);
-    if (v) utm[k] = v.slice(0, 150);
+  let utm: Record<string, string> = readAttribution(window.location.search);
+  if (!Object.keys(utm).length) {
+    try {
+      const stored = JSON.parse(sessionStorage.getItem(ATTRIBUTION_KEY) ?? "{}") as Record<string, string>;
+      utm = Object.fromEntries(Object.entries(stored).filter(([k]) => k !== "landing"));
+    } catch {}
   }
   return { utm, referrer: document.referrer.slice(0, 300), page: window.location.pathname.slice(0, 200) };
 }
+
+export type FormQuestion = { key: string; label: string; options?: string[]; placeholder?: string };
 
 async function submitLead(payload: Record<string, unknown>) {
   const res = await fetch("/api/leads", {
@@ -44,12 +51,15 @@ export function LeadForm({
   services,
   defaultService,
   source = "quote",
-  offer
+  offer,
+  questions = []
 }: {
   services: { slug: string; title: string }[];
   defaultService?: string;
   source?: "quote" | "contact" | "career" | "offer";
   offer?: { key: string; label: string; caption: string };
+  /** extra questions for this offer (answers go to the CRM as details) */
+  questions?: FormQuestion[];
 }) {
   const t = useTranslations("form");
   const locale = useLocale();
@@ -65,7 +75,10 @@ export function LeadForm({
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
-    const data = Object.fromEntries(new FormData(form)) as Record<string, string>;
+    const all = Object.fromEntries(new FormData(form)) as Record<string, string>;
+    // q_<key> fields answer the offer page questions; everything else is the standard form
+    const details = Object.fromEntries(Object.entries(all).filter(([k, v]) => k.startsWith("q_") && v.trim()).map(([k, v]) => [k.slice(2), v.trim()]));
+    const data = Object.fromEntries(Object.entries(all).filter(([k]) => !k.startsWith("q_")));
     if (!data.name?.trim() || (!data.phone?.trim() && !data.email?.trim())) return setError(t("required"));
     if ((data.phone && !phoneRe.test(data.phone)) || (data.email && !emailRe.test(data.email))) return setError(t("invalidContact"));
 
@@ -76,7 +89,7 @@ export function LeadForm({
       [`DMS Tech — ${offer?.label ?? serviceTitle}`, data.name, data.phone, data.email, data.company, data.message].filter(Boolean).join("\n")
     );
     try {
-      await submitLead({ ...data, source, locale, ...attribution(), elapsed: Date.now() - shownAt.current });
+      await submitLead({ ...data, ...(Object.keys(details).length ? { details } : {}), source, locale, ...attribution(), elapsed: Date.now() - shownAt.current });
       setStatus("success");
       form.reset();
     } catch {
@@ -143,6 +156,22 @@ export function LeadForm({
           ))}
         </select>
       </Field>
+      {questions.map((q) => (
+        <Field key={q.key} label={q.label} htmlFor={`lf-q-${q.key}`}>
+          {q.options ? (
+            <select id={`lf-q-${q.key}`} name={`q_${q.key}`} className="input" defaultValue="">
+              <option value="">—</option>
+              {q.options.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input id={`lf-q-${q.key}`} name={`q_${q.key}`} className="input" placeholder={q.placeholder} maxLength={200} />
+          )}
+        </Field>
+      ))}
       <Field label={t("message")} htmlFor="lf-message" full>
         <textarea id="lf-message" name="message" className="input min-h-32 resize-y" placeholder={t("messagePh")} />
       </Field>

@@ -7,7 +7,7 @@ import { SERVICE_KEYS, WEBSITE_BUDGET_KEYS, WEBSITE_BUDGETS } from "@/lib/crm/se
 import { normEmail, normPhone } from "./normalize";
 import { systemActivity } from "./activities";
 import { createLeadTx } from "./leads";
-import { offerLabel } from "@/content/offers";
+import { LEAD_DETAIL_LABELS, offerLabel, type LeadDetailKey } from "@/content/offers";
 
 /**
  * Public website → CRM lead capture.
@@ -34,7 +34,10 @@ export const websiteLeadSchema = z
     offer: t(160),
     source: z.enum(["quote", "contact", "hero", "cta", "career", "offer"]).default("quote"),
     locale: z.enum(["ar", "en"]).default("ar"),
-    utm: z.record(z.string().regex(/^utm_(source|medium|campaign|term|content)$/), z.string().max(150)).optional(),
+    /** campaign attribution: utm_* plus the ad platforms' click ids (first touch of the visit) */
+    utm: z.record(z.string().regex(/^(utm_(source|medium|campaign|term|content)|gclid|fbclid|ttclid|sccid)$/), z.string().max(150)).optional(),
+    /** answers to the offer page's extra questions (whitelisted keys, see LEAD_DETAIL_LABELS) */
+    details: z.partialRecord(z.enum(Object.keys(LEAD_DETAIL_LABELS) as [LeadDetailKey, ...LeadDetailKey[]]), z.string().trim().max(200)).optional(),
     referrer: z.string().max(300).optional().default(""),
     page: z.string().max(200).optional().default(""),
     /** honeypot: real users never fill it */
@@ -95,7 +98,11 @@ export async function captureWebsiteLead(raw: unknown, meta: { ip?: string | nul
   const offer = d.offer ? offerLabel(d.offer) : null;
   if (offer) d.message = `[${offer}]${d.message ? `
 ${d.message}` : ""}`;
-  const captureMeta = { form: d.source, offer: offer ? { key: d.offer, label: offer } : null, utm: d.utm ?? {}, referrer: d.referrer || null, page: d.page || null, ip: meta.ip ?? null, userAgent: meta.userAgent?.slice(0, 200) ?? null, budgetOption: d.budget || null, rawService: d.service || null };
+  // the extra answers are kept as data and also shown at the end of the message for whoever reads the lead
+  const details = Object.fromEntries(Object.entries(d.details ?? {}).filter(([, v]) => v)) as Partial<Record<LeadDetailKey, string>>;
+  const detailLines = Object.entries(details).map(([k, v]) => `• ${LEAD_DETAIL_LABELS[k as LeadDetailKey]}: ${v}`);
+  if (detailLines.length) d.message = [d.message, ...detailLines].filter(Boolean).join("\n");
+  const captureMeta = { form: d.source, offer: offer ? { key: d.offer, label: offer } : null, utm: d.utm ?? {}, referrer: d.referrer || null, page: d.page || null, ip: meta.ip ?? null, userAgent: meta.userAgent?.slice(0, 200) ?? null, budgetOption: d.budget || null, rawService: d.service || null, details };
 
   const matchOr = [
     ...(email ? [{ emailNormalized: email }] : []),

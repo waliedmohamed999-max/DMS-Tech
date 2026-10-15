@@ -6,7 +6,7 @@ import { industries, integrations } from "@/content/industries";
 import { aiCards, capabilities, nova, phases, promises, trustCards, values } from "@/content/company";
 import { posts } from "@/content/posts";
 import { careersCopy, jobs } from "@/content/careers";
-import { activeOffers, cycleEnd, findDeal, findOffer, offerEndInstant, offers, offersCopy, packageGroups, todaysDeals, type Offer } from "@/content/offers";
+import { activeOffers, cycleEnd, findDeal, findOffer, offerAliases, offerEndInstant, offers, offersCopy, packageGroups, questionsFor, todaysDeals, type Offer } from "@/content/offers";
 import { formatMoney } from "@/lib/commercial/calc";
 import { clientProjects } from "@/content/projects";
 import { projectsCopy } from "@/content/projects-copy";
@@ -147,7 +147,12 @@ export async function getActiveOffers(locale: Locale) {
   return { weekly: activeOffers().filter((o) => o.cycle === "weekly").map((o) => offerView(o, locale)), today: todaysDeals().map((o) => offerView(o, locale)), weekEndsAt: cycleEnd("weekly").toISOString() };
 }
 /** A shareable item: a package tier, a running offer or "today" (null = unknown, ended, or a daily deal on another day). */
-export async function getOfferItem(slug: string, locale: Locale) {
+/** The offer page's extra form questions, localized. */
+const questionsView = (service: string, locale: Locale) =>
+  questionsFor(service).map((q) => ({ key: q.key, label: localize(q.label, locale), ...(q.options ? { options: q.options.map((o) => localize(o, locale)) } : {}), ...(q.placeholder ? { placeholder: localize(q.placeholder, locale) } : {}) }));
+
+export async function getOfferItem(rawSlug: string, locale: Locale) {
+  const slug = offerAliases[rawSlug] ?? rawSlug;
   for (const g of packageGroups) {
     const t = g.tiers.find((x) => x.key === slug);
     if (t)
@@ -164,16 +169,18 @@ export async function getOfferItem(slug: string, locale: Locale) {
         saving: null,
         percent: null,
         endsAtInstant: null,
-        details: null
+        details: null,
+        questions: questionsView(g.service, locale)
       };
   }
   const o = findOffer(slug);
   if (!o) return null;
   const v = offerView(o, locale);
-  return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: v.badge, name: v.title, tagline: v.text, features: v.features, period: null, delivery: v.delivery, icon: o.icon, price: v.price, oldPrice: v.oldPrice, saving: v.saving, percent: v.percent, endsAtInstant: v.endsAtInstant, cycle: o.cycle, details: { forWho: v.forWho, deliverables: v.deliverables, terms: v.terms, excludes: v.excludes } };
+  return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: v.badge, name: v.title, tagline: v.text, features: v.features, period: null, delivery: v.delivery, icon: o.icon, price: v.price, oldPrice: v.oldPrice, saving: v.saving, percent: v.percent, endsAtInstant: v.endsAtInstant, cycle: o.cycle, details: { forWho: v.forWho, deliverables: v.deliverables, terms: v.terms, excludes: v.excludes }, questions: questionsView(o.service, locale) };
 }
 /** "ended" for a past weekly offer, "notToday" for a daily deal on another day, null when the slug never existed. */
-export const offerUnavailable = (slug: string) => {
+export const offerUnavailable = (rawSlug: string) => {
+  const slug = offerAliases[rawSlug] ?? rawSlug;
   const o = offers.find((x) => x.slug === slug);
   return o ? (o.cycle === "daily" ? ("notToday" as const) : ("ended" as const)) : null;
 };
@@ -183,5 +190,5 @@ export async function getDeal(token: string, locale: Locale) {
   return { expired: r.expired, key: `deal:${r.deal.token}`, preview: Boolean(r.deal.preview), ...localize({ client: r.deal.client, title: r.deal.title, text: r.deal.text }, locale), items: r.deal.items.map((i) => ({ label: localize(i.label, locale), price: offerMoney(i.price, locale) })), total: offerMoney(r.deal.total, locale), expiresAt: r.deal.expiresAt, expiresAtInstant: offerEndInstant(r.deal.expiresAt) };
 }
 export async function getOfferSlugs() {
-  return [...packageGroups.flatMap((g) => g.tiers.map((t) => t.key)), ...offers.filter((o) => o.cycle === "weekly").map((o) => o.slug), "today"];
+  return [...packageGroups.flatMap((g) => g.tiers.map((t) => t.key)), ...offers.filter((o) => o.cycle === "weekly").map((o) => o.slug), ...Object.keys(offerAliases), "today"];
 }

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/server/db";
 import { captureWebsiteLead, websiteLeadSchema } from "@/server/crm/website";
 import { buildLeadMail } from "@/server/notify/lead-mail";
-import { activeOffers, cycleEnd, DEALS_PER_DAY, findDeal, findOffer, offerLabel, offers, packageGroups, todaysDeal, todaysDeals } from "@/content/offers";
+import { activeOffers, cycleEnd, DEALS_PER_DAY, findDeal, findOffer, offerAliases, offerLabel, offers, packageGroups, todaysDeal, todaysDeals } from "@/content/offers";
 import { resetDb, setupOrg } from "./helpers";
 
 beforeEach(async () => {
@@ -115,6 +115,24 @@ describe("packages & offers", () => {
     await captureWebsiteLead(lead({ phone: "0550000004", offer: "pkg:made-up<script>" }));
     const l2 = await prisma.lead.findFirstOrThrow({ where: { phone: "0550000004" } });
     expect(l2.message).toBe("نحتاج موقع");
+  });
+
+  it("9. an offer form's extra answers and the ad source reach the CRM; unknown fields are refused", async () => {
+    vi.stubEnv("OS_ORG_SLUG", "test-org");
+    await captureWebsiteLead(lead({ offer: "pkg:store-launch", details: { hasStore: "نعم — سلة", productCount: "حتى 30" }, utm: { utm_source: "snapchat", utm_campaign: "store-oct", gclid: "abc123" } }));
+    const l = await prisma.lead.findFirstOrThrow();
+    expect(l.message).toBe("[باقات المتاجر الإلكترونية — الانطلاق]\nنحتاج موقع\n• حساب سلة أو زد: نعم — سلة\n• عدد المنتجات: حتى 30");
+    const meta = l.captureMeta as { details: Record<string, string>; utm: Record<string, string> };
+    expect(meta.details).toEqual({ hasStore: "نعم — سلة", productCount: "حتى 30" });
+    expect(meta.utm).toEqual({ utm_source: "snapchat", utm_campaign: "store-oct", gclid: "abc123" });
+    // keys outside the whitelist never get in
+    expect(websiteLeadSchema.safeParse(lead({ details: { salary: "1" } })).success).toBe(false);
+    expect(websiteLeadSchema.safeParse(lead({ utm: { session_id: "x" } })).success).toBe(false);
+  });
+
+  it("10. ad links (/offers/<alias>) open a real package or offer", () => {
+    expect(offerAliases["store-marketing"]).toBe("store-week");
+    for (const target of Object.values(offerAliases)) expect(packageGroups.some((g) => g.tiers.some((t) => t.key === target)) || offers.some((o) => o.slug === target && o.cycle === "weekly")).toBe(true);
   });
 
   it("4. the e-mail to the company names the package", () => {

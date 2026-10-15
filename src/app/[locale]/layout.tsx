@@ -11,6 +11,7 @@ import Footer from "@/components/layout/Footer";
 import { WhatsAppFloat } from "@/components/layout/Chrome";
 import { PauseOffscreenMotion } from "@/components/layout/PauseOffscreenMotion";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
+import { AttributionCapture } from "@/components/layout/AttributionCapture";
 import { Splash } from "@/components/layout/Splash";
 import "../globals.css";
 
@@ -77,6 +78,7 @@ export default async function LocaleLayout({
           <WhatsAppFloat />
           <PauseOffscreenMotion />
           <ScrollToTop />
+          <AttributionCapture />
         </NextIntlClientProvider>
       </body>
     </html>

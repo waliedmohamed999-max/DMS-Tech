@@ -292,6 +292,7 @@ export default async function OfferItemPage({ params }: Props) {
                   : undefined
               }
               source="offer"
+              questions={item.questions}
               offer={{ key: item.key, label, caption: c.chosen }}
             />
           </div>
@@ -442,6 +443,28 @@ export default async function OfferItemPage({ params }: Props) {
               </li>
             ))}
           </ol>
+        </div>
+      </section>
+
+      <section className="bg-cloud py-12 md:py-16">
+        <div className="container-site grid max-w-3xl gap-6">
+          <h2 className="text-center text-3xl font-bold">
+            <Highlight text={c.faqTitle} />
+          </h2>
+          <div className="grid gap-3">
+            {c.faqs.map((f) => (
+              <details key={f.q} className="group rounded-2xl border border-mist bg-white p-5 shadow-card open:border-iris/30">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold [&::-webkit-details-marker]:hidden">
+                  {f.q}
+                  <Icon name="ChevronDown" size={18} className="shrink-0 text-iris transition group-open:rotate-180" />
+                </summary>
+                <p className="mt-3 leading-relaxed text-iron">{f.a}</p>
+              </details>
+            ))}
+          </div>
+          <a href="#order" className="btn btn-primary mx-auto">
+            {c.orderNow} <Icon name={arrow} size={16} />
+          </a>
         </div>
       </section>
 
