@@ -10,11 +10,12 @@ import { registerSystemSubscribers } from "../system/alerts";
  * wherever services run (server actions, route handlers, tests).
  */
 
-let registered = false;
+// on globalThis, not a module variable: dev hot reload re-runs this module while the bus keeps its handlers
+const flag = globalThis as unknown as { __dmsSubscribersRegistered?: boolean };
 
 export function registerSubscribers() {
-  if (registered) return;
-  registered = true;
+  if (flag.__dmsSubscribersRegistered) return;
+  flag.__dmsSubscribersRegistered = true;
 
   // Activity feed: any event that carries an `activity` descriptor
   subscribe("*", async (e) => {

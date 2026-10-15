@@ -59,7 +59,13 @@ const subscribers = new Map<string, Registered[]>();
 export function subscribe(type: string, fn: Subscriber, name?: string) {
   const list = subscribers.get(type) ?? [];
   const key = name ?? `${type}#${list.length}`;
-  if (list.some((r) => r.key === key)) throw new Error(`duplicate subscriber key ${key}`);
+  if (list.some((r) => r.key === key)) {
+    // dev hot reload re-runs the registering module while this map survives: swap in the new handler instead of
+    // failing every request; anywhere else a repeated key is a real wiring bug
+    if (process.env.NODE_ENV !== "development") throw new Error(`duplicate subscriber key ${key}`);
+    subscribers.set(type, list.map((r) => (r.key === key ? { key, fn } : r)));
+    return;
+  }
   subscribers.set(type, [...list, { key, fn }]);
 }
 
