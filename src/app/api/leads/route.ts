@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { leadSchema, saveLead } from "@/lib/leads";
-import { hit } from "@/server/rate-limit";
+import { hitOrLocal } from "@/server/rate-limit";
 import { randomUUID } from "node:crypto";
 import { runWithObs } from "@/server/obs/context";
 import { reportError } from "@/server/obs/errors";
@@ -40,7 +40,8 @@ async function handle(request: NextRequest) {
   const len = Number(request.headers.get("content-length") ?? 0);
   if (len > MAX_BODY) return NextResponse.json({ ok: false, error: "too_large" }, { status: 413 });
 
-  if (!(await hit(`web-lead:ip:${ip}`, 5, 10 * 60 * 1000)) || !(await hit(`web-lead:net:${ipPrefix(ip)}`, 30, 60 * 60 * 1000))) {
+  // the form keeps working (and keeps its limits) when the database is down: the request then goes out by e-mail
+  if (!(await hitOrLocal(`web-lead:ip:${ip}`, 5, 10 * 60 * 1000)) || !(await hitOrLocal(`web-lead:net:${ipPrefix(ip)}`, 30, 60 * 60 * 1000))) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
 

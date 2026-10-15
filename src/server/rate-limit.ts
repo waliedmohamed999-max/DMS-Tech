@@ -15,3 +15,22 @@ export async function hit(key: string, limit: number, windowMs: number): Promise
     RETURNING "count"`;
   return (rows[0]?.count ?? 1) <= limit;
 }
+
+const local = new Map<string, { count: number; windowStart: number }>();
+/**
+ * Same limiter for public forms that must keep working when the database is unreachable: if the DB call fails, the
+ * window is counted in this process's memory instead (still limited, per instance). Login keeps the DB-only `hit`
+ * so it fails closed.
+ */
+export async function hitOrLocal(key: string, limit: number, windowMs: number): Promise<boolean> {
+  try {
+    return await hit(key, limit, windowMs);
+  } catch {
+    const windowStart = Math.floor(Date.now() / windowMs) * windowMs;
+    const cur = local.get(key);
+    const count = cur && cur.windowStart === windowStart ? cur.count + 1 : 1;
+    local.set(key, { count, windowStart });
+    if (local.size > 5000) local.clear(); // a flood of distinct keys never grows memory without bound
+    return count <= limit;
+  }
+}
