@@ -192,6 +192,17 @@ export default async function OfferItemPage({ params }: Props) {
               {c.save} {item.saving}
             </span>
           )}
+          {item.kind === "package" && item.annual && (
+            <span className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-iron">
+              {c.yearly}{" "}
+              <b className="text-ink" dir="ltr">
+                {item.annual}
+              </b>
+              <span className="rounded-full bg-mint px-2 py-0.5 text-xs font-bold text-fern">
+                {c.save} {item.annualSave}
+              </span>
+            </span>
+          )}
         </div>
       ) : (
         <span className="text-2xl font-bold text-iris">{c.onRequest}</span>

@@ -155,10 +155,10 @@ export function DealsCarousel({ deals, labels, locale }: { deals: DealSlide[]; l
   );
 }
 
-export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; price: string | null; from: boolean; period: string | null; delivery: string; featured?: boolean; features: string[]; excludes: string[] };
+export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; price: string | null; from: boolean; period: string | null; delivery: string; featured?: boolean; features: string[]; excludes: string[]; annual?: string | null; annualSave?: string | null };
 export type JourneyView = { icon: IconName; title: string; text: string; tier: string };
 export type GroupView = { id: string; segment: "smb" | "business"; service: string; icon: IconName; title: string; short: string; text: string; highlights: string[]; notice: string; startsAt: { price: string | null; period: string | null } | null; tiers: TierView[]; journey?: JourneyView[] };
-type BrowserLabels = { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string; prev: string; next: string; quote: string };
+type BrowserLabels = { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string; prev: string; next: string; quote: string; yearly: string; save: string };
 
 /** Packages by service (tabs), three tiers each; every tier links to its own shareable page. */
 export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }: { groups: GroupView[]; labels: BrowserLabels; locale: string; anchor?: string }) {
@@ -245,6 +245,17 @@ export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }:
                     </span>
                     {t.period && <span className="text-sm font-medium text-iron">/ {t.period}</span>}
                   </span>
+                  {t.annual && (
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-iron">
+                      {labels.yearly}{" "}
+                      <b className="text-ink" dir="ltr">
+                        {t.annual}
+                      </b>
+                      <span className="rounded-full bg-mint px-2 py-0.5 font-bold text-fern">
+                        {labels.save} {t.annualSave}
+                      </span>
+                    </span>
+                  )}
                 </span>
               ) : (
                 <span className="text-base font-semibold text-iris">{labels.onRequest}</span>

@@ -35,7 +35,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
   const [c, groups, offers, projects] = await Promise.all([getOffersCopy(locale), getPackageGroups(locale), getActiveOffers(locale), getProjects(locale)]);
   const smb = groups.filter((g) => g.segment === "smb");
   const business = groups.filter((g) => g.segment === "business");
-  const browserLabels = { mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded, journeyTitle: c.journeyTitle, journeySub: c.journeySub, journeyStep: c.journeyStep, aboutService: c.aboutService, prev: c.prev, next: c.next, quote: c.quote };
+  const browserLabels = { mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded, journeyTitle: c.journeyTitle, journeySub: c.journeySub, journeyStep: c.journeyStep, aboutService: c.aboutService, prev: c.prev, next: c.next, quote: c.quote, yearly: c.yearly, save: c.save };
   // structured data: the published packages as an offer catalogue (prices before VAT, in SAR)
   const base = site.url.replace(/\/$/, "");
   const prefix = locale === "ar" ? "" : `/${locale}`;

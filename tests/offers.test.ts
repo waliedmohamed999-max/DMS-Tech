@@ -62,7 +62,7 @@ describe("packages & offers", () => {
       "web-week": price("web-growth"),
       "marketing-week": price("mkt-growth") + price("social-engage"),
       "ai-agent-week": price("ai-assistant"),
-      "ai-bundle-week": price("ai-assistant") + price("ai-auto-starter"),
+      "whatsapp-year-week": price("wa-pro") * 12,
       "system-week": price("app-mvp"),
       "day-automation": price("ai-auto-starter"),
       "day-website": price("web-starter"),
@@ -82,8 +82,10 @@ describe("packages & offers", () => {
       expect(o.oldPrice, o.slug).toBe(made[o.slug]);
       expect(o.price, o.slug).toBeLessThan(o.oldPrice);
     }
+    // a yearly price is always below 12 months of the monthly price
+    for (const t of packageGroups.flatMap((g) => g.tiers).filter((x) => x.annual)) expect(t.annual!, t.key).toBeLessThan(t.price! * 12);
     // every everyday section has a weekly offer
-    for (const svc of ["ecommerce", "web-development", "digital-marketing", "ai-automation"]) expect(offers.some((o) => o.cycle === "weekly" && o.service === svc), svc).toBe(true);
+    for (const svc of ["ecommerce", "web-development", "digital-marketing", "whatsapp-automation", "ai-automation"]) expect(offers.some((o) => o.cycle === "weekly" && o.service === svc), svc).toBe(true);
   });
 
   it("8. every day shows at least one AI / automation / integration deal", () => {
