@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
@@ -7,6 +8,7 @@ import { site } from "@/content/site";
 import {
   getOfferItem,
   getOffersCopy,
+  getProjects,
   getServices,
   offerUnavailable,
 } from "@/lib/content";
@@ -85,11 +87,12 @@ export default async function OfferItemPage({ params }: Props) {
   const { locale: raw, slug } = await params;
   const locale = raw as Locale;
   setRequestLocale(locale);
-  const [c, item, services, nav] = await Promise.all([
+  const [c, item, services, nav, projects] = await Promise.all([
     getOffersCopy(locale),
     getOfferItem(slug, locale),
     getServices(locale),
     getTranslations("nav"),
+    getProjects(locale),
   ]);
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
 
@@ -358,6 +361,56 @@ export default async function OfferItemPage({ params }: Props) {
         </div>
       </section>
 
+      {item.compare && (
+        <section className="py-12 md:py-16">
+          <div className="container-site grid gap-8">
+            <div className="grid justify-items-center gap-1 text-center">
+              <h2 className="text-3xl font-bold">
+                <Highlight text={c.compareTitle} />
+              </h2>
+              <p className="text-iron">{c.compareSub}</p>
+            </div>
+            <div className="grid gap-5 md:grid-cols-3">
+              {item.compare.map((x) => (
+                <div key={x.key} className={`relative grid content-start gap-4 rounded-card border bg-white p-6 ${x.current ? "border-iris shadow-lg ring-4 ring-iris/10" : "border-mist shadow-card"}`}>
+                  {(x.current || x.featured) && <span className={`absolute -top-3 start-6 rounded-full px-3 py-1 text-xs font-semibold ${x.current ? "bg-iris text-white" : "bg-lilac text-iris"}`}>{x.current ? c.current : c.mostPopular}</span>}
+                  <div className="grid gap-1">
+                    <b className="text-xl">{x.name}</b>
+                    <span className="text-sm text-iron">{x.tagline}</span>
+                  </div>
+                  <span className="grid border-y border-mist py-3">
+                    {x.from && <span className="text-xs text-graphite">{c.from}</span>}
+                    <span className="flex flex-wrap items-baseline gap-1.5">
+                      <b className="text-2xl" dir="ltr">
+                        {x.price ?? c.onRequest}
+                      </b>
+                      {x.period && <span className="text-sm text-iron">/ {x.period}</span>}
+                    </span>
+                  </span>
+                  <ul className="grid gap-2">
+                    {x.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-[14px]">
+                        <Icon name="CircleCheck" size={16} className="mt-0.5 shrink-0 text-iris" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  {x.current ? (
+                    <a href="#order" className="btn btn-primary mt-auto w-full justify-center">
+                      {c.orderNow} <Icon name={arrow} size={16} />
+                    </a>
+                  ) : (
+                    <Link href={`/offers/${x.key}`} className="btn btn-outline mt-auto w-full justify-center">
+                      {c.view} <Icon name={arrow} size={16} />
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {d && (
         <section className="py-12 md:py-16">
           <div className="container-site grid gap-8">
@@ -445,6 +498,35 @@ export default async function OfferItemPage({ params }: Props) {
           </ol>
         </div>
       </section>
+
+      {/* real client projects only */}
+      {projects.length > 0 && (
+        <section className="py-12 md:py-16">
+          <div className="container-site grid gap-8">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <h2 className="text-3xl font-bold">
+                <Highlight text={c.projectsTitle} />
+              </h2>
+              <Link href="/clients" className="link-arrow">
+                {c.allProjects} <Icon name={arrow} size={15} />
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              {projects.slice(0, 3).map((pr) => (
+                <Link key={pr.slug} href={`/clients/${pr.slug}`} className="card group grid content-start overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
+                  <span className="relative block aspect-[16/10] overflow-hidden bg-white">
+                    <Image src={pr.cover} alt={pr.name} fill sizes="(min-width: 768px) 33vw, 50vw" className={`transition duration-500 group-hover:scale-105 ${pr.coverFit === "contain" ? "object-contain p-6" : "object-cover"}`} />
+                  </span>
+                  <span className="grid gap-1 p-4">
+                    <b className="text-[15px]">{pr.name}</b>
+                    <span className="text-xs text-iris">{pr.category}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="bg-cloud py-12 md:py-16">
         <div className="container-site grid max-w-3xl gap-6">

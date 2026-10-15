@@ -1466,6 +1466,10 @@ export const offersCopy = {
     { icon: "Rocket", title: { ar: "نبدأ التنفيذ", en: "We start" }, text: { ar: "مدير مشروع يتابع معك حتى التسليم في الموعد المكتوب.", en: "A project manager stays with you until delivery on the written date." } }
   ],
   quickFacts: { ar: "باختصار", en: "At a glance" } as L,
+  compareTitle: { ar: "قارن *الباقات*", en: "Compare *packages*" } as L,
+  compareSub: { ar: "اختر ما يناسب مرحلة نشاطك — يمكنك الترقية لاحقاً.", en: "Pick what fits your stage — you can upgrade later." } as L,
+  current: { ar: "الباقة الحالية", en: "This package" } as L,
+  view: { ar: "التفاصيل", en: "Details" } as L,
   allOffers: { ar: "كل الباقات والعروض", en: "All packages & offers" } as L,
   ended: { ar: "انتهى هذا العرض", en: "This offer has ended" } as L,
   endedText: { ar: "يسعدنا مساعدتك بعرض جديد يناسب احتياجك.", en: "We'd be happy to prepare a new offer for you." } as L,

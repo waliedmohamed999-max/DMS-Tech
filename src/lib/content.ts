@@ -170,13 +170,14 @@ export async function getOfferItem(rawSlug: string, locale: Locale) {
         percent: null,
         endsAtInstant: null,
         details: null,
-        questions: questionsView(g.service, locale)
+        questions: questionsView(g.service, locale),
+        compare: g.tiers.map((x) => ({ key: x.key, current: x.key === t.key, featured: Boolean(x.featured), from: x.from, price: offerMoney(x.price, locale), ...localize({ name: x.name, tagline: x.tagline, period: x.period, delivery: x.delivery, features: x.features.slice(0, 5) }, locale) }))
       };
   }
   const o = findOffer(slug);
   if (!o) return null;
   const v = offerView(o, locale);
-  return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: v.badge, name: v.title, tagline: v.text, features: v.features, period: null, delivery: v.delivery, icon: o.icon, price: v.price, oldPrice: v.oldPrice, saving: v.saving, percent: v.percent, endsAtInstant: v.endsAtInstant, cycle: o.cycle, details: { forWho: v.forWho, deliverables: v.deliverables, terms: v.terms, excludes: v.excludes }, questions: questionsView(o.service, locale) };
+  return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: v.badge, name: v.title, tagline: v.text, features: v.features, period: null, delivery: v.delivery, icon: o.icon, price: v.price, oldPrice: v.oldPrice, saving: v.saving, percent: v.percent, endsAtInstant: v.endsAtInstant, cycle: o.cycle, details: { forWho: v.forWho, deliverables: v.deliverables, terms: v.terms, excludes: v.excludes }, questions: questionsView(o.service, locale), compare: null };
 }
 /** "ended" for a past weekly offer, "notToday" for a daily deal on another day, null when the slug never existed. */
 export const offerUnavailable = (rawSlug: string) => {
