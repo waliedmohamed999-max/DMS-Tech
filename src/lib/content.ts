@@ -193,5 +193,6 @@ export async function getDeal(token: string, locale: Locale) {
   return { expired: r.expired, key: `deal:${r.deal.token}`, preview: Boolean(r.deal.preview), ...localize({ client: r.deal.client, title: r.deal.title, text: r.deal.text }, locale), items: r.deal.items.map((i) => ({ label: localize(i.label, locale), price: offerMoney(i.price, locale) })), total: offerMoney(r.deal.total, locale), expiresAt: r.deal.expiresAt, expiresAtInstant: offerEndInstant(r.deal.expiresAt) };
 }
 export async function getOfferSlugs() {
-  return [...packageGroups.flatMap((g) => g.tiers.map((t) => t.key)), ...offers.filter((o) => o.cycle === "weekly").map((o) => o.slug), ...Object.keys(offerAliases), "today"];
+  // real pages only, once each — the ad aliases (/offers/store-marketing…) are copies with a canonical to the real page
+  return [...new Set([...packageGroups.flatMap((g) => g.tiers.map((t) => t.key)), ...offers.filter((o) => o.cycle === "weekly").map((o) => o.slug), "today"])];
 }

@@ -9,6 +9,7 @@ import TechBackdrop from "@/components/ui/TechBackdrop";
 import { Icon } from "@/components/ui/Icon";
 import { FinalCta } from "@/components/home/Sections";
 import { Faq } from "@/components/ui/ProductBlocks";
+import { alternatesFor } from "@/lib/seo";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -21,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const s = await getService(slug, locale as Locale);
   if (!s) return {};
-  return { title: s.title, description: s.description, openGraph: { images: [{ url: s.image }] } };
+  return { ...alternatesFor(locale, `/services/${slug}`), title: s.title, description: s.description, openGraph: { images: [{ url: s.image }] } };
 }
 
 export default async function ServicePage({ params }: Props) {

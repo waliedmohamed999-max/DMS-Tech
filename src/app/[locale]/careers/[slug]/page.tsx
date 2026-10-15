@@ -7,6 +7,7 @@ import { site } from "@/content/site";
 import { getCareersCopy, getJob, getJobSlugs, getJobs } from "@/lib/content";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import TechBackdrop from "@/components/ui/TechBackdrop";
+import { alternatesFor } from "@/lib/seo";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const j = await getJob(slug, locale as Locale);
   if (!j) return {};
-  return { title: `${j.title} — ${j.team}`, description: j.about };
+  return { ...alternatesFor(locale, `/careers/${slug}`), title: `${j.title} — ${j.team}`, description: j.about };
 }
 
 /** A titled section of the job page with a bullet list. */

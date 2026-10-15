@@ -7,11 +7,12 @@ import { PageHero, SectionHeading } from "@/components/ui/Section";
 import { Icon } from "@/components/ui/Icon";
 import { FinalCta, IntegrationsWall } from "@/components/home/Sections";
 import { ProjectCard } from "@/components/clients/ProjectCard";
+import { alternatesFor } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "pages" });
-  return { title: t("clientsTitle").replace(/\*/g, ""), description: t("clientsSub") };
+  return { ...alternatesFor(locale, "/clients"), title: t("clientsTitle").replace(/\*/g, ""), description: t("clientsSub") };
 }
 
 export default async function ClientsPage({ params }: { params: Promise<{ locale: string }> }) {

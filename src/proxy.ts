@@ -79,7 +79,7 @@ function publicProxy(request: NextRequest) {
   else {
     // dynamically rendered public page (e.g. /quote) or unknown path: per-request nonce, forwarded to the renderer
     const nonce = btoa(crypto.randomUUID());
-    csp = publicCsp({ nonce, styleUnion: m?.styleUnion, notFound: m?.notFound });
+    csp = publicCsp({ nonce, notFound: m?.notFound });
     const headers = new Headers(request.headers);
     headers.set("x-nonce", nonce);
     headers.set("Content-Security-Policy", csp);

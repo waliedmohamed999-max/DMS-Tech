@@ -10,6 +10,7 @@ import TechBackdrop from "@/components/ui/TechBackdrop";
 import { Icon } from "@/components/ui/Icon";
 import { FinalCta } from "@/components/home/Sections";
 import { ProjectCard, hostOf } from "@/components/clients/ProjectCard";
+import { alternatesFor } from "@/lib/seo";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -22,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const p = await getProject(slug, locale as Locale);
   if (!p) return {};
-  return { title: p.name, description: p.description?.split("\n")[0] ?? undefined, openGraph: { images: [{ url: p.cover }] } };
+  return { ...alternatesFor(locale, `/clients/${slug}`), title: p.name, description: p.description?.split("\n")[0] ?? undefined, openGraph: { images: [{ url: p.cover }] } };
 }
 
 export default async function ClientProjectPage({ params }: Props) {

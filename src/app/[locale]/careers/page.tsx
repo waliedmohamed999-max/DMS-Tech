@@ -8,11 +8,12 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import JobsBrowser from "@/components/careers/JobsBrowser";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { DarkSteps } from "@/components/ui/ProductBlocks";
+import { alternatesFor } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "pages" });
-  return { title: t("careersTitle").replace(/\*/g, ""), description: t("careersSub") };
+  return { ...alternatesFor(locale, "/careers"), title: t("careersTitle").replace(/\*/g, ""), description: t("careersSub") };
 }
 
 /** Careers: open roles filtered by department (each links to its full page), why work with us, the hiring process, and a general CV call. */

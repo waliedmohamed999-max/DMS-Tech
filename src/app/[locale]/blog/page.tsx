@@ -7,11 +7,12 @@ import { getPosts } from "@/lib/content";
 import { PageHero } from "@/components/ui/Section";
 import { Icon } from "@/components/ui/Icon";
 import { formatDate } from "@/lib/format";
+import { alternatesFor } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "pages" });
-  return { title: t("blogTitle").replace(/\*/g, ""), description: t("blogSub") };
+  return { ...alternatesFor(locale, "/blog"), title: t("blogTitle").replace(/\*/g, ""), description: t("blogSub") };
 }
 
 export default async function BlogPage({ params }: { params: Promise<{ locale: string }> }) {

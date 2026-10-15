@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { Link, redirect } from "@/i18n/navigation";
-import { groupAliases } from "@/content/offers";
+import { groupAliases, offerAliases } from "@/content/offers";
 import { site } from "@/content/site";
 import {
   getOfferItem,
@@ -24,6 +24,7 @@ import {
   WhatsAppOrder,
 } from "@/components/offers/OfferWidgets";
 import { ServiceVisual } from "@/components/offers/ServiceVisual";
+import { alternatesFor } from "@/lib/seo";
 import { TrackView } from "@/components/offers/TrackView";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -43,9 +44,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       ? `${item.name} — ${item.price}`
       : `${item.name} — ${item.group}`;
   // the preview card WhatsApp / social apps show for the shared link
+  // ad links (/offers/store-marketing…) show the same page as the real key: tell search engines which one counts
+  const real = offerAliases[slug] ?? slug;
   return {
     title,
     description: item.tagline,
+    ...alternatesFor(locale, `/offers/${real}`),
     openGraph: {
       title,
       description: item.tagline,

@@ -6,11 +6,12 @@ import { getCompany, getServices } from "@/lib/content";
 import { PageHero } from "@/components/ui/Section";
 import { Icon } from "@/components/ui/Icon";
 import { FinalCta } from "@/components/home/Sections";
+import { alternatesFor } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "pages" });
-  return { title: t("servicesTitle").replace(/\*/g, ""), description: t("servicesSub") };
+  return { ...alternatesFor(locale, "/services"), title: t("servicesTitle").replace(/\*/g, ""), description: t("servicesSub") };
 }
 
 export default async function ServicesPage({ params }: { params: Promise<{ locale: string }> }) {

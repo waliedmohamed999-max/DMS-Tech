@@ -48,11 +48,15 @@ const nextConfig = {
   },
   // "app-development" was merged into "web-development" (Web & App Development): keep old links and search results working
   async redirects() {
-    return ["", "/ar", "/en"].map((prefix) => ({
-      source: `${prefix}/services/app-development`,
-      destination: `${prefix === "/ar" ? "" : prefix}/services/web-development`,
-      permanent: true
-    }));
+    return ["", "/ar", "/en"].flatMap((prefix) => {
+      const to = prefix === "/ar" ? "" : prefix;
+      return [
+        { source: `${prefix}/services/app-development`, destination: `${to}/services/web-development`, permanent: true },
+        // the work pages live under /clients; /projects is the address people (and crawlers) guess
+        { source: `${prefix}/projects`, destination: `${to}/clients`, permanent: true },
+        { source: `${prefix}/projects/:slug`, destination: `${to}/clients/:slug`, permanent: true }
+      ];
+    });
   },
   async headers() {
     // Phase 9: CSP + HSTS (production) + baseline headers — see security-headers.mjs

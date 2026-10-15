@@ -12,6 +12,7 @@ import TechBackdrop from "@/components/ui/TechBackdrop";
 import { Countdown, DealsCarousel, PackagesBrowser } from "@/components/offers/OfferWidgets";
 import { ServiceVisual } from "@/components/offers/ServiceVisual";
 import { CardSlider } from "@/components/offers/CardSlider";
+import { alternatesFor } from "@/lib/seo";
 
 // rendered per request: the deals of the day change at midnight and weekly offers renew every Sunday; fresh renders
 // also get the public CSP nonce (a cached re-render would no longer match the build-time script hashes)
@@ -20,7 +21,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const c = await getOffersCopy(locale as Locale);
-  return { title: c.eyebrow, description: c.sub, alternates: { canonical: locale === "ar" ? "/offers" : `/${locale}/offers` }, openGraph: { title: c.eyebrow, description: c.sub } };
+  return { ...alternatesFor(locale, "/offers"), title: c.eyebrow, description: c.sub, openGraph: { title: c.eyebrow, description: c.sub } };
 }
 
 /**

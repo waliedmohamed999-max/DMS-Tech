@@ -6,11 +6,12 @@ import { PageHero } from "@/components/ui/Section";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { LeadForm } from "@/components/forms/LeadForm";
 import { chatbotNav } from "@/content/chatbot-nav";
+import { alternatesFor } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "pages" });
-  return { title: t("quoteTitle").replace(/\*/g, ""), description: t("quoteSub") };
+  return { ...alternatesFor(locale, "/quote"), title: t("quoteTitle").replace(/\*/g, ""), description: t("quoteSub") };
 }
 
 export default async function QuotePage({

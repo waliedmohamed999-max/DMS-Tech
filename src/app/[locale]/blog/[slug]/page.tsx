@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { getPost, getPostSlugs, getPosts } from "@/lib/content";
 import { Icon } from "@/components/ui/Icon";
 import { formatDate } from "@/lib/format";
+import { alternatesFor } from "@/lib/seo";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const p = await getPost(slug, locale as Locale);
   if (!p) return {};
-  return { title: p.title, description: p.excerpt, openGraph: { type: "article", images: [{ url: p.image }] } };
+  return { ...alternatesFor(locale, `/blog/${slug}`), title: p.title, description: p.excerpt, openGraph: { type: "article", images: [{ url: p.image }] } };
 }
 
 export default async function PostPage({ params }: Props) {

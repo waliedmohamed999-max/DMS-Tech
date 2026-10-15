@@ -8,11 +8,12 @@ import { PageHero, SectionHeading } from "@/components/ui/Section";
 import { Icon } from "@/components/ui/Icon";
 import PhasesTabs from "@/components/home/PhasesTabs";
 import { FinalCta, ValueBadges } from "@/components/home/Sections";
+import { alternatesFor } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "pages" });
-  return { title: t("aboutStoryTitle"), description: t("aboutSub") };
+  return { ...alternatesFor(locale, "/about"), title: t("aboutStoryTitle"), description: t("aboutSub") };
 }
 
 export default async function AboutPage({ params }: { params: Promise<{ locale: string }> }) {

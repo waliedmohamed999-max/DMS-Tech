@@ -41,7 +41,6 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     openGraph: {
       title: t("title"),
       description: t("description"),
-      url: path,
       siteName: t("siteName"),
       locale: locale === "ar" ? "ar_SA" : "en_US",
       type: "website",

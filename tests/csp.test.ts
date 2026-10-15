@@ -32,17 +32,22 @@ describe("public CSP (static pages: build-time hashes)", () => {
 });
 
 describe("public CSP (dynamic pages / unknown paths: nonce)", () => {
-  it("uses the request nonce plus the static 404 hashes and the site-wide style hashes", () => {
-    const csp = publicCsp({ nonce: "bm9uY2U=", notFound: { s: [sha("nf")], y: [sha("a:b")] }, styleUnion: [sha("color:transparent")] });
+  it("uses the request nonce plus the static 404 hashes; per-request style attributes via style-src-attr only", () => {
+    const csp = publicCsp({ nonce: "bm9uY2U=", notFound: { s: [sha("nf")], y: [sha("a:b")] } });
     expect(directive(csp, "script-src")).toBe(`script-src 'self' 'nonce-bm9uY2U=' '${sha("nf")}'`);
-    expect(directive(csp, "style-src")).toContain(sha("color:transparent"));
-    expect(directive(csp, "style-src")).toContain(sha("a:b"));
-    expect(csp).not.toMatch(/unsafe-inline|unsafe-eval/);
+    expect(directive(csp, "style-src")).toBe(`style-src 'self' 'unsafe-hashes' '${sha("a:b")}'`);
+    expect(directive(csp, "style-src-attr")).toBe("style-src-attr 'unsafe-inline'");
+    // scripts and <style> elements never get unsafe-inline / unsafe-eval
+    expect(directive(csp, "script-src")).not.toMatch(/unsafe-inline|unsafe-eval/);
+    expect(directive(csp, "style-src")).not.toMatch(/unsafe-inline/);
+    // and the header stays small enough for proxies and fetchers (8 KB limits)
+    expect(csp.length).toBeLessThan(2000);
   });
   it("without a manifest (missing / stale build) the policy stays STRICT — it never falls back to unsafe-inline", () => {
     const csp = publicCsp({ nonce: "x" });
     expect(directive(csp, "script-src")).toBe("script-src 'self' 'nonce-x'");
     expect(directive(csp, "style-src")).toBe("style-src 'self'");
+    expect(directive(csp, "script-src")).not.toMatch(/unsafe-inline/);
   });
   it("development is the only mode with unsafe-inline / unsafe-eval", () => {
     expect(publicCsp({ dev: true })).toMatch(/'unsafe-eval'/);

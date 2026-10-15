@@ -10,12 +10,13 @@ import { BrandIcon } from "@/components/ui/Brand";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { DarkSteps, Faq, SectionNav } from "@/components/ui/ProductBlocks";
 import ToolExplorer from "@/components/ui/ToolExplorer";
+import { alternatesFor } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const c = await getNovaPage(locale as Locale);
   const title = c.heroTitle.replace(/\*/g, "");
-  return { title: `NOVA AI — ${title}`, description: `${c.heroSub} ${c.workspace.sub}`, openGraph: { images: [{ url: `/images/photos/nova-app-${locale === "en" ? "en" : "ar"}.webp` }] } };
+  return { ...alternatesFor(locale, "/nova-ai"), title: `NOVA AI — ${title}`, description: `${c.heroSub} ${c.workspace.sub}`, openGraph: { images: [{ url: `/images/photos/nova-app-${locale === "en" ? "en" : "ar"}.webp` }] } };
 }
 
 /**
