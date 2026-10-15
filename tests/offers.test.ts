@@ -54,23 +54,36 @@ describe("packages & offers", () => {
     expect(offerLabel("offer:store-launch-example")).toBeNull();
   });
 
-  it("7. a deal never contradicts the packages: its struck price is the real package price and it costs less", () => {
+  it("7. every deal and weekly offer is priced against real published packages and costs less", () => {
     const price = (key: string) => packageGroups.flatMap((g) => g.tiers).find((t) => t.key === key)!.price!;
-    const deal = (slug: string) => offers.find((o) => o.slug === slug)!;
-    // deal → what it really costs as a package (WhatsApp: 3 months of Basic)
-    const refs: [string, number][] = [["day-website", price("web-starter")], ["day-store", price("store-launch")], ["day-whatsapp", price("wa-basic") * 3], ["day-marketing", price("mkt-start") + price("social-presence")], ["day-social", price("social-engage")], ["day-automation", price("ai-auto-starter")]];
-    for (const [slug, ref] of refs) {
-      expect(deal(slug).oldPrice).toBe(ref);
-      expect(deal(slug).price).toBeLessThan(ref);
+    // each offer → the packages it is made of (struck price = their real total)
+    const made: Record<string, number> = {
+      "store-week": price("store-launch") + price("mkt-start") + price("social-presence"),
+      "web-week": price("web-growth"),
+      "marketing-week": price("mkt-growth") + price("social-engage"),
+      "ai-agent-week": price("ai-assistant"),
+      "ai-bundle-week": price("ai-assistant") + price("ai-auto-starter"),
+      "system-week": price("app-mvp"),
+      "day-automation": price("ai-auto-starter"),
+      "day-website": price("web-starter"),
+      "day-store": price("store-launch"),
+      "day-ai-bot": price("ai-site-bot"),
+      "day-marketing": price("mkt-start") + price("social-presence"),
+      "day-whatsapp": price("wa-basic") * 3,
+      "day-integration": price("integration"),
+      "day-landing": price("landing-page"),
+      "day-social": price("social-engage"),
+      "day-dashboard": price("dashboard"),
+      "day-ads": price("ads-launch"),
+      "day-store-growth": price("store-growth")
+    };
+    expect(offers.map((o) => o.slug).sort()).toEqual(Object.keys(made).sort());
+    for (const o of offers) {
+      expect(o.oldPrice, o.slug).toBe(made[o.slug]);
+      expect(o.price, o.slug).toBeLessThan(o.oldPrice);
     }
-    // weekly offers: struck price = the sum of the packages inside
-    expect(deal("store-week").oldPrice).toBe(price("store-launch") + price("mkt-start") + price("social-presence"));
-    expect(deal("ai-agent-week").oldPrice).toBe(price("ai-assistant"));
-    expect(deal("ai-bundle-week").oldPrice).toBe(price("ai-assistant") + price("ai-auto-starter"));
-    expect(deal("system-week").oldPrice).toBe(price("app-mvp"));
-    // a smaller deal never costs more than a bigger one of the same kind
-    // the website-only AI bot is cheaper than the full assistant offer
-    expect(deal("day-ai-bot").price).toBeLessThan(deal("ai-agent-week").price);
+    // every everyday section has a weekly offer
+    for (const svc of ["ecommerce", "web-development", "digital-marketing", "ai-automation"]) expect(offers.some((o) => o.cycle === "weekly" && o.service === svc), svc).toBe(true);
   });
 
   it("8. every day shows at least one AI / automation / integration deal", () => {

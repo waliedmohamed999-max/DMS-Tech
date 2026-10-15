@@ -151,7 +151,7 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
             <SectionHeading title={c.offersTitle} sub={c.weeklyNote}>
               <Countdown endsAt={offers.weekEndsAt} labels={cd} />
             </SectionHeading>
-            <CardSlider className="grid gap-6 md:grid-cols-2 xl:grid-cols-4" labels={{ prev: c.prev, next: c.next }} rtl={locale === "ar"}>
+            <CardSlider className="grid gap-6 md:grid-cols-2 xl:grid-cols-3" labels={{ prev: c.prev, next: c.next }} rtl={locale === "ar"}>
               {offers.weekly.map((o) => (
                 <article key={o.slug} className="card grid content-start overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
                   <ServiceVisual service={o.service} locale={locale} className="h-52 rounded-none border-b border-mist" />

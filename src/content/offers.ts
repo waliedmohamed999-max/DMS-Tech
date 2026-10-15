@@ -98,6 +98,28 @@ export const packageGroups: PackageGroup[] = [
         ]
       },
       {
+        key: "landing-page",
+        icon: "MousePointerClick",
+        name: { ar: "صفحة هبوط", en: "Landing page" },
+        tagline: { ar: "صفحة واحدة تحوّل زوار إعلانك إلى طلبات", en: "One page that turns ad visitors into orders" },
+        idealFor: { ar: "من يطلق حملة لمنتج أو خدمة أو عرض محدد", en: "Anyone running a campaign for one product, service or offer" },
+        price: 1799,
+        from: false,
+        period: oneTime,
+        delivery: { ar: "5 أيام عمل", en: "5 business days" },
+        features: [
+          { ar: "صفحة واحدة بتصميم مخصص متجاوب مع الجوال", en: "One custom, mobile-first page" },
+          { ar: "العرض والمميزات وآراء العملاء والأسئلة", en: "Offer, benefits, testimonials and FAQs" },
+          { ar: "زر واتساب ونموذج طلب يصل لبريدك", en: "WhatsApp button and an order form to your inbox" },
+          { ar: "بكسل الإعلانات وتحليلات جوجل", en: "Ad pixels and Google Analytics" },
+          { ar: "نشرها على نطاقك مع شهادة الأمان", en: "Published on your domain with SSL" }
+        ],
+        excludes: [
+          { ar: "الاستضافة والنطاق إن لم تكن لديك", en: "Hosting and domain if you don't have them" },
+          { ar: "إدارة الحملة وميزانية الإعلانات", en: "Campaign management and ad spend" }
+        ]
+      },
+      {
         key: "web-growth",
         icon: "Rocket",
         name: { ar: "الأعمال", en: "Business" },
@@ -555,6 +577,28 @@ export const packageGroups: PackageGroup[] = [
         ]
       },
       {
+        key: "ai-site-bot",
+        icon: "MessagesSquare",
+        name: { ar: "مساعد ذكي للموقع", en: "Website AI assistant" },
+        tagline: { ar: "يجيب زوار موقعك فوراً من ملفاتك", en: "Answers your site visitors instantly from your files" },
+        idealFor: { ar: "الشركات التي يسأل زوار موقعها نفس الأسئلة كثيراً", en: "Companies whose site visitors keep asking the same questions" },
+        price: 3999,
+        from: false,
+        period: oneTime,
+        delivery: { ar: "10 أيام عمل", en: "10 business days" },
+        features: [
+          { ar: "مدرَّب على حتى 50 صفحة من ملفاتك وموقعك", en: "Trained on up to 50 pages of your files and site" },
+          { ar: "نافذة محادثة بهويتك في كل الصفحات", en: "A branded chat window on every page" },
+          { ar: "عربي وإنجليزي", en: "Arabic and English" },
+          { ar: "يجمع بيانات المهتمين ويرسلها لفريقك", en: "Collects interested leads for your team" },
+          { ar: "مراجعة وتحسين الردود لمدة شهر", en: "A month of review and answer tuning" }
+        ],
+        excludes: [
+          { ar: "رسوم استخدام الذكاء الاصطناعي", en: "AI usage fees" },
+          { ar: "واتساب (في باقة «مساعد ذكاء اصطناعي»)", en: "WhatsApp (in the AI assistant package)" }
+        ]
+      },
+      {
         key: "ai-assistant",
         icon: "Bot",
         name: { ar: "مساعد ذكاء اصطناعي", en: "AI assistant" },
@@ -638,6 +682,50 @@ export const packageGroups: PackageGroup[] = [
         excludes: [
           { ar: "برمجة التطبيق أو النظام", en: "Developing the app or system" },
           { ar: "الشعار والهوية البصرية", en: "Logo and brand identity" }
+        ]
+      },
+      {
+        key: "integration",
+        icon: "Plug",
+        name: { ar: "ربط الأنظمة", en: "System integration" },
+        tagline: { ar: "نظامان يتبادلان البيانات وحدهما", en: "Two systems exchanging data by themselves" },
+        idealFor: { ar: "الشركات التي تعيد إدخال نفس البيانات في أكثر من نظام", en: "Companies re-entering the same data in several systems" },
+        price: 2999,
+        from: false,
+        period: oneTime,
+        delivery: { ar: "7 أيام عمل", en: "7 business days" },
+        features: [
+          { ar: "ربط نظامين عبر واجهاتهما البرمجية", en: "Two systems connected through their APIs" },
+          { ar: "مزامنة تلقائية في الاتجاهين عند الحاجة", en: "Automatic two-way sync when needed" },
+          { ar: "إعادة المحاولة تلقائياً عند انقطاع أي نظام", en: "Automatic retries when a system is down" },
+          { ar: "سجل لكل عملية وتنبيه عند الخطأ", en: "A log of every transfer and alerts on errors" },
+          { ar: "دعم لمدة شهر", en: "One month of support" }
+        ],
+        excludes: [
+          { ar: "اشتراكات الأنظمة ورسوم واجهاتها", en: "System subscriptions and API fees" },
+          { ar: "تطوير أنظمة جديدة", en: "Building new systems" }
+        ]
+      },
+      {
+        key: "dashboard",
+        icon: "ChartColumn",
+        name: { ar: "لوحة تقارير الإدارة", en: "Management dashboard" },
+        tagline: { ar: "أرقام شركتك في شاشة واحدة تتحدث وحدها", en: "Your company's numbers on one self-updating screen" },
+        idealFor: { ar: "المديرون الذين يريدون قرارات مبنية على أرقام حقيقية", en: "Managers who want decisions based on real numbers" },
+        price: 3999,
+        from: false,
+        period: oneTime,
+        delivery: { ar: "10 أيام عمل", en: "10 business days" },
+        features: [
+          { ar: "حتى 12 مؤشراً في لوحة واحدة", en: "Up to 12 KPIs on one dashboard" },
+          { ar: "ربط حتى مصدرين للبيانات", en: "Up to 2 data sources connected" },
+          { ar: "تحديث تلقائي وصلاحيات لمن يراها", en: "Automatic refresh and access control" },
+          { ar: "تقرير أسبوعي بالبريد", en: "A weekly e-mail report" },
+          { ar: "دعم لمدة شهر", en: "One month of support" }
+        ],
+        excludes: [
+          { ar: "تراخيص أدوات التقارير إن وُجدت", en: "Reporting tool licences, if any" },
+          { ar: "تنظيف بيانات تاريخية كبيرة", en: "Cleaning large historical data" }
         ]
       },
       {
@@ -860,6 +948,112 @@ export const groupAliases: Record<string, string> = {
 
 export const offers: Offer[] = [
   {
+    slug: "store-week",
+    cycle: "weekly",
+    service: "ecommerce",
+    icon: "ShoppingCart",
+    badge: { ar: "عرض الأسبوع — متجر وانطلاقة تسويقية", en: "Offer of the week — store + marketing launch" },
+    title: { ar: "متجرك + انطلاقة تسويقية: من فكرة متجر إلى إطلاق متكامل", en: "Your store + a marketing launch: from idea to a complete launch" },
+    text: { ar: "باقة «الانطلاق» للمتاجر (1,999) مع أول شهر من «البداية» للحملات (1,499) و«الحضور» للسوشيال (1,499) — متجر جاهز وحملة افتتاح ومحتوى إطلاق بسعر واحد بدل 4,997 ريالاً.", en: "The store Launch package (1,999) with a first month of Starter campaigns (1,499) and Presence social (1,499) — a ready store, an opening campaign and launch content at one price instead of SAR 4,997." },
+    forWho: { ar: "لأصحاب المشاريع الجديدة والعلامات التي تبيع من إنستغرام أو واتساب وتريد متجراً وإطلاقاً تسويقياً معاً.", en: "For new businesses and brands selling on Instagram or WhatsApp that want a store and a marketing launch together." },
+    features: [
+      { ar: "متجر على سلة أو زد بهويتك", en: "A Salla or Zid store in your brand" },
+      { ar: "رفع حتى 50 منتجاً", en: "Up to 50 products uploaded" },
+      { ar: "حملة افتتاح تُدار 14 يوماً", en: "An opening campaign run for 14 days" },
+      { ar: "6 تصاميم إعلانية و8 منشورات", en: "6 ad designs and 8 posts" },
+      { ar: "جلسة متابعة وتوصيات", en: "A follow-up and recommendations session" }
+    ],
+    deliverables: [
+      { title: { ar: "المتجر", en: "The store" }, text: { ar: "إعداد المتجر على سلة أو زد بقالب متاح مخصص بهويتك، والصفحات والسياسات من بياناتك.", en: "The store set up on Salla or Zid with a theme styled in your brand, pages and policies from your details." } },
+      { title: { ar: "المنتجات", en: "Products" }, text: { ar: "رفع حتى 50 منتجاً من بيانات وصور جاهزة.", en: "Up to 50 products from ready data and photos." } },
+      { title: { ar: "الدفع والشحن", en: "Payments & shipping" }, text: { ar: "تهيئة وسائل الدفع والشحن المتاحة لحسابك، وزر واتساب وتحليلات أساسية.", en: "Your available payment and shipping options set up, a WhatsApp button and basic analytics." } },
+      { title: { ar: "حملة الافتتاح", en: "Opening campaign" }, text: { ar: "إعداد حملة افتتاح على منصة واحدة بـ 6 تصاميم إعلانية وإدارتها 14 يوماً بعد الإطلاق.", en: "An opening campaign on one platform with 6 ad designs, run for 14 days after launch." } },
+      { title: { ar: "محتوى الإطلاق", en: "Launch content" }, text: { ar: "8 منشورات سوشيال ميديا بالتصميم والنص.", en: "8 designed and written social posts." } },
+      { title: { ar: "المتابعة", en: "Follow-up" }, text: { ar: "جلسة متابعة بعد الإطلاق بالنتائج وتوصيات للتطوير.", en: "A post-launch session with results and recommendations." } }
+    ],
+    delivery: { ar: "المتجر خلال 10 أيام عمل، ثم 14 يوم إدارة إعلانية", en: "The store in 10 business days, then 14 days of ad management" },
+    terms: [
+      { ar: "اشتراك سلة أو زد والميزانية الإعلانية على حساب العميل وباسمه", en: "The Salla / Zid subscription and ad spend are the client's, in their name" },
+      { ar: "الدفع: 50% عند البدء و50% عند تسليم المتجر", en: "Payment: 50% to start, 50% on store delivery" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
+    ],
+    excludes: [
+      { ar: "التصوير وكتابة أوصاف المنتجات من الصفر", en: "Photography and writing product descriptions from scratch" },
+      { ar: "رسوم المنصة والإنفاق الإعلاني", en: "Platform fees and ad spend" }
+    ],
+    price: 3999,
+    oldPrice: 4997
+  },
+  {
+    slug: "web-week",
+    cycle: "weekly",
+    service: "web-development",
+    icon: "Rocket",
+    badge: { ar: "عرض الأسبوع — موقع الأعمال", en: "Offer of the week — business website" },
+    title: { ar: "موقع شركتك الاحترافي بالعربي والإنجليزي بـ 4,499 ريالاً", en: "Your professional bilingual company website for SAR 4,499" },
+    text: { ar: "باقة «الأعمال» للمواقع (5,999) بسعر الأسبوع: حتى 15 صفحة بالعربية والإنجليزية بتصميم مخصص، ولوحة تحكم، ومدونة وصفحات هبوط، واستضافة ونطاق للسنة الأولى.", en: "The Business website package (5,999) at this week's price: up to 15 custom-designed pages in Arabic and English, a content panel, a blog and landing pages, hosting and domain for year one." },
+    forWho: { ar: "للشركات التي تعتمد على موقعها في جلب العملاء والحملات الإعلانية.", en: "For companies that rely on their website for leads and ad campaigns." },
+    features: [
+      { ar: "حتى 15 صفحة بالعربية والإنجليزية", en: "Up to 15 pages in Arabic and English" },
+      { ar: "تصميم مخصص ولوحة تحكم", en: "Custom design and a content panel" },
+      { ar: "مدونة و3 صفحات هبوط", en: "A blog and 3 landing pages" },
+      { ar: "استضافة ونطاق دوت كوم للسنة الأولى", en: "Hosting and a .com domain for year one" },
+      { ar: "دعم فني لمدة 3 أشهر", en: "3 months of support" }
+    ],
+    deliverables: [
+      { title: { ar: "التصميم", en: "Design" }, text: { ar: "تصميم مخصص بهوية شركتك لكل الصفحات، متجاوب مع الجوال.", en: "A custom design in your brand for every page, mobile-first." } },
+      { title: { ar: "المحتوى", en: "Content" }, text: { ar: "لوحة تحكم لتعديل النصوص والصور والأخبار، ومدونة.", en: "A panel to edit text, images and news, and a blog." } },
+      { title: { ar: "الحملات", en: "Campaigns" }, text: { ar: "3 صفحات هبوط للحملات، وبكسل الإعلانات وتحليلات جوجل.", en: "3 campaign landing pages, ad pixels and Google Analytics." } },
+      { title: { ar: "الإطلاق", en: "Launch" }, text: { ar: "استضافة سحابية ونطاق دوت كوم للسنة الأولى، وتحسين السرعة ومحركات البحث.", en: "Cloud hosting and a .com domain for year one, speed and SEO work." } }
+    ],
+    delivery: { ar: "21 يوم عمل", en: "21 business days" },
+    terms: [
+      { ar: "الدفع: 50% عند البدء و50% عند الإطلاق", en: "Payment: 50% to start, 50% at launch" },
+      { ar: "جولتان من التعديلات", en: "Two revision rounds" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
+    ],
+    excludes: [
+      { ar: "كتابة المحتوى والتصوير", en: "Copywriting and photography" },
+      { ar: "تجديد الاستضافة والنطاق بعد السنة الأولى", en: "Hosting and domain renewal after year one" }
+    ],
+    price: 4499,
+    oldPrice: 5999
+  },
+  {
+    slug: "marketing-week",
+    cycle: "weekly",
+    service: "digital-marketing",
+    icon: "ChartLine",
+    badge: { ar: "عرض الأسبوع — تسويق متكامل", en: "Offer of the week — full marketing" },
+    title: { ar: "أول شهر تسويق متكامل: حملات «النمو» + سوشيال «التفاعل»", en: "Your first full marketing month: Growth campaigns + Engagement social" },
+    text: { ar: "باقة «النمو» للحملات (3,499) مع باقة «التفاعل» للسوشيال (2,999) لشهرك الأول بسعر واحد: حتى 3 حملات على منصتين، و16 منشوراً و4 فيديوهات، ومتابعة التعليقات — بدل 6,498 ريالاً.", en: "The Growth campaign plan (3,499) and the Engagement social plan (2,999) for your first month at one price: up to 3 campaigns on two platforms, 16 posts, 4 videos and comment management — instead of SAR 6,498." },
+    forWho: { ar: "للمتاجر والشركات التي تريد إعلانات ومحتوى يعملان معاً بخطة واحدة.", en: "For stores and companies that want ads and content working together in one plan." },
+    features: [
+      { ar: "حتى 3 حملات على منصتين و8 مواد إعلانية", en: "Up to 3 campaigns on two platforms, 8 creatives" },
+      { ar: "16 منشوراً و4 فيديوهات قصيرة", en: "16 posts and 4 short videos" },
+      { ar: "إعادة استهداف الزوار ومن ترك السلة", en: "Retargeting visitors and abandoned carts" },
+      { ar: "متابعة التعليقات في ساعات العمل", en: "Comment management in working hours" },
+      { ar: "تقرير مفصل بالتوصيات", en: "A detailed report with recommendations" }
+    ],
+    deliverables: [
+      { title: { ar: "الحملات", en: "Campaigns" }, text: { ar: "إدارة حتى 3 حملات على منصتين بـ 8 مواد إعلانية، مع تتبع وتحسين دوري.", en: "Up to 3 campaigns on two platforms with 8 creatives, tracked and optimised." } },
+      { title: { ar: "المحتوى", en: "Content" }, text: { ar: "16 منشوراً بالتصميم والكتابة و4 فيديوهات قصيرة بمونتاج موادك، منشورة على منصتين.", en: "16 designed and written posts and 4 short videos from your footage, published on two platforms." } },
+      { title: { ar: "التقرير", en: "Report" }, text: { ar: "تقرير شهري مفصل بالنتائج وتوصيات الشهر التالي.", en: "A detailed monthly report with results and next steps." } }
+    ],
+    delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+    terms: [
+      { ar: "السعر للشهر الأول فقط، وبعده تختار الباقات الشهرية بموافقتك — لا تجديد تلقائي", en: "First month only; then you choose the monthly plans — no automatic renewal" },
+      { ar: "لا نضمن عدد مبيعات أو متابعين", en: "No guaranteed sales or followers" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
+    ],
+    excludes: [
+      { ar: "الميزانية الإعلانية ورسوم المنصات", en: "Ad spend and platform fees" },
+      { ar: "التصوير الميداني", en: "On-site filming" }
+    ],
+    price: 4999,
+    oldPrice: 6498
+  },
+  {
     slug: "ai-agent-week",
     cycle: "weekly",
     service: "ai-automation",
@@ -964,43 +1158,6 @@ export const offers: Offer[] = [
     ],
     price: 11999,
     oldPrice: 14999
-  },
-  {
-    slug: "store-week",
-    cycle: "weekly",
-    service: "ecommerce",
-    icon: "ShoppingCart",
-    badge: { ar: "عرض الأسبوع — متجر وانطلاقة تسويقية", en: "Offer of the week — store + marketing launch" },
-    title: { ar: "متجرك + انطلاقة تسويقية: من فكرة متجر إلى إطلاق متكامل", en: "Your store + a marketing launch: from idea to a complete launch" },
-    text: { ar: "باقة «الانطلاق» للمتاجر (1,999) مع أول شهر من «البداية» للحملات (1,499) و«الحضور» للسوشيال (1,499) — متجر جاهز وحملة افتتاح ومحتوى إطلاق بسعر واحد بدل 4,997 ريالاً.", en: "The store Launch package (1,999) with a first month of Starter campaigns (1,499) and Presence social (1,499) — a ready store, an opening campaign and launch content at one price instead of SAR 4,997." },
-    forWho: { ar: "لأصحاب المشاريع الجديدة والعلامات التي تبيع من إنستغرام أو واتساب وتريد متجراً وإطلاقاً تسويقياً معاً.", en: "For new businesses and brands selling on Instagram or WhatsApp that want a store and a marketing launch together." },
-    features: [
-      { ar: "متجر على سلة أو زد بهويتك", en: "A Salla or Zid store in your brand" },
-      { ar: "رفع حتى 50 منتجاً", en: "Up to 50 products uploaded" },
-      { ar: "حملة افتتاح تُدار 14 يوماً", en: "An opening campaign run for 14 days" },
-      { ar: "6 تصاميم إعلانية و8 منشورات", en: "6 ad designs and 8 posts" },
-      { ar: "جلسة متابعة وتوصيات", en: "A follow-up and recommendations session" }
-    ],
-    deliverables: [
-      { title: { ar: "المتجر", en: "The store" }, text: { ar: "إعداد المتجر على سلة أو زد بقالب متاح مخصص بهويتك، والصفحات والسياسات من بياناتك.", en: "The store set up on Salla or Zid with a theme styled in your brand, pages and policies from your details." } },
-      { title: { ar: "المنتجات", en: "Products" }, text: { ar: "رفع حتى 50 منتجاً من بيانات وصور جاهزة.", en: "Up to 50 products from ready data and photos." } },
-      { title: { ar: "الدفع والشحن", en: "Payments & shipping" }, text: { ar: "تهيئة وسائل الدفع والشحن المتاحة لحسابك، وزر واتساب وتحليلات أساسية.", en: "Your available payment and shipping options set up, a WhatsApp button and basic analytics." } },
-      { title: { ar: "حملة الافتتاح", en: "Opening campaign" }, text: { ar: "إعداد حملة افتتاح على منصة واحدة بـ 6 تصاميم إعلانية وإدارتها 14 يوماً بعد الإطلاق.", en: "An opening campaign on one platform with 6 ad designs, run for 14 days after launch." } },
-      { title: { ar: "محتوى الإطلاق", en: "Launch content" }, text: { ar: "8 منشورات سوشيال ميديا بالتصميم والنص.", en: "8 designed and written social posts." } },
-      { title: { ar: "المتابعة", en: "Follow-up" }, text: { ar: "جلسة متابعة بعد الإطلاق بالنتائج وتوصيات للتطوير.", en: "A post-launch session with results and recommendations." } }
-    ],
-    delivery: { ar: "المتجر خلال 10 أيام عمل، ثم 14 يوم إدارة إعلانية", en: "The store in 10 business days, then 14 days of ad management" },
-    terms: [
-      { ar: "اشتراك سلة أو زد والميزانية الإعلانية على حساب العميل وباسمه", en: "The Salla / Zid subscription and ad spend are the client's, in their name" },
-      { ar: "الدفع: 50% عند البدء و50% عند تسليم المتجر", en: "Payment: 50% to start, 50% on store delivery" },
-      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
-    ],
-    excludes: [
-      { ar: "التصوير وكتابة أوصاف المنتجات من الصفر", en: "Photography and writing product descriptions from scratch" },
-      { ar: "رسوم المنصة والإنفاق الإعلاني", en: "Platform fees and ad spend" }
-    ],
-    price: 3999,
-    oldPrice: 4997
   },
   {
     slug: "day-automation",
@@ -1241,62 +1398,6 @@ export const offers: Offer[] = [
     oldPrice: 1799
   },
   {
-    slug: "day-brand",
-    cycle: "daily",
-    service: "ux-ui-design",
-    icon: "Palette",
-    badge: { ar: "صفقة اليوم — تصميم", en: "Deal of the day — design" },
-    title: { ar: "هوية بصرية كاملة لمشروعك بـ 999 ريال", en: "A complete brand identity for SAR 999" },
-    text: { ar: "شعار احترافي مع ألوانك وخطوطك وقالبين سوشيال جاهزين — كل ما تحتاجه لتبدأ بشكل يثق فيه العميل من أول نظرة.", en: "A professional logo with your colours, fonts and two ready social templates — everything you need to look trustworthy from the first glance." },
-    forWho: { ar: "للمشاريع الجديدة والمتاجر التي تبدأ بدون هوية، أو تريد تجديد شكلها.", en: "For new businesses and stores starting without an identity, or refreshing their look." },
-    features: [
-      { ar: "3 مقترحات للشعار", en: "3 logo concepts" },
-      { ar: "دليل ألوان وخطوط", en: "Colour and font guide" },
-      { ar: "قالبان للسوشيال ميديا", en: "2 social media templates" }
-    ],
-    deliverables: [
-      { title: { ar: "الشعار", en: "Logo" }, text: { ar: "3 مقترحات، وجولتان من التعديل على المقترح المختار، وتسليمه بكل الصيغ المناسبة للطباعة والنشر.", en: "3 concepts, two revision rounds on the chosen one, delivered in every format (PNG, SVG, PDF)." } },
-      { title: { ar: "دليل الهوية", en: "Brand guide" }, text: { ar: "الألوان والخطوط وطريقة استخدام الشعار في ملف واحد.", en: "Colours, fonts and logo usage in one file." } },
-      { title: { ar: "السوشيال", en: "Social" }, text: { ar: "قالبان للمنشورات وغلاف للحسابات، قابلة للتعديل.", en: "2 editable post templates and account covers." } }
-    ],
-    delivery: { ar: "7 أيام عمل", en: "7 business days" },
-    terms: [
-      { ar: "جولتان من التعديلات على المقترح المختار", en: "Two revision rounds on the chosen concept" },
-      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
-    ],
-    excludes: [{ ar: "تسجيل العلامة التجارية والمطبوعات", en: "Trademark registration and print" }],
-    price: 999,
-    oldPrice: 1599
-  },
-  {
-    slug: "day-dashboard",
-    cycle: "daily",
-    service: "digital-transformation",
-    icon: "ChartColumn",
-    badge: { ar: "صفقة اليوم — تقارير الإدارة", en: "Deal of the day — management reports" },
-    title: { ar: "لوحة تقارير ومؤشرات لإدارتك من بياناتك بـ 2,499 ريالاً", en: "A management KPI dashboard from your data, SAR 2,499" },
-    text: { ar: "كل أرقام شركتك في شاشة واحدة تتحدث وحدها: المبيعات، والعملاء، والطلبات، والتحصيل — من جداولك وأنظمتك الحالية بدل تجميعها يدوياً كل أسبوع.", en: "All your company's numbers on one self-updating screen: sales, clients, orders and collections — from your current sheets and systems instead of compiling them by hand every week." },
-    forWho: { ar: "للمديرين وأصحاب الشركات الذين يريدون قرارات أسرع مبنية على أرقام حقيقية.", en: "For managers and owners who want faster decisions based on real numbers." },
-    features: [
-      { ar: "حتى 12 مؤشراً في لوحة واحدة", en: "Up to 12 KPIs on one dashboard" },
-      { ar: "ربط حتى مصدرين للبيانات", en: "Up to 2 data sources connected" },
-      { ar: "تحديث تلقائي وتقرير أسبوعي بالبريد", en: "Automatic refresh and a weekly e-mail report" }
-    ],
-    deliverables: [
-      { title: { ar: "المؤشرات", en: "KPIs" }, text: { ar: "جلسة نحدد فيها المؤشرات التي تهم إدارتك فعلاً.", en: "A session to define the KPIs that really matter to you." } },
-      { title: { ar: "البيانات", en: "Data" }, text: { ar: "ربط حتى مصدرين (مثل الجداول والمتجر أو المحاسبة) وتنظيف البيانات.", en: "Up to 2 sources connected (e.g. sheets and store or accounting) and the data cleaned." } },
-      { title: { ar: "اللوحة", en: "Dashboard" }, text: { ar: "لوحة بالعربي تعمل على الكمبيوتر والجوال، مع صلاحيات لمن يراها، وتقرير أسبوعي بالبريد.", en: "An Arabic dashboard on desktop and mobile, with access control and a weekly e-mail report." } }
-    ],
-    delivery: { ar: "10 أيام عمل", en: "10 business days" },
-    terms: [
-      { ar: "حتى 12 مؤشراً ومصدرين للبيانات", en: "Up to 12 KPIs and 2 data sources" },
-      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
-    ],
-    excludes: [{ ar: "تراخيص أدوات التقارير إن وُجدت", en: "Reporting tool licences, if any" }],
-    price: 2499,
-    oldPrice: 3999
-  },
-  {
     slug: "day-social",
     cycle: "daily",
     service: "digital-marketing",
@@ -1327,6 +1428,97 @@ export const offers: Offer[] = [
     ],
     price: 1999,
     oldPrice: 2999
+  },
+  {
+    slug: "day-dashboard",
+    cycle: "daily",
+    service: "digital-transformation",
+    icon: "ChartColumn",
+    badge: { ar: "صفقة اليوم — تقارير الإدارة", en: "Deal of the day — management reports" },
+    title: { ar: "لوحة تقارير ومؤشرات لإدارتك من بياناتك بـ 2,499 ريالاً", en: "A management KPI dashboard from your data, SAR 2,499" },
+    text: { ar: "كل أرقام شركتك في شاشة واحدة تتحدث وحدها: المبيعات، والعملاء، والطلبات، والتحصيل — من جداولك وأنظمتك الحالية بدل تجميعها يدوياً كل أسبوع.", en: "All your company's numbers on one self-updating screen: sales, clients, orders and collections — from your current sheets and systems instead of compiling them by hand every week." },
+    forWho: { ar: "للمديرين وأصحاب الشركات الذين يريدون قرارات أسرع مبنية على أرقام حقيقية.", en: "For managers and owners who want faster decisions based on real numbers." },
+    features: [
+      { ar: "حتى 12 مؤشراً في لوحة واحدة", en: "Up to 12 KPIs on one dashboard" },
+      { ar: "ربط حتى مصدرين للبيانات", en: "Up to 2 data sources connected" },
+      { ar: "تحديث تلقائي وتقرير أسبوعي بالبريد", en: "Automatic refresh and a weekly e-mail report" }
+    ],
+    deliverables: [
+      { title: { ar: "المؤشرات", en: "KPIs" }, text: { ar: "جلسة نحدد فيها المؤشرات التي تهم إدارتك فعلاً.", en: "A session to define the KPIs that really matter to you." } },
+      { title: { ar: "البيانات", en: "Data" }, text: { ar: "ربط حتى مصدرين (مثل الجداول والمتجر أو المحاسبة) وتنظيف البيانات.", en: "Up to 2 sources connected (e.g. sheets and store or accounting) and the data cleaned." } },
+      { title: { ar: "اللوحة", en: "Dashboard" }, text: { ar: "لوحة بالعربي تعمل على الكمبيوتر والجوال، مع صلاحيات لمن يراها، وتقرير أسبوعي بالبريد.", en: "An Arabic dashboard on desktop and mobile, with access control and a weekly e-mail report." } }
+    ],
+    delivery: { ar: "10 أيام عمل", en: "10 business days" },
+    terms: [
+      { ar: "حتى 12 مؤشراً ومصدرين للبيانات", en: "Up to 12 KPIs and 2 data sources" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
+    ],
+    excludes: [{ ar: "تراخيص أدوات التقارير إن وُجدت", en: "Reporting tool licences, if any" }],
+    price: 2499,
+    oldPrice: 3999
+  },
+  {
+    slug: "day-ads",
+    cycle: "daily",
+    service: "digital-marketing",
+    icon: "Target",
+    badge: { ar: "صفقة اليوم — أول حملة إعلانية", en: "Deal of the day — your first campaign" },
+    title: { ar: "«جاهز للإعلان» بـ 999 ريالاً: تجهيز وإدارة حملتك 14 يوماً", en: "Ready to advertise for SAR 999: set-up and 14 days of management" },
+    text: { ar: "باقة «جاهز للإعلان» (1,499) بسعر اليوم: نراجع جاهزية موقعك، ونجهز التتبع، ونطلق حملتين على منصة واحدة وندير ونحسّن أداءهما 14 يوماً.", en: "The Ready-to-advertise package (1,499) at today's price: readiness review, tracking, two campaigns on one platform, run and optimised for 14 days." },
+    forWho: { ar: "لمن يبدأ الإعلان لأول مرة أو يعلن دون قياس واضح للنتائج.", en: "For anyone advertising for the first time, or without clear measurement." },
+    features: [
+      { ar: "حملتان على منصة واحدة", en: "Two campaigns on one platform" },
+      { ar: "4 مواد إعلانية من محتواك", en: "4 creatives from your content" },
+      { ar: "إدارة 14 يوماً وتقرير ختامي", en: "14 days of management and a final report" }
+    ],
+    deliverables: [
+      { title: { ar: "الجاهزية والتتبع", en: "Readiness & tracking" }, text: { ar: "مراجعة صفحاتك وطريقة الطلب، وإعداد التتبع على المنصة المختارة.", en: "A review of your pages and ordering flow, and tracking on the chosen platform." } },
+      { title: { ar: "الحملات", en: "Campaigns" }, text: { ar: "إطلاق حملتين بـ 4 مواد إعلانية من محتواك.", en: "Two campaigns launched with 4 creatives from your content." } },
+      { title: { ar: "الإدارة والتقرير", en: "Management & report" }, text: { ar: "متابعة وتحسين 14 يوماً، ثم تقرير بالتكلفة والنتائج القابلة للقياس.", en: "14 days of optimisation, then a report on cost and measurable results." } }
+    ],
+    delivery: { ar: "التجهيز خلال 3 أيام عمل، ثم 14 يوم إدارة", en: "Set up in 3 business days, then 14 days of management" },
+    terms: [
+      { ar: "منصة إعلانية واحدة يختارها العميل", en: "One ad platform of the client's choice" },
+      { ar: "لا نضمن عدد مبيعات — النتائج تعتمد على المنتج والسوق والميزانية", en: "No guaranteed sales — results depend on product, market and budget" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
+    ],
+    excludes: [
+      { ar: "ميزانية الإعلانات", en: "Ad spend" },
+      { ar: "التصوير وصفحات الهبوط الجديدة", en: "Photography and new landing pages" }
+    ],
+    price: 999,
+    oldPrice: 1499
+  },
+  {
+    slug: "day-store-growth",
+    cycle: "daily",
+    service: "ecommerce",
+    icon: "TrendingUp",
+    badge: { ar: "صفقة اليوم — متجر بهويتك", en: "Deal of the day — a branded store" },
+    title: { ar: "باقة «النمو» للمتاجر بـ 3,299 ريالاً بدل 4,499", en: "The store Growth package for SAR 3,299 instead of 4,499" },
+    text: { ar: "متجر بتصميم مخصص لهويتك وحتى 100 منتج، مع البكسل والكتالوج وتجهيز حملة الافتتاح — باقة «النمو» كاملة بسعر اليوم.", en: "A store custom-designed in your brand with up to 100 products, pixels, catalogue and the opening campaign set up — the full Growth package at today's price." },
+    forWho: { ar: "للعلامات التي تريد متجراً مميزاً جاهزاً للإعلان على السوشيال ميديا.", en: "For brands that want a distinctive store ready for social media ads." },
+    features: [
+      { ar: "تصميم مخصص وحتى 100 منتج", en: "Custom design and up to 100 products" },
+      { ar: "بكسل وكتالوج وحسابات إعلانية", en: "Pixels, catalogue and ad accounts" },
+      { ar: "10 تصاميم إطلاق وتدريب فريقك", en: "10 launch designs and team training" }
+    ],
+    deliverables: [
+      { title: { ar: "المتجر", en: "The store" }, text: { ar: "تصميم مخصص للرئيسية وصفحة المنتج، ورفع حتى 100 منتج بالخيارات والتصنيفات.", en: "A custom home and product page, up to 100 products with options and categories." } },
+      { title: { ar: "الدفع والشحن", en: "Payments & shipping" }, text: { ar: "ربط الدفع والشحن والدفع عند الاستلام.", en: "Payments, shipping and cash on delivery connected." } },
+      { title: { ar: "الجاهزية للإعلان", en: "Ready for ads" }, text: { ar: "بكسل سناب وتيك توك وميتا، وربط الكتالوج، وتجهيز الحسابات الإعلانية وحملة الافتتاح.", en: "Snap, TikTok and Meta pixels, catalogue sync, ad accounts and the opening campaign set up." } }
+    ],
+    delivery: { ar: "10 أيام عمل", en: "10 business days" },
+    terms: [
+      { ar: "اشتراك المنصة على حساب العميل وباسمه", en: "The platform subscription is the client's, in their name" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
+    ],
+    excludes: [
+      { ar: "اشتراك المنصة ورسوم الدفع والشحن", en: "Platform subscription, payment and shipping fees" },
+      { ar: "ميزانية الإعلانات", en: "Ad spend" }
+    ],
+    price: 3299,
+    oldPrice: 4499
   }
 ];
 

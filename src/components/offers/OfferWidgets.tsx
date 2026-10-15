@@ -221,7 +221,7 @@ export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }:
         </div>
         <ServiceVisual service={g.service} locale={locale} className="h-72 md:h-80" />
       </div>
-      <CardSlider key={`tiers-${g.id}`} className={`grid items-stretch gap-5 ${g.tiers.length > 3 ? "md:grid-cols-2 xl:grid-cols-4" : "md:grid-cols-3"}`} labels={{ prev: labels.prev, next: labels.next }} rtl={locale === "ar"}>
+      <CardSlider key={`tiers-${g.id}`} className={`grid items-stretch gap-5 ${g.tiers.length === 4 ? "md:grid-cols-2 xl:grid-cols-4" : g.tiers.length > 4 ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-3"}`} labels={{ prev: labels.prev, next: labels.next }} rtl={locale === "ar"}>
         {g.tiers.map((t) => (
           <div key={t.key} className={`relative grid content-start gap-5 rounded-card border p-7 ${t.featured ? "border-iris bg-white shadow-lg ring-4 ring-iris/10 md:-translate-y-2" : "border-mist bg-white shadow-card"}`}>
             {t.featured && <span className="absolute -top-3 start-6 rounded-full bg-iris px-3 py-1 text-xs font-semibold text-white">{labels.mostPopular}</span>}
