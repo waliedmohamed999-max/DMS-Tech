@@ -6,6 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import { site } from "@/content/site";
 import { ATTRIBUTION_KEY, readAttribution } from "@/components/layout/AttributionCapture";
+import { track } from "@/lib/track";
 
 type Status = "idle" | "sending" | "success" | "error";
 
@@ -91,6 +92,7 @@ export function LeadForm({
     try {
       await submitLead({ ...data, ...(Object.keys(details).length ? { details } : {}), source, locale, ...attribution(), elapsed: Date.now() - shownAt.current });
       setStatus("success");
+      track("generate_lead", { form: source, offer: offer?.key, service: data.service }, `lead:${shownAt.current}`);
       form.reset();
     } catch {
       setStatus("error");

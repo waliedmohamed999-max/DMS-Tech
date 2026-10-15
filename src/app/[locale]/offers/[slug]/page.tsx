@@ -24,6 +24,7 @@ import {
   WhatsAppOrder,
 } from "@/components/offers/OfferWidgets";
 import { ServiceVisual } from "@/components/offers/ServiceVisual";
+import { TrackView } from "@/components/offers/TrackView";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -218,6 +219,7 @@ export default async function OfferItemPage({ params }: Props) {
 
   return (
     <>
+      <TrackView offer={item.key} service={item.service} price={item.price} />
       <section className="on-dark relative overflow-hidden">
         <TechBackdrop />
         <div className="container-site relative grid items-center gap-10 py-12 md:py-16 lg:grid-cols-[1.15fr_1fr]">

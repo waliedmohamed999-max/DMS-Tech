@@ -6,6 +6,7 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import { ServiceVisual } from "@/components/offers/ServiceVisual";
 import { CardSlider } from "@/components/offers/CardSlider";
+import { track } from "@/lib/track";
 
 /** Time left until `endsAt` (an ISO instant); `labels.seconds` adds a ticking seconds box (24-hour deals).
  * Renders nothing until mounted, so server and client markup agree. */
@@ -330,6 +331,7 @@ export function WhatsAppOrder({ phone, lines, label, className = "" }: { phone: 
       type="button"
       className={`btn justify-center bg-[#25d366] text-white hover:bg-[#1ebe5b] ${className}`}
       onClick={() => {
+        track("click_cta", { cta: "whatsapp_order", page: window.location.pathname });
         const text = [...lines, window.location.href.split("#")[0]].join("\n");
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
       }}

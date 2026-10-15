@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { pageCtx } from "@/lib/os/dal";
-import { crmAttention, crmOverview } from "@/server/crm/insights";
+import { campaignReport, crmAttention, crmOverview, type CampaignRow } from "@/server/crm/insights";
 import { commercialAttention, salesMetrics } from "@/server/commercial/insights";
 import { formatMoney } from "@/lib/commercial/calc";
 import { can } from "@/server/context";
@@ -33,7 +33,8 @@ export default async function CrmOverviewPage({ searchParams }: { searchParams: 
   const days = PERIODS.find((d) => String(d) === rawDays) ?? 30;
   const locale = await getLocale();
   const t = await getTranslations("os");
-  const [o, crmAtt, sales, comAtt] = await Promise.all([crmOverview(ctx, days), crmAttention(ctx, { team: true }), salesMetrics(ctx, days), commercialAttention(ctx, { team: true })]);
+  const ar = locale === "ar";
+  const [o, crmAtt, sales, comAtt, camp] = await Promise.all([crmOverview(ctx, days), crmAttention(ctx, { team: true }), salesMetrics(ctx, days), commercialAttention(ctx, { team: true }), campaignReport(ctx, days)]);
   const attention = [...comAtt, ...crmAtt];
   const ts = await getTranslations("os.sales.m");
   const oppsOk = can(ctx, "crm.opportunities.view");
@@ -117,6 +118,12 @@ export default async function CrmOverviewPage({ searchParams }: { searchParams: 
         )}
       </div>
 
+      {/* website leads by offer and by ad campaign → qualified → won → value */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        <CampaignTable title={ar ? "الطلبات حسب العرض أو الباقة" : "Leads by offer / package"} rows={camp.byOffer} ar={ar} locale={locale} emptyLabel={ar ? "بدون باقة محددة" : "No package"} />
+        <CampaignTable title={ar ? "الطلبات حسب الحملة الإعلانية" : "Leads by ad campaign"} rows={camp.byCampaign} ar={ar} locale={locale} emptyLabel={ar ? "زيارة مباشرة" : "Direct visit"} />
+      </div>
+
       <div className="grid gap-6 xl:grid-cols-2">
         {oppsOk && (
           <SectionCard title={t("crm.overview.valueByStage")}>
@@ -148,5 +155,42 @@ export default async function CrmOverviewPage({ searchParams }: { searchParams: 
       </div>
       <p className="text-[11px] text-os-faint">{t("crm.overview.currencyNote")}</p>
     </div>
+  );
+}
+
+/** Website leads grouped by offer or by campaign: leads → qualified → won → won value (SAR). */
+function CampaignTable({ title, rows, ar, locale, emptyLabel }: { title: string; rows: CampaignRow[]; ar: boolean; locale: string; emptyLabel: string }) {
+  const head = ar ? ["المصدر", "الطلبات", "مؤهَّل", "مكسوب", "القيمة"] : ["Source", "Leads", "Qualified", "Won", "Value"];
+  return (
+    <SectionCard title={title}>
+      {rows.length ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-os-line text-xs text-os-muted">
+                {head.map((h, i) => (
+                  <th key={h} className={`px-4 py-2 font-medium ${i ? "text-end" : "text-start"}`}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.slice(0, 12).map((r) => (
+                <tr key={r.key} className="border-b border-os-line/60 last:border-0">
+                  <td className="max-w-64 truncate px-4 py-2">{r.label || emptyLabel}</td>
+                  <td className="px-4 py-2 text-end tabular">{fmtNumber(r.leads, locale)}</td>
+                  <td className="px-4 py-2 text-end tabular">{fmtNumber(r.qualified, locale)}</td>
+                  <td className="px-4 py-2 text-end tabular">{fmtNumber(r.won, locale)}</td>
+                  <td className="px-4 py-2 text-end tabular">{fmtMoney(Number(r.revenue), locale)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <EmptyState title={ar ? "لا توجد طلبات من الموقع في هذه الفترة" : "No website leads in this period"} text={ar ? "تظهر هنا طلبات الموقع مع العرض والحملة التي جاءت منها." : "Website requests appear here with the offer and campaign they came from."} />
+      )}
+    </SectionCard>
   );
 }

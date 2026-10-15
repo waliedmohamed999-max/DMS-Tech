@@ -99,6 +99,62 @@ export async function crmOverview(ctx: Ctx, days = 30) {
   };
 }
 
+export type CampaignRow = { key: string; label: string; leads: number; qualified: number; won: number; revenue: string };
+type Capture = { offer?: { key?: string; label?: string } | null; utm?: Record<string, string> | null; referrer?: string | null } | null;
+
+/**
+ * Website leads by offer and by ad campaign (utm / click id captured on the site), with how many were qualified, won
+ * and the won value (SAR) of the opportunity each converted into — so ad spend can be judged by real outcomes.
+ */
+export async function campaignReport(ctx: Ctx, days = 90) {
+  requirePermission(ctx, "crm.leads.view");
+  const scope = await ownedWhere(ctx);
+  const since = new Date(Date.now() - days * 86400000);
+  const leads = await prisma.lead.findMany({
+    where: { organizationId: ctx.organizationId, ...scope, source: "WEBSITE", createdAt: { gte: since } },
+    select: { id: true, status: true, captureMeta: true }
+  });
+  const opps = can(ctx, "crm.opportunities.view") && leads.length
+    ? await prisma.opportunity.findMany({ where: { organizationId: ctx.organizationId, sourceLeadId: { in: leads.map((l) => l.id) } }, select: { sourceLeadId: true, status: true, estimatedValue: true, currency: true } })
+    : [];
+  const oppOf = new Map(opps.map((o) => [o.sourceLeadId, o]));
+
+  const group = (keyOf: (m: Capture) => { key: string; label: string }) => {
+    const rows = new Map<string, { label: string; leads: number; qualified: number; won: number; revenue: Prisma.Decimal | number }>();
+    for (const l of leads) {
+      const { key, label } = keyOf(l.captureMeta as Capture);
+      const r = rows.get(key) ?? { label, leads: 0, qualified: 0, won: 0, revenue: 0 };
+      r.leads++;
+      if (l.status === "QUALIFIED" || l.status === "CONVERTED") r.qualified++;
+      const o = oppOf.get(l.id);
+      if (o?.status === "WON") {
+        r.won++;
+        if (o.currency === "SAR") r.revenue = Number(r.revenue) + Number(o.estimatedValue);
+      }
+      rows.set(key, r);
+    }
+    return [...rows.entries()].map(([key, r]): CampaignRow => ({ key, label: r.label, leads: r.leads, qualified: r.qualified, won: r.won, revenue: Number(r.revenue).toFixed(2) })).sort((a, b) => b.leads - a.leads);
+  };
+  const host = (u?: string | null) => {
+    try {
+      return u ? new URL(u).hostname.replace(/^www\./, "") : "";
+    } catch {
+      return "";
+    }
+  };
+  return {
+    days,
+    byOffer: group((m) => (m?.offer?.key ? { key: m.offer.key, label: m.offer.label ?? m.offer.key } : { key: "—", label: "" })),
+    byCampaign: group((m) => {
+      const u = m?.utm ?? {};
+      const src = u.utm_source || (u.gclid ? "google" : u.fbclid ? "meta" : u.ttclid ? "tiktok" : u.sccid ? "snapchat" : "");
+      if (src) return { key: `${src}|${u.utm_campaign ?? ""}`, label: [src, u.utm_campaign].filter(Boolean).join(" · ") };
+      const ref = host(m?.referrer);
+      return ref ? { key: `ref|${ref}`, label: ref } : { key: "direct", label: "" };
+    })
+  };
+}
+
 /** Open-pipeline snapshot by stage for the Command Center (counts all currencies, sums SAR only). */
 export async function pipelineSummary(ctx: Ctx) {
   requirePermission(ctx, "crm.opportunities.view");

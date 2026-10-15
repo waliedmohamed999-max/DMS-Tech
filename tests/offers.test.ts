@@ -3,7 +3,8 @@ import { prisma } from "@/server/db";
 import { captureWebsiteLead, websiteLeadSchema } from "@/server/crm/website";
 import { buildLeadMail } from "@/server/notify/lead-mail";
 import { activeOffers, cycleEnd, DEALS_PER_DAY, findDeal, findOffer, groupAliases, offerAliases, offerLabel, offers, packageGroups, todaysDeal, todaysDeals } from "@/content/offers";
-import { resetDb, setupOrg } from "./helpers";
+import { ctxFor, makeUser, resetDb, setupOrg } from "./helpers";
+import { campaignReport } from "@/server/crm/insights";
 
 beforeEach(async () => {
   await resetDb();
@@ -134,6 +135,21 @@ describe("packages & offers", () => {
     // section links point at real tabs
     for (const id of Object.values(groupAliases)) expect(packageGroups.some((g) => g.id === id)).toBe(true);
     for (const target of Object.values(offerAliases)) expect(packageGroups.some((g) => g.tiers.some((t) => t.key === target)) || offers.some((o) => o.slug === target && o.cycle === "weekly")).toBe(true);
+  });
+
+  it("11. the CRM campaign report counts website leads by offer and by ad campaign", async () => {
+    vi.stubEnv("OS_ORG_SLUG", "test-org");
+    const org = await prisma.organization.findFirstOrThrow({ where: { slug: "test-org" } });
+    const ctx = await ctxFor((await makeUser(org.id, "mgr@x.test", ["sales_manager"])).id);
+    await captureWebsiteLead(lead({ phone: "0550000011", offer: "pkg:store-launch", utm: { utm_source: "snapchat", utm_campaign: "oct" } }));
+    await captureWebsiteLead(lead({ phone: "0550000012", offer: "pkg:store-launch", utm: { fbclid: "x1" } }));
+    await captureWebsiteLead(lead({ phone: "0550000013", offer: "pkg:web-starter" }));
+    const r = await campaignReport(ctx, 30);
+    expect(r.byOffer.find((x) => x.key === "pkg:store-launch")?.leads).toBe(2);
+    expect(r.byOffer.find((x) => x.key === "pkg:web-starter")?.leads).toBe(1);
+    expect(r.byCampaign.find((x) => x.key === "snapchat|oct")?.leads).toBe(1);
+    expect(r.byCampaign.find((x) => x.key === "meta|")?.leads).toBe(1);
+    expect(r.byCampaign.find((x) => x.key === "direct")?.leads).toBe(1);
   });
 
   it("4. the e-mail to the company names the package", () => {
