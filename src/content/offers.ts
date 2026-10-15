@@ -1314,28 +1314,31 @@ export const offers: Offer[] = [
     slug: "day-whatsapp",
     cycle: "daily",
     service: "whatsapp-automation",
-    icon: "MessageSquareMore",
-    badge: { ar: "صفقة اليوم — 24 ساعة فقط", en: "Deal of the day — 24 hours only" },
-    title: { ar: "باقة واتساب الأساسية 3 أشهر بـ 349 ريالاً", en: "WhatsApp Basic, 3 months for SAR 349" },
-    text: { ar: "لا تفوّت أي رسالة: نربط رقمك بواتساب للأعمال الرسمي مع رسالة ترحيب ورد آلي وردود سريعة — 3 أشهر بأقل من سعر شهرين.", en: "Never miss a message: your number on the official WhatsApp Business Platform with a welcome message, auto-reply and quick replies — 3 months for less than the price of 2." },
-    forWho: { ar: "للأنشطة التي تبدأ في تنظيم رسائل واتساب لأول مرة.", en: "For businesses organising their WhatsApp messages for the first time." },
+    icon: "Bot",
+    badge: { ar: "صفقة اليوم — واتساب للأعمال", en: "Deal of the day — WhatsApp for business" },
+    title: { ar: "واتساب الاحترافي 3 أشهر بـ 999 ريالاً: بوت يرد ويؤهل ويحوّل لفريقك", en: "WhatsApp Professional, 3 months for SAR 999: a bot that answers, qualifies and hands over" },
+    text: { ar: "باقة «الاحترافية» (499 شهرياً) لمدة 3 أشهر بسعر اليوم: رقمك الرسمي، ومسارات محادثة مصممة لنشاطك، وتأهيل العملاء وتحويل الجادّين للموظف المناسب، وصندوق محادثات مشترك لفريقك.", en: "The Professional plan (499/month) for 3 months at today's price: your official number, conversation flows designed for your business, lead qualification and hand-over to the right person, and a shared inbox for your team." },
+    forWho: { ar: "للعيادات والمتاجر والشركات العقارية والخدمية التي تصلها رسائل كثيرة ولا تستطيع الرد عليها كلها بسرعة.", en: "For clinics, stores, real-estate and service companies with more messages than they can answer quickly." },
     features: [
-      { ar: "3 أشهر من الباقة الأساسية", en: "3 months of Basic" },
-      { ar: "الإعداد مجاناً", en: "Free set-up" },
-      { ar: "جاهز خلال يومي عمل", en: "Ready in 2 business days" }
+      { ar: "مسارات محادثة مصممة لنشاطك", en: "Conversation flows designed for your business" },
+      { ar: "تأهيل العملاء وتحويلهم لفريقك", en: "Lead qualification and hand-over to your team" },
+      { ar: "حتى 3 موظفين في صندوق واحد", en: "Up to 3 staff in one inbox" }
     ],
     deliverables: [
-      { title: { ar: "الرقم الرسمي", en: "Official number" }, text: { ar: "ربط رقمك والتحقق من اسم نشاطك.", en: "Your number connected and business name verified." } },
-      { title: { ar: "الرد الآلي", en: "Auto-reply" }, text: { ar: "رسالة ترحيب، رد خارج أوقات العمل، و10 ردود سريعة جاهزة.", en: "Welcome message, out-of-hours reply and 10 ready quick replies." } }
+      { title: { ar: "الرقم الرسمي", en: "Official number" }, text: { ar: "ربط رقمك بمنصة واتساب للأعمال وتوثيق نشاطك لدى ميتا.", en: "Your number on the WhatsApp Business Platform with your business verified by Meta." } },
+      { title: { ar: "مسارات المحادثة", en: "Conversation flows" }, text: { ar: "قائمة خدمات أو منتجات، وأسئلة متكررة، وحجز أو طلب، بالعربي والإنجليزي.", en: "A service or product menu, FAQs and booking or ordering, in Arabic and English." } },
+      { title: { ar: "التأهيل والتحويل", en: "Qualification & hand-over" }, text: { ar: "يسأل عن الاسم والمدينة والخدمة، ثم يحوّل المحادثة للموظف المناسب مع ملخص.", en: "Asks for name, city and service, then hands the chat to the right person with a summary." } },
+      { title: { ar: "الفريق والتقارير", en: "Team & reports" }, text: { ar: "صندوق مشترك حتى 3 موظفين، و5 قوالب رسائل، وتقرير شهري بالمحادثات وسرعة الرد.", en: "A shared inbox for up to 3 staff, 5 message templates and a monthly report on conversations and response time." } }
     ],
-    delivery: { ar: "يومان عمل بعد اعتماد ميتا لحسابك", en: "2 business days after Meta approves your account" },
+    delivery: { ar: "5 أيام عمل بعد اعتماد ميتا لحسابك", en: "5 business days after Meta approves your account" },
     terms: [
-      { ar: "الدفع مقدماً عن الأشهر الثلاثة", en: "The three months are paid upfront" },
+      { ar: "الدفع مقدماً عن الأشهر الثلاثة، وبعدها بسعر الباقة (499 شهرياً) أو الإلغاء بلا التزام", en: "The three months are paid upfront; then the plan price (499/month) or cancel with no commitment" },
+      { ar: "اعتماد الحساب وقوالب الرسائل يخضع لموافقة ميتا", en: "Account and template approval is subject to Meta" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
     excludes: [{ ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, billed by usage" }],
-    price: 349,
-    oldPrice: 597
+    price: 999,
+    oldPrice: 1497
   },
   {
     slug: "day-integration",

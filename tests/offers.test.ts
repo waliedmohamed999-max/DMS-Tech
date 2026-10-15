@@ -69,7 +69,7 @@ describe("packages & offers", () => {
       "day-store": price("store-launch"),
       "day-ai-bot": price("ai-site-bot"),
       "day-marketing": price("mkt-start") + price("social-presence"),
-      "day-whatsapp": price("wa-basic") * 3,
+      "day-whatsapp": price("wa-pro") * 3,
       "day-integration": price("integration"),
       "day-landing": price("landing-page"),
       "day-social": price("social-engage"),
