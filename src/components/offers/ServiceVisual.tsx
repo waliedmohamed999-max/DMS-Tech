@@ -295,7 +295,57 @@ function Design({ l }: { l: Lc }) {
   );
 }
 
+function Dashboard({ l }: { l: Lc }) {
+  const kpis: [string, string, string][] = [
+    [pick(l, "المبيعات", "Sales"), pick(l, "84,200", "84,200"), "+12%"],
+    [pick(l, "الطلبات", "Orders"), "312", "+8%"],
+    [pick(l, "التحصيل", "Collected"), "91%", "+5%"]
+  ];
+  const bars = [40, 55, 48, 62, 70, 66, 85];
+  return (
+    <>
+      <div className="absolute inset-x-[8%] top-[10%] bottom-[8%] grid content-start gap-2 rounded-xl border border-mist bg-white p-3 shadow-lg">
+        <div className="flex items-center justify-between text-[11px]">
+          <b>{pick(l, "لوحة الإدارة", "Management dashboard")}</b>
+          <span className="flex items-center gap-1 rounded-full bg-mint px-2 py-0.5 text-[10px] font-bold text-fern">
+            <span className="size-1.5 rounded-full bg-fern" /> {pick(l, "مباشر", "Live")}
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-1.5">
+          {kpis.map(([k, v, d]) => (
+            <span key={k} className="rounded-md bg-cloud px-1.5 py-1.5">
+              <span className="block text-[9px] text-graphite">{k}</span>
+              <b className="block text-[12px]" dir="ltr">
+                {v}
+              </b>
+              <span className="text-[9px] font-bold text-fern" dir="ltr">
+                {d}
+              </span>
+            </span>
+          ))}
+        </div>
+        <div className="flex h-14 items-end gap-1.5" dir="ltr">
+          {bars.map((h, i) => (
+            <span key={i} className="sv-bar flex-1 rounded-t bg-gradient-to-t from-iris to-iris-soft" style={{ height: `${h}%`, animationDelay: `${i * 0.12}s` }} />
+          ))}
+        </div>
+      </div>
+      <Float className="start-[2%] top-[2%]">
+        <Chip>
+          <Icon name="Plug" size={12} className="text-iris" /> {pick(l, "المتجر ↔ المحاسبة", "Store ↔ accounting")}
+        </Chip>
+      </Float>
+      <Float className="end-[2%] bottom-[2%]" delay={1}>
+        <Chip>
+          <Icon name="Check" size={12} className="text-fern" /> {pick(l, "مزامنة تلقائية", "Auto-sync")}
+        </Chip>
+      </Float>
+    </>
+  );
+}
+
 const scenes: Record<string, (p: { l: Lc }) => ReactNode> = {
+  "digital-transformation": Dashboard,
   "web-development": Web,
   ecommerce: Store,
   "digital-marketing": Marketing,

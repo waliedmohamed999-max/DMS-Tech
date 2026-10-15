@@ -146,6 +146,91 @@ export const packageGroups: PackageGroup[] = [
     ]
   },
   {
+    service: "ai-automation",
+    icon: "Bot",
+    title: { ar: "باقات الذكاء الاصطناعي والأتمتة", en: "AI & automation packages" },
+    short: { ar: "ذكاء اصطناعي وأتمتة", en: "AI & automation" },
+    text: { ar: "اجعل الأعمال المتكررة تعمل وحدها، ومساعداً ذكياً يرد على عملائك ويخدم فريقك على مدار الساعة.", en: "Let repetitive work run by itself, and an AI assistant answer your clients and serve your team around the clock." },
+    highlights: [
+      { ar: "أتمتة العمليات بين أدواتك وأنظمتك", en: "Process automation across your tools and systems" },
+      { ar: "مساعد ذكاء اصطناعي يفهم اللهجة السعودية", en: "An AI assistant that understands Saudi Arabic" },
+      { ar: "بياناتك محمية ومملوكة لك بالكامل", en: "Your data protected and fully yours" }
+    ],
+    notice: { ar: "رسوم استخدام نماذج الذكاء الاصطناعي واشتراكات الأدوات الخارجية تُدفع حسب الاستخدام الفعلي وباسمك — نقدّرها لك مسبقاً قبل البدء، وغالباً تبدأ من 100 ريال شهرياً للأنشطة الصغيرة.", en: "AI model usage and third-party tool subscriptions are paid by actual usage, in your name — we estimate them before we start; for small businesses they usually start around SAR 100 a month." },
+    tiers: [
+      {
+        key: "ai-auto-starter",
+        icon: "Workflow",
+        name: { ar: "أتمتة الأعمال", en: "Business automation" },
+        tagline: { ar: "عمليتان تعملان وحدهما بدل فريقك", en: "Two processes that run themselves" },
+        idealFor: { ar: "الشركات التي يكرر فريقها نفس الخطوات يدوياً كل يوم", en: "Companies whose team repeats the same manual steps every day" },
+        price: 2999,
+        from: false,
+        period: oneTime,
+        delivery: { ar: "10 أيام عمل", en: "10 business days" },
+        features: [
+          { ar: "تحليل عملياتك واختيار الأعلى أثراً", en: "Your processes reviewed and the highest-impact ones chosen" },
+          { ar: "أتمتة عمليتين حتى 10 خطوات لكل منهما", en: "Two processes automated, up to 10 steps each" },
+          { ar: "ربط حتى 3 أدوات (نماذج، جداول، بريد، واتساب، نظام العملاء)", en: "Up to 3 tools connected (forms, sheets, e-mail, WhatsApp, CRM)" },
+          { ar: "ذكاء اصطناعي لقراءة الرسائل وتصنيفها وتلخيصها", en: "AI to read, sort and summarise messages" },
+          { ar: "تنبيهات عند أي خطأ وتوثيق لكل عملية", en: "Alerts on any failure and documentation for every process" },
+          { ar: "تدريب فريقك ودعم فني لمدة شهر", en: "Team training and one month of support" }
+        ],
+        excludes: [
+          { ar: "اشتراكات الأدوات ورسوم الذكاء الاصطناعي حسب الاستخدام", en: "Tool subscriptions and AI usage fees" },
+          { ar: "تطوير أنظمة جديدة (في باقات البرمجة)", en: "Building new systems (in the development packages)" }
+        ]
+      },
+      {
+        key: "ai-assistant",
+        icon: "Bot",
+        name: { ar: "مساعد ذكاء اصطناعي", en: "AI assistant" },
+        tagline: { ar: "موظف ذكي يرد على عملائك 24 ساعة", en: "A smart agent answering your clients 24/7" },
+        idealFor: { ar: "العيادات والمتاجر والعقار والشركات الخدمية كثيرة الاستفسارات", en: "Clinics, stores, real estate and service companies with many enquiries" },
+        price: 7999,
+        from: false,
+        period: oneTime,
+        delivery: { ar: "3 أسابيع", en: "3 weeks" },
+        featured: true,
+        features: [
+          { ar: "مساعد مدرَّب على خدماتك وأسعارك وسياساتك من ملفاتك", en: "An assistant trained on your services, prices and policies from your files" },
+          { ar: "يرد على واتساب وموقعك بالعربي (واللهجة السعودية) والإنجليزي", en: "Answers on WhatsApp and your website in Arabic (incl. Saudi dialect) and English" },
+          { ar: "يحجز المواعيد ويؤهل العملاء ويسجلهم في نظام العملاء", en: "Books appointments, qualifies leads and records them in your CRM" },
+          { ar: "يحوّل المحادثة للموظف المناسب عند الحاجة", en: "Hands the chat to the right person when needed" },
+          { ar: "لوحة لمراجعة المحادثات وتحسين الردود", en: "A dashboard to review conversations and improve answers" },
+          { ar: "ضبط وتحسين مستمر لمدة 3 أشهر", en: "Three months of tuning and improvement" }
+        ],
+        excludes: [
+          { ar: "رسوم استخدام الذكاء الاصطناعي ورسائل ميتا حسب الاستخدام", en: "AI usage and Meta message fees, by usage" },
+          { ar: "اشتراك واتساب للأعمال (في باقات حلول واتساب)", en: "The WhatsApp Business subscription (in the WhatsApp packages)" }
+        ]
+      },
+      {
+        key: "ai-custom",
+        icon: "Sparkles",
+        name: { ar: "حلول ذكاء اصطناعي مخصصة", en: "Custom AI solutions" },
+        tagline: { ar: "ذكاء اصطناعي داخل أنظمتك وبياناتك", en: "AI inside your systems and data" },
+        idealFor: { ar: "الشركات والجهات التي لديها بيانات ومستندات كثيرة وأنظمة قائمة", en: "Companies and entities with lots of data, documents and existing systems" },
+        price: 19999,
+        from: true,
+        period: oneTime,
+        delivery: { ar: "من 6 أسابيع حسب النطاق", en: "From 6 weeks, depending on scope" },
+        features: [
+          { ar: "ورشة لتحديد حالات الاستخدام والعائد المتوقع", en: "A workshop to define use cases and expected return" },
+          { ar: "مساعد معرفة داخلي يجيب فريقك من مستندات الشركة", en: "An internal knowledge assistant answering your team from company documents" },
+          { ar: "قراءة الفواتير والعقود والمستندات واستخراج بياناتها تلقائياً", en: "Invoices, contracts and documents read and their data extracted automatically" },
+          { ar: "ربط مع أنظمتك (ERP، المحاسبة، نظام العملاء)", en: "Integration with your systems (ERP, accounting, CRM)" },
+          { ar: "صلاحيات وسجل تدقيق وحماية للبيانات الحساسة", en: "Permissions, audit trail and protection for sensitive data" },
+          { ar: "تسليم موثق ودعم وتحسين لمدة 6 أشهر", en: "Documented hand-over and 6 months of support and tuning" }
+        ],
+        excludes: [
+          { ar: "رسوم الخوادم ونماذج الذكاء الاصطناعي حسب الاستخدام", en: "Server and AI model costs, by usage" },
+          { ar: "تراخيص الأنظمة الخارجية", en: "Third-party system licences" }
+        ]
+      }
+    ]
+  },
+  {
     service: "ecommerce",
     icon: "ShoppingCart",
     title: { ar: "باقات المتاجر الإلكترونية", en: "Online store packages" },
@@ -483,6 +568,112 @@ export const packageGroups: PackageGroup[] = [
  */
 export const offers: Offer[] = [
   {
+    slug: "ai-agent-week",
+    cycle: "weekly",
+    service: "ai-automation",
+    icon: "Bot",
+    badge: { ar: "عرض الأسبوع — ذكاء اصطناعي", en: "Offer of the week — AI" },
+    title: { ar: "مساعد ذكاء اصطناعي يرد على عملائك 24 ساعة", en: "An AI assistant answering your clients 24/7" },
+    text: { ar: "باقة «مساعد ذكاء اصطناعي» (7,999) بسعر الأسبوع: مساعد مدرَّب على خدماتك وأسعارك يرد على واتساب وموقعك بالعربي والإنجليزي، يحجز ويؤهل العملاء ويسجلهم في نظامك، ويحوّل الجادّين لفريقك.", en: "The AI assistant package (7,999) at this week's price: an assistant trained on your services and prices that answers on WhatsApp and your site in Arabic and English, books, qualifies and records leads, and hands serious ones to your team." },
+    forWho: { ar: "للعيادات والمتاجر وشركات العقار والخدمات التي تصلها استفسارات كثيرة خارج أوقات العمل أو أكثر من قدرة فريقها.", en: "For clinics, stores, real-estate and service companies with more enquiries than their team can handle, or outside working hours." },
+    features: [
+      { ar: "مدرَّب على ملفاتك وخدماتك وأسعارك", en: "Trained on your files, services and prices" },
+      { ar: "واتساب والموقع بالعربي والإنجليزي", en: "WhatsApp and website, Arabic and English" },
+      { ar: "حجز وتأهيل وتسجيل في نظام العملاء", en: "Booking, qualification and CRM records" },
+      { ar: "تحويل للموظف المناسب عند الحاجة", en: "Hand-over to the right person when needed" },
+      { ar: "3 أشهر ضبط وتحسين", en: "Three months of tuning" }
+    ],
+    deliverables: [
+      { title: { ar: "قاعدة المعرفة", en: "Knowledge base" }, text: { ar: "نجمع خدماتك وأسعارك وسياساتك وأسئلة عملائك المتكررة وندرّب المساعد عليها.", en: "We gather your services, prices, policies and frequent questions and train the assistant on them." } },
+      { title: { ar: "القنوات", en: "Channels" }, text: { ar: "تشغيله على رقم واتساب الرسمي ونافذة محادثة في موقعك.", en: "Live on your official WhatsApp number and a chat window on your website." } },
+      { title: { ar: "الحجز والتأهيل", en: "Booking & qualification" }, text: { ar: "يسأل عن الاحتياج والمدينة والميزانية، ويحجز المواعيد، ويسجل العميل في نظام العملاء.", en: "Asks about need, city and budget, books appointments and records the client in your CRM." } },
+      { title: { ar: "التحويل لفريقك", en: "Hand-over" }, text: { ar: "يحوّل المحادثة للموظف المناسب مع ملخص بما قاله العميل.", en: "Passes the chat to the right person with a summary of what the client said." } },
+      { title: { ar: "المراجعة والتحسين", en: "Review & tuning" }, text: { ar: "لوحة لمراجعة المحادثات، وتحسين أسبوعي للردود لمدة 3 أشهر.", en: "A dashboard to review conversations and weekly answer tuning for 3 months." } }
+    ],
+    delivery: { ar: "3 أسابيع من استلام المعلومات", en: "3 weeks from receiving your information" },
+    terms: [
+      { ar: "الدفع: 50% عند البدء و50% عند التشغيل", en: "Payment: 50% to start, 50% at go-live" },
+      { ar: "يتطلب رقم واتساب للأعمال موثقاً لدى ميتا", en: "Requires a WhatsApp Business number verified with Meta" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
+    ],
+    excludes: [
+      { ar: "رسوم استخدام الذكاء الاصطناعي ورسائل ميتا حسب الاستخدام", en: "AI usage and Meta message fees, by usage" },
+      { ar: "اشتراك واتساب للأعمال", en: "The WhatsApp Business subscription" }
+    ],
+    price: 5499,
+    oldPrice: 7999
+  },
+  {
+    slug: "ai-bundle-week",
+    cycle: "weekly",
+    service: "ai-automation",
+    icon: "Sparkles",
+    badge: { ar: "صفقة الأسبوع — التحول الذكي", en: "Bundle of the week — smart transformation" },
+    title: { ar: "التحول الذكي: مساعد ذكاء اصطناعي + أتمتة عمليتين", en: "Smart transformation: AI assistant + two automated processes" },
+    text: { ar: "باقة «مساعد ذكاء اصطناعي» (7,999) مع باقة «أتمتة الأعمال» (2,999) في مشروع واحد: المساعد يستقبل العملاء، والأتمتة تكمل الشغل بعده — من الطلب حتى المتابعة والتقرير — بدل 10,998 ريالاً.", en: "The AI assistant (7,999) and Business automation (2,999) packages in one project: the assistant receives clients and automation finishes the work after it — from request to follow-up and report — instead of SAR 10,998." },
+    forWho: { ar: "للشركات التي تريد تقليل العمل اليدوي فعلياً: استقبال العملاء، وإدخال البيانات، والمتابعة، والتقارير — دون توظيف إضافي.", en: "For companies that really want less manual work — intake, data entry, follow-up and reports — without hiring more." },
+    features: [
+      { ar: "كل مميزات «مساعد ذكاء اصطناعي»", en: "Everything in AI assistant" },
+      { ar: "أتمتة عمليتين بعد استقبال العميل", en: "Two processes automated after intake" },
+      { ar: "ربط حتى 3 أدوات وأنظمة", en: "Up to 3 tools and systems connected" },
+      { ar: "تقرير أسبوعي تلقائي للإدارة", en: "An automatic weekly report for management" },
+      { ar: "مدير مشروع واحد للكل", en: "One project manager for all of it" }
+    ],
+    deliverables: [
+      { title: { ar: "المساعد الذكي", en: "AI assistant" }, text: { ar: "مساعد على واتساب وموقعك مدرَّب على بياناتك، يحجز ويؤهل ويحوّل لفريقك.", en: "An assistant on WhatsApp and your site, trained on your data, that books, qualifies and hands over." } },
+      { title: { ar: "الأتمتة", en: "Automation" }, text: { ar: "عمليتان حتى 10 خطوات لكل منهما، مثل: إنشاء عرض السعر وإرساله، أو متابعة العميل تلقائياً حتى الدفع.", en: "Two processes up to 10 steps each, e.g. creating and sending the quote, or automatic follow-up until payment." } },
+      { title: { ar: "الربط", en: "Integration" }, text: { ar: "ربط حتى 3 أدوات: نظام العملاء، الجداول، البريد، المحاسبة.", en: "Up to 3 tools connected: CRM, sheets, e-mail, accounting." } },
+      { title: { ar: "التقارير", en: "Reports" }, text: { ar: "تقرير أسبوعي تلقائي بعدد العملاء والطلبات ومصادرها وسرعة الرد.", en: "An automatic weekly report on clients, orders, sources and response time." } }
+    ],
+    delivery: { ar: "5 أسابيع للمشروع كاملاً", en: "5 weeks for the whole project" },
+    terms: [
+      { ar: "الدفع: 40% عند البدء، 40% عند تشغيل المساعد، 20% عند تسليم الأتمتة", en: "Payment: 40% to start, 40% at assistant go-live, 20% at automation hand-over" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
+    ],
+    excludes: [
+      { ar: "رسوم الذكاء الاصطناعي ورسائل ميتا واشتراكات الأدوات حسب الاستخدام", en: "AI, Meta message and tool fees, by usage" },
+      { ar: "تطوير أنظمة جديدة من الصفر", en: "Building new systems from scratch" }
+    ],
+    price: 7999,
+    oldPrice: 10998
+  },
+  {
+    slug: "system-week",
+    cycle: "weekly",
+    service: "web-development",
+    icon: "LayoutDashboard",
+    badge: { ar: "عرض الأسبوع — برمجة", en: "Offer of the week — development" },
+    title: { ar: "نظام إداري مخصص لشركتك: العملاء والطلبات والتقارير", en: "A custom management system: clients, orders and reports" },
+    text: { ar: "نظام ويب مبني من الصفر على طريقة عمل شركتك، بنطاق محدد وسعر ثابت: العملاء، والطلبات أو المشاريع، والمهام، والصلاحيات، ولوحة تقارير — بدل أنظمة جاهزة لا تناسبك.", en: "A web system built from scratch around how your company works, with a defined scope and a fixed price: clients, orders or projects, tasks, permissions and a reports dashboard — instead of ready-made tools that don't fit." },
+    forWho: { ar: "للشركات التي تدير عملها بالجداول وواتساب وتريد نظاماً واحداً منظماً تملكه بالكامل.", en: "For companies running on spreadsheets and WhatsApp that want one organised system they fully own." },
+    features: [
+      { ar: "تحليل متطلبات ووثيقة نطاق قبل البدء", en: "Requirements analysis and a written scope first" },
+      { ar: "حتى 6 أقسام مثل العملاء والطلبات والمهام", en: "Up to 6 modules such as clients, orders and tasks" },
+      { ar: "مستخدمون وصلاحيات لكل دور", en: "Users and role permissions" },
+      { ar: "لوحة تقارير وتنبيهات بالبريد وواتساب", en: "A reports dashboard and e-mail / WhatsApp alerts" },
+      { ar: "ملكية كاملة للكود ودعم 3 أشهر", en: "Full code ownership and 3 months of support" }
+    ],
+    deliverables: [
+      { title: { ar: "التحليل والتصميم", en: "Analysis & design" }, text: { ar: "ورشة لفهم طريقة عملك، ووثيقة نطاق مكتوبة، وتصميم الشاشات قبل البرمجة.", en: "A workshop on how you work, a written scope and screen designs before development." } },
+      { title: { ar: "النظام", en: "The system" }, text: { ar: "حتى 6 أقسام (مثل العملاء، الطلبات أو المشاريع، المهام، الفواتير البسيطة، المستندات)، بالعربي والإنجليزي.", en: "Up to 6 modules (e.g. clients, orders or projects, tasks, simple invoices, documents), in Arabic and English." } },
+      { title: { ar: "الصلاحيات", en: "Permissions" }, text: { ar: "مستخدمون بأدوار مختلفة، وكل موظف يرى ما يخصه فقط، مع سجل لكل تعديل.", en: "Users with roles, each seeing only what concerns them, with a log of every change." } },
+      { title: { ar: "التقارير والتنبيهات", en: "Reports & alerts" }, text: { ar: "لوحة مؤشرات للإدارة، وتنبيهات بالبريد وواتساب عند الأحداث المهمة.", en: "A KPI dashboard for management and e-mail / WhatsApp alerts on key events." } },
+      { title: { ar: "التسليم", en: "Hand-over" }, text: { ar: "رفع النظام على خادمك، وتدريب فريقك، والكود كاملاً باسمك، ودعم 3 أشهر.", en: "Deployed on your server, team training, full code in your name and 3 months of support." } }
+    ],
+    delivery: { ar: "8 أسابيع من اعتماد وثيقة النطاق", en: "8 weeks from scope sign-off" },
+    terms: [
+      { ar: "النطاق محدد في وثيقة مكتوبة قبل البدء، وأي إضافة بعدها تُسعَّر منفصلة", en: "Scope is fixed in a written document first; additions are priced separately" },
+      { ar: "الدفع: 30% عند البدء، 40% عند تسليم النسخة التجريبية، 30% عند الإطلاق", en: "Payment: 30% to start, 40% at the beta, 30% at launch" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
+    ],
+    excludes: [
+      { ar: "الخادم والنطاق (باسمك وعلى حسابك)", en: "Server and domain (in your name)" },
+      { ar: "تطبيق الجوال (يُسعَّر منفصلاً)", en: "A mobile app (priced separately)" }
+    ],
+    price: 11999,
+    oldPrice: 14999
+  },
+  {
     slug: "store-week",
     cycle: "weekly",
     service: "ecommerce",
@@ -525,80 +716,32 @@ export const offers: Offer[] = [
     oldPrice: 5998
   },
   {
-    slug: "whatsapp-week",
-    cycle: "weekly",
-    service: "whatsapp-automation",
-    icon: "MessagesSquare",
-    badge: { ar: "عرض الأسبوع — 3 أشهر بسعر شهرين", en: "This week — 3 months for 2" },
-    title: { ar: "واتساب الاحترافي: بوت يرد على عملائك 24 ساعة", en: "WhatsApp Professional: a bot that answers your clients 24/7" },
-    text: { ar: "الباقة الاحترافية (499 شهرياً) لمدة 3 أشهر بسعر شهرين: رقمك الرسمي على واتساب للأعمال، شات بوت يرد بالعربي والإنجليزي ويؤهل العملاء ويحوّل الجادّين لفريقك، وصندوق محادثات مشترك — والإعداد مجاني.", en: "Professional (499/month) for 3 months at the price of 2: your official WhatsApp Business number, a chatbot that answers in Arabic and English, qualifies clients and hands the serious ones to your team, and a shared inbox — with free set-up." },
-    forWho: { ar: "للعيادات والصالونات والمطاعم والمتاجر والشركات العقارية والخدمية التي تصلها رسائل كثيرة على واتساب ولا تستطيع الرد عليها كلها بسرعة.", en: "For clinics, salons, restaurants, stores, real-estate and service companies that get many WhatsApp messages and can't answer them all quickly." },
+    slug: "day-automation",
+    cycle: "daily",
+    service: "ai-automation",
+    icon: "Workflow",
+    badge: { ar: "صفقة اليوم — أتمتة", en: "Deal of the day — automation" },
+    title: { ar: "أتمتة عمليتين في شركتك بـ 1,999 ريالاً", en: "Two processes automated for SAR 1,999" },
+    text: { ar: "باقة «أتمتة الأعمال» كاملة بسعر اليوم: نحوّل عمليتين يكررهما فريقك يومياً — مثل استقبال الطلبات وإرسال عروض الأسعار والمتابعة — إلى عمليات تعمل وحدها.", en: "The full Business automation package at today's price: two processes your team repeats daily — like taking requests, sending quotes and follow-ups — turned into ones that run by themselves." },
+    forWho: { ar: "للشركات التي يضيع وقت فريقها في نقل البيانات بين البريد والجداول وواتساب والأنظمة.", en: "For companies whose team loses time moving data between e-mail, sheets, WhatsApp and systems." },
     features: [
-      { ar: "الباقة الاحترافية لمدة 3 أشهر (توفير 499 ريالاً)", en: "Professional for 3 months (save SAR 499)" },
-      { ar: "رقمك الرسمي باسم نشاطك والإعداد مجاناً", en: "Your official number under your business name, free set-up" },
-      { ar: "شات بوت بالعربي والإنجليزي مصمم لنشاطك", en: "An Arabic and English chatbot designed for your business" },
-      { ar: "حتى 3 موظفين في صندوق محادثات واحد", en: "Up to 3 staff in one shared inbox" },
-      { ar: "5 قوالب رسائل معتمدة من ميتا", en: "5 Meta-approved message templates" }
+      { ar: "عمليتان حتى 10 خطوات", en: "Two processes, up to 10 steps" },
+      { ar: "ربط حتى 3 أدوات", en: "Up to 3 tools connected" },
+      { ar: "ذكاء اصطناعي لقراءة الرسائل وتصنيفها", en: "AI to read and sort messages" }
     ],
     deliverables: [
-      { title: { ar: "الرقم الرسمي", en: "Official number" }, text: { ar: "ربط رقمك بمنصة واتساب للأعمال، وتوثيق نشاطك لدى ميتا بالسجل التجاري، وظهور اسم نشاطك للعملاء.", en: "Your number on the WhatsApp Business Platform, business verification with Meta using your commercial registration, and your business name shown to clients." } },
-      { title: { ar: "شات بوت", en: "Chatbot" }, text: { ar: "تدفق رد آلي بالعربي والإنجليزي: ترحيب، قائمة خدمات أو منتجات، أسعار، مواقع الفروع، الأسئلة المتكررة، وتحويل للموظف المناسب.", en: "An Arabic and English auto-reply flow: welcome, service or product menu, prices, branch locations, FAQs and hand-over to the right person." } },
-      { title: { ar: "تأهيل العملاء", en: "Lead qualification" }, text: { ar: "البوت يسأل عن الاسم والمدينة والخدمة المطلوبة قبل التحويل، فيصل لفريقك عميل جاهز.", en: "The bot asks for name, city and the service needed before hand-over, so your team gets a ready client." } },
-      { title: { ar: "صندوق محادثات", en: "Shared inbox" }, text: { ar: "صندوق واحد لفريقك حتى 3 موظفين، مع تعيين المحادثات والملاحظات الداخلية وأوقات العمل بتوقيت الرياض.", en: "One inbox for up to 3 staff, with assignment, internal notes and working hours on Riyadh time." } },
-      { title: { ar: "قوالب الرسائل", en: "Message templates" }, text: { ar: "إعداد واعتماد 5 قوالب من ميتا: ترحيب، تأكيد حجز أو طلب، تذكير بموعد، متابعة، وعرض.", en: "5 Meta-approved templates: welcome, booking or order confirmation, appointment reminder, follow-up and offer." } },
-      { title: { ar: "التقارير", en: "Reports" }, text: { ar: "تقرير شهري بعدد المحادثات وسرعة الرد وعدد العملاء المحوّلين لفريقك.", en: "A monthly report on conversations, response time and clients handed to your team." } }
+      { title: { ar: "التحليل", en: "Review" }, text: { ar: "جلسة نرسم فيها عملياتك ونختار الأعلى أثراً.", en: "A session mapping your processes and picking the highest-impact ones." } },
+      { title: { ar: "التنفيذ", en: "Build" }, text: { ar: "بناء الأتمتة وربط أدواتك، مع تنبيه عند أي خطأ.", en: "The automations built and your tools connected, with alerts on any failure." } },
+      { title: { ar: "التسليم", en: "Hand-over" }, text: { ar: "تجربة على بيانات حقيقية، وتوثيق، وتدريب، ودعم لمدة شهر.", en: "Tested on real data, documented, team trained, one month of support." } }
     ],
-    delivery: { ar: "5 أيام عمل بعد اعتماد ميتا لحسابك", en: "5 business days after Meta approves your account" },
+    delivery: { ar: "10 أيام عمل", en: "10 business days" },
     terms: [
-      { ar: "يتطلب سجلاً تجارياً أو وثيقة عمل حر سارية لتوثيق الحساب لدى ميتا", en: "A valid commercial registration or freelance document is needed for Meta verification" },
-      { ar: "الدفع مقدماً عن الأشهر الثلاثة", en: "The three months are paid upfront" },
-      { ar: "بعد الأشهر الثلاثة يتجدد الاشتراك بسعر الباقة العادي (499 شهرياً) أو يُلغى بلا التزام", en: "After three months it renews at the normal price (499/month) or can be cancelled with no commitment" },
-      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
+      { ar: "عمليتان بحد أقصى 10 خطوات لكل منهما و3 أدوات", en: "Two processes, at most 10 steps each and 3 tools" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
-    excludes: [
-      { ar: "رسوم رسائل ميتا حسب الاستخدام (الرد خلال 24 ساعة من رسالة العميل مجاني ضمن حدود ميتا)", en: "Meta message fees by usage (replying within 24 hours of a client's message is free within Meta's limits)" },
-      { ar: "الحملات التسويقية الجماعية (متاحة في الباقة المتقدمة)", en: "Bulk marketing campaigns (in the Advanced package)" }
-    ],
-    price: 998,
-    oldPrice: 1497
-  },
-  {
-    slug: "launch-bundle-week",
-    cycle: "weekly",
-    service: "web-development",
-    icon: "Rocket",
-    badge: { ar: "صفقة الأسبوع — وفّر 30%", en: "Bundle of the week — save 30%" },
-    title: { ar: "صفقة الانطلاق الرقمي: موقع + متجر + واتساب", en: "Digital launch bundle: website + store + WhatsApp" },
-    text: { ar: "كل ما تحتاجه شركتك لتبدأ أونلاين في صفقة واحدة ومدير مشروع واحد: موقع احترافي بالعربي والإنجليزي (5,999)، متجر جاهز للبيع والإعلان (1,999)، وواتساب يرد على عملائك 3 أشهر (597) — بدلاً من 8,595 ريالاً.", en: "Everything your business needs online, in one deal with one project manager: a professional Arabic and English website (5,999), a store ready to sell and advertise (1,999) and WhatsApp answering clients for 3 months (597) — instead of SAR 8,595." },
-    forWho: { ar: "للشركات والمؤسسات الجديدة في المملكة، أو التي تبدأ حضورها الرقمي من الصفر، وتريد الموقع والمتجر وواتساب مرتبطة ببعضها من اليوم الأول.", en: "For new companies in Saudi Arabia, or those starting online from scratch, that want website, store and WhatsApp connected from day one." },
-    features: [
-      { ar: "موقع الشركة — الباقة الاحترافية (حتى 15 صفحة)", en: "Company website — Professional (up to 15 pages)" },
-      { ar: "استضافة ونطاق دوت كوم للسنة الأولى", en: "Hosting and a .com domain for the first year" },
-      { ar: "متجر إلكتروني — باقة الانطلاق مع البكسل", en: "Online store — Launch, with pixels" },
-      { ar: "واتساب الأساسية — 3 أشهر", en: "WhatsApp Basic — 3 months" },
-      { ar: "مدير مشروع واحد لكل الأعمال", en: "One project manager for everything" }
-    ],
-    deliverables: [
-      { title: { ar: "موقع الشركة", en: "Company website" }, text: { ar: "حتى 15 صفحة بالعربية والإنجليزية بتصميم مخصص، لوحة تحكم لتعديل المحتوى، مدونة وثلاث صفحات هبوط للحملات، وتهيئة متقدمة لمحركات البحث.", en: "Up to 15 custom-designed pages in Arabic and English, a content panel, a blog, 3 campaign landing pages and advanced SEO." } },
-      { title: { ar: "الاستضافة والنطاق", en: "Hosting & domain" }, text: { ar: "استضافة سحابية ونطاق دوت كوم باسمك للسنة الأولى، مع شهادة الأمان.", en: "Cloud hosting and a .com domain in your name for the first year, with SSL." } },
-      { title: { ar: "المتجر", en: "Store" }, text: { ar: "متجر على زد أو سلة مع رفع حتى 30 منتجاً، مدى وأبل باي والشحن، صفحات السياسات، وبكسل سناب وتيك توك وميتا.", en: "A Zid or Salla store with up to 30 products, mada, Apple Pay and shipping, policy pages, and Snap, TikTok and Meta pixels." } },
-      { title: { ar: "واتساب", en: "WhatsApp" }, text: { ar: "رقمك الرسمي باسم نشاطك مع رسالة ترحيب ورد خارج أوقات العمل و10 ردود سريعة لمدة 3 أشهر.", en: "Your official number under your business name, with welcome and out-of-hours messages and 10 quick replies for 3 months." } },
-      { title: { ar: "الربط بينها", en: "Connected" }, text: { ar: "أزرار المتجر وواتساب في الموقع، ونماذج الموقع تصل إلى بريدك وواتساب، وتحليلات جوجل على الموقع والمتجر.", en: "Store and WhatsApp buttons on the site, site forms delivered to your e-mail and WhatsApp, and Google Analytics on site and store." } },
-      { title: { ar: "مدير مشروع", en: "Project manager" }, text: { ar: "شخص واحد يتابع معك كل الأعمال وجدولها حتى التسليم، مع تحديث أسبوعي.", en: "One person running everything with you until delivery, with a weekly update." } }
-    ],
-    delivery: { ar: "25 يوم عمل للموقع والمتجر معاً", en: "25 business days for the website and store together" },
-    terms: [
-      { ar: "الدفع: 40% عند البدء، 40% عند اعتماد التصميم، 20% عند الإطلاق", en: "Payment: 40% to start, 40% on design sign-off, 20% at launch" },
-      { ar: "جولتان من التعديلات على تصميم الموقع ودعم فني لمدة 3 أشهر", en: "Two design revision rounds and 3 months of support" },
-      { ar: "تجديد الاستضافة والنطاق بعد السنة الأولى على حساب العميل", en: "Hosting and domain renewal after year one is paid by the client" },
-      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
-    ],
-    excludes: [
-      { ar: "اشتراك منصة المتجر ورسوم رسائل ميتا", en: "The store platform subscription and Meta message fees" },
-      { ar: "كتابة المحتوى والتصوير وميزانية الإعلانات", en: "Copywriting, photography and ad budget" }
-    ],
-    price: 5999,
-    oldPrice: 8595
+    excludes: [{ ar: "اشتراكات الأدوات ورسوم الذكاء الاصطناعي حسب الاستخدام", en: "Tool subscriptions and AI usage fees" }],
+    price: 1999,
+    oldPrice: 2999
   },
   {
     slug: "day-website",
@@ -663,6 +806,63 @@ export const offers: Offer[] = [
     oldPrice: 1999
   },
   {
+    slug: "day-ai-bot",
+    cycle: "daily",
+    service: "ai-automation",
+    icon: "Bot",
+    badge: { ar: "صفقة اليوم — ذكاء اصطناعي", en: "Deal of the day — AI" },
+    title: { ar: "مساعد ذكاء اصطناعي على موقعك يجيب من ملفاتك بـ 2,499 ريالاً", en: "An AI assistant on your website answering from your files, SAR 2,499" },
+    text: { ar: "نافذة محادثة ذكية في موقعك تجيب زوارك فوراً من ملفاتك وخدماتك وأسعارك بالعربي والإنجليزي، وتجمع بيانات المهتمين وترسلها لفريقك.", en: "A smart chat window on your site that instantly answers visitors from your files, services and prices in Arabic and English, and collects interested leads for your team." },
+    forWho: { ar: "للشركات التي يسأل زوار موقعها نفس الأسئلة كثيراً ولا يجدون من يرد عليهم فوراً.", en: "For companies whose site visitors keep asking the same questions and get no instant answer." },
+    features: [
+      { ar: "مدرَّب على ملفاتك وموقعك", en: "Trained on your files and site" },
+      { ar: "عربي وإنجليزي", en: "Arabic and English" },
+      { ar: "يجمع بيانات العملاء المهتمين", en: "Collects interested leads" }
+    ],
+    deliverables: [
+      { title: { ar: "التدريب", en: "Training" }, text: { ar: "تدريب المساعد على حتى 50 صفحة من ملفاتك وصفحات موقعك.", en: "The assistant trained on up to 50 pages of your files and site." } },
+      { title: { ar: "التركيب", en: "Installation" }, text: { ar: "نافذة محادثة بهويتك في كل صفحات الموقع.", en: "A branded chat window on every page of your site." } },
+      { title: { ar: "العملاء المهتمون", en: "Leads" }, text: { ar: "يطلب الاسم والجوال من المهتمين ويرسلها لبريدك أو نظام العملاء.", en: "Asks interested visitors for name and phone and sends them to your inbox or CRM." } },
+      { title: { ar: "التحسين", en: "Tuning" }, text: { ar: "مراجعة المحادثات وتحسين الردود لمدة شهر.", en: "Conversations reviewed and answers tuned for a month." } }
+    ],
+    delivery: { ar: "10 أيام عمل", en: "10 business days" },
+    terms: [
+      { ar: "الموقع فقط — واتساب متاح في باقة «مساعد ذكاء اصطناعي»", en: "Website only — WhatsApp is in the AI assistant package" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
+    ],
+    excludes: [{ ar: "رسوم استخدام الذكاء الاصطناعي حسب عدد المحادثات", en: "AI usage fees, by number of conversations" }],
+    price: 2499,
+    oldPrice: 3999
+  },
+  {
+    slug: "day-marketing",
+    cycle: "daily",
+    service: "digital-marketing",
+    icon: "Megaphone",
+    badge: { ar: "صفقة اليوم — تسويق", en: "Deal of the day — marketing" },
+    title: { ar: "أول شهر من باقة «نمو المبيعات» بـ 1,999 ريالاً", en: "Your first Sales Growth month for SAR 1,999" },
+    text: { ar: "باقة «نمو المبيعات» لشهر كامل بسعر اليوم: ندير 3 حسابات، 20 منشوراً و4 فيديوهات قصيرة، وحملاتك على سناب وتيك توك وميتا مع إعادة استهداف من ترك السلة.", en: "The Sales Growth plan for a full month at today's price: 3 accounts, 20 posts and 4 short videos, and your Snap, TikTok and Meta campaigns with abandoned-cart retargeting." },
+    forWho: { ar: "للمتاجر والمشاريع التي تريد تجربة إدارة التسويق الكاملة معنا قبل الالتزام.", en: "For stores and businesses that want to try our full marketing management before committing." },
+    features: [
+      { ar: "20 منشوراً و4 فيديوهات قصيرة", en: "20 posts and 4 short videos" },
+      { ar: "حملات على سناب وتيك توك وميتا", en: "Campaigns on Snap, TikTok and Meta" },
+      { ar: "تقرير بالطلبات وتكلفتها", en: "A report on orders and their cost" }
+    ],
+    deliverables: [
+      { title: { ar: "المحتوى", en: "Content" }, text: { ar: "خطة محتوى للشهر، 20 منشوراً و4 فيديوهات قصيرة (من تصويرك ونحن نحررها) على 3 حسابات.", en: "A monthly content plan, 20 posts and 4 short videos (you film, we edit) on 3 accounts." } },
+      { title: { ar: "الإعلانات", en: "Ads" }, text: { ar: "حملات على سناب وتيك توك وميتا بـ 8 تصاميم إعلانية، وإعادة استهداف زوار المتجر ومن ترك السلة، وتحسين أسبوعي.", en: "Snap, TikTok and Meta campaigns with 8 ad designs, retargeting of visitors and abandoned carts, and weekly optimisation." } },
+      { title: { ar: "القياس", en: "Measurement" }, text: { ar: "فحص البكسل وتقرير كل أسبوعين بالطلبات وتكلفة الطلب الواحد.", en: "A pixel check and a report every two weeks on orders and cost per order." } }
+    ],
+    delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+    terms: [
+      { ar: "شهر واحد بلا التزام بعده", en: "One month, no commitment after it" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
+    ],
+    excludes: [{ ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" }],
+    price: 1999,
+    oldPrice: 2999
+  },
+  {
     slug: "day-whatsapp",
     cycle: "daily",
     service: "whatsapp-automation",
@@ -690,32 +890,64 @@ export const offers: Offer[] = [
     oldPrice: 597
   },
   {
-    slug: "day-automation",
+    slug: "day-integration",
     cycle: "daily",
-    service: "ai-automation",
-    icon: "Workflow",
-    badge: { ar: "صفقة اليوم — أتمتة", en: "Deal of the day — automation" },
-    title: { ar: "أتمتة عملية متكررة في شركتك بـ 1,299 ريال", en: "Automate one repetitive process for SAR 1,299" },
-    text: { ar: "اختر عملية تأخذ وقت فريقك كل يوم — استقبال الطلبات، إرسال عروض الأسعار، التقارير، المتابعة — ونحولها لعملية تلقائية تعمل وحدها.", en: "Pick a process that eats your team's time every day — taking requests, sending quotes, reports, follow-ups — and we turn it into one that runs by itself." },
-    forWho: { ar: "للشركات التي يكرر موظفوها نفس الخطوات يدوياً بين البريد والجداول وواتساب والأنظمة.", en: "For companies whose staff repeat the same manual steps between e-mail, spreadsheets, WhatsApp and systems." },
+    service: "digital-transformation",
+    icon: "Plug",
+    badge: { ar: "صفقة اليوم — ربط الأنظمة", en: "Deal of the day — integration" },
+    title: { ar: "ربط نظامين ببعض تلقائياً بـ 1,799 ريالاً", en: "Two systems connected automatically for SAR 1,799" },
+    text: { ar: "نوقف الإدخال المزدوج: نربط نظامين عندك ليتبادلا البيانات وحدهما — مثل المتجر مع المحاسبة، أو الموقع مع نظام العملاء، أو نظام العملاء مع واتساب.", en: "No more double entry: we connect two of your systems so they exchange data by themselves — e.g. store and accounting, site and CRM, or CRM and WhatsApp." },
+    forWho: { ar: "للشركات التي يعيد موظفوها إدخال نفس البيانات في أكثر من نظام.", en: "For companies whose staff re-enter the same data in more than one system." },
     features: [
-      { ar: "عملية واحدة حتى 8 خطوات", en: "One process, up to 8 steps" },
-      { ar: "ربط أداتين أو نظامين", en: "Two tools or systems connected" },
-      { ar: "ذكاء اصطناعي لقراءة وتصنيف الرسائل عند الحاجة", en: "AI to read and sort messages when needed" }
+      { ar: "ربط نظامين عبر واجهاتهما البرمجية", en: "Two systems connected through their APIs" },
+      { ar: "مزامنة تلقائية في الاتجاهين عند الحاجة", en: "Automatic two-way sync when needed" },
+      { ar: "سجل وتنبيه عند أي خطأ", en: "A log and alerts on any failure" }
     ],
     deliverables: [
-      { title: { ar: "تحليل العملية", en: "Process review" }, text: { ar: "جلسة نرسم فيها خطوات العملية الحالية ونحدد ما يمكن أتمتته.", en: "A session mapping today's steps and what can be automated." } },
-      { title: { ar: "التنفيذ", en: "Build" }, text: { ar: "بناء الأتمتة وربط أدواتك (مثل نماذج الموقع وجداول جوجل والبريد وواتساب ونظام العملاء).", en: "The automation built and your tools connected (e.g. site forms, Google Sheets, e-mail, WhatsApp, CRM)." } },
-      { title: { ar: "التسليم", en: "Hand-over" }, text: { ar: "تجربة على بيانات حقيقية، شرح مسجل، ودعم 30 يوماً.", en: "Tested on real data, a recorded walkthrough and 30 days of support." } }
+      { title: { ar: "التحليل", en: "Analysis" }, text: { ar: "تحديد البيانات التي تنتقل ومتى، ومراجعة واجهات النظامين.", en: "Which data moves and when, and a review of both systems' APIs." } },
+      { title: { ar: "الربط", en: "Integration" }, text: { ar: "بناء الربط مع إعادة المحاولة تلقائياً عند انقطاع أي نظام.", en: "The integration built with automatic retries when a system is down." } },
+      { title: { ar: "المتابعة", en: "Monitoring" }, text: { ar: "سجل لكل عملية نقل وتنبيه بالبريد عند الخطأ، ودعم لمدة شهر.", en: "A log of every transfer, e-mail alerts on errors and one month of support." } }
     ],
     delivery: { ar: "7 أيام عمل", en: "7 business days" },
     terms: [
-      { ar: "عملية واحدة بحد أقصى 8 خطوات وأداتين", en: "One process, at most 8 steps and two tools" },
+      { ar: "يتطلب أن يوفر النظامان واجهة برمجية متاحة", en: "Both systems must offer an available API" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
-    excludes: [{ ar: "اشتراكات الأدوات الخارجية ورسوم الذكاء الاصطناعي حسب الاستخدام", en: "Third-party tool subscriptions and AI usage fees" }],
-    price: 1299,
-    oldPrice: 2079
+    excludes: [{ ar: "اشتراكات الأنظمة ورسوم واجهاتها البرمجية", en: "System subscriptions and their API fees" }],
+    price: 1799,
+    oldPrice: 2999
+  },
+  {
+    slug: "day-landing",
+    cycle: "daily",
+    service: "web-development",
+    icon: "MousePointerClick",
+    badge: { ar: "صفقة اليوم — صفحة هبوط", en: "Deal of the day — landing page" },
+    title: { ar: "صفحة هبوط احترافية لحملتك الإعلانية بـ 999 ريالاً", en: "A professional landing page for your ad campaign, SAR 999" },
+    text: { ar: "صفحة واحدة مصممة لتحويل زوار إعلانك إلى طلبات: عرض واضح، وزر طلب وواتساب، ونموذج يصل لبريدك، وبكسل يقيس كل طلب — أسرع وأرخص من موقع كامل.", en: "One page built to turn ad visitors into orders: a clear offer, order and WhatsApp buttons, a form to your inbox and a pixel that measures every order — faster and cheaper than a full site." },
+    forWho: { ar: "لمن يطلق حملة على سناب أو تيك توك أو جوجل لمنتج أو خدمة أو عرض محدد، ويريد صفحة تبيع بدل إرسال الزوار للصفحة الرئيسية.", en: "For anyone running a Snap, TikTok or Google campaign for one product, service or offer who wants a page that sells instead of sending visitors to the home page." },
+    features: [
+      { ar: "صفحة واحدة بتصميم مخصص", en: "One custom-designed page" },
+      { ar: "زر واتساب ونموذج طلب", en: "WhatsApp button and order form" },
+      { ar: "بكسل الإعلانات وتحليلات جوجل", en: "Ad pixels and Google Analytics" }
+    ],
+    deliverables: [
+      { title: { ar: "التصميم", en: "Design" }, text: { ar: "صفحة بهويتك متجاوبة مع الجوال: العرض، المميزات، آراء العملاء، الأسئلة المتكررة، وزر الطلب.", en: "A mobile-first page in your brand: the offer, benefits, testimonials, FAQs and the order button." } },
+      { title: { ar: "الطلبات", en: "Orders" }, text: { ar: "نموذج يصل لبريدك وزر واتساب برسالة جاهزة باسم العرض.", en: "A form to your inbox and a WhatsApp button with a ready message naming the offer." } },
+      { title: { ar: "القياس", en: "Measurement" }, text: { ar: "بكسل سناب وتيك توك وميتا وتحليلات جوجل مع تتبع كل طلب.", en: "Snap, TikTok and Meta pixels plus Google Analytics, tracking every order." } },
+      { title: { ar: "النشر", en: "Publishing" }, text: { ar: "رفعها على نطاقك أو نطاق فرعي، مع شهادة الأمان وتحسين السرعة.", en: "Published on your domain or a sub-domain, with SSL and speed optimisation." } }
+    ],
+    delivery: { ar: "5 أيام عمل من استلام المحتوى", en: "5 business days from receiving the content" },
+    terms: [
+      { ar: "صفحة واحدة بلغة واحدة وجولة تعديل واحدة", en: "One page in one language, one revision round" },
+      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
+    ],
+    excludes: [
+      { ar: "الاستضافة والنطاق (إن لم تكن لديك)", en: "Hosting and domain (if you don't have them)" },
+      { ar: "إدارة الحملة وميزانية الإعلانات", en: "Campaign management and ad budget" }
+    ],
+    price: 999,
+    oldPrice: 1799
   },
   {
     slug: "day-brand",
@@ -746,32 +978,32 @@ export const offers: Offer[] = [
     oldPrice: 1599
   },
   {
-    slug: "day-marketing",
+    slug: "day-dashboard",
     cycle: "daily",
-    service: "digital-marketing",
-    icon: "Megaphone",
-    badge: { ar: "صفقة اليوم — تسويق", en: "Deal of the day — marketing" },
-    title: { ar: "أول شهر من باقة «نمو المبيعات» بـ 1,999 ريالاً", en: "Your first Sales Growth month for SAR 1,999" },
-    text: { ar: "باقة «نمو المبيعات» لشهر كامل بسعر اليوم: ندير 3 حسابات، 20 منشوراً و4 فيديوهات قصيرة، وحملاتك على سناب وتيك توك وميتا مع إعادة استهداف من ترك السلة.", en: "The Sales Growth plan for a full month at today's price: 3 accounts, 20 posts and 4 short videos, and your Snap, TikTok and Meta campaigns with abandoned-cart retargeting." },
-    forWho: { ar: "للمتاجر والمشاريع التي تريد تجربة إدارة التسويق الكاملة معنا قبل الالتزام.", en: "For stores and businesses that want to try our full marketing management before committing." },
+    service: "digital-transformation",
+    icon: "ChartColumn",
+    badge: { ar: "صفقة اليوم — تقارير الإدارة", en: "Deal of the day — management reports" },
+    title: { ar: "لوحة تقارير ومؤشرات لإدارتك من بياناتك بـ 2,499 ريالاً", en: "A management KPI dashboard from your data, SAR 2,499" },
+    text: { ar: "كل أرقام شركتك في شاشة واحدة تتحدث وحدها: المبيعات، والعملاء، والطلبات، والتحصيل — من جداولك وأنظمتك الحالية بدل تجميعها يدوياً كل أسبوع.", en: "All your company's numbers on one self-updating screen: sales, clients, orders and collections — from your current sheets and systems instead of compiling them by hand every week." },
+    forWho: { ar: "للمديرين وأصحاب الشركات الذين يريدون قرارات أسرع مبنية على أرقام حقيقية.", en: "For managers and owners who want faster decisions based on real numbers." },
     features: [
-      { ar: "20 منشوراً و4 فيديوهات قصيرة", en: "20 posts and 4 short videos" },
-      { ar: "حملات على سناب وتيك توك وميتا", en: "Campaigns on Snap, TikTok and Meta" },
-      { ar: "تقرير بالطلبات وتكلفتها", en: "A report on orders and their cost" }
+      { ar: "حتى 12 مؤشراً في لوحة واحدة", en: "Up to 12 KPIs on one dashboard" },
+      { ar: "ربط حتى مصدرين للبيانات", en: "Up to 2 data sources connected" },
+      { ar: "تحديث تلقائي وتقرير أسبوعي بالبريد", en: "Automatic refresh and a weekly e-mail report" }
     ],
     deliverables: [
-      { title: { ar: "المحتوى", en: "Content" }, text: { ar: "خطة محتوى للشهر، 20 منشوراً و4 فيديوهات قصيرة (من تصويرك ونحن نحررها) على 3 حسابات.", en: "A monthly content plan, 20 posts and 4 short videos (you film, we edit) on 3 accounts." } },
-      { title: { ar: "الإعلانات", en: "Ads" }, text: { ar: "حملات على سناب وتيك توك وميتا بـ 8 تصاميم إعلانية، وإعادة استهداف زوار المتجر ومن ترك السلة، وتحسين أسبوعي.", en: "Snap, TikTok and Meta campaigns with 8 ad designs, retargeting of visitors and abandoned carts, and weekly optimisation." } },
-      { title: { ar: "القياس", en: "Measurement" }, text: { ar: "فحص البكسل وتقرير كل أسبوعين بالطلبات وتكلفة الطلب الواحد.", en: "A pixel check and a report every two weeks on orders and cost per order." } }
+      { title: { ar: "المؤشرات", en: "KPIs" }, text: { ar: "جلسة نحدد فيها المؤشرات التي تهم إدارتك فعلاً.", en: "A session to define the KPIs that really matter to you." } },
+      { title: { ar: "البيانات", en: "Data" }, text: { ar: "ربط حتى مصدرين (مثل الجداول والمتجر أو المحاسبة) وتنظيف البيانات.", en: "Up to 2 sources connected (e.g. sheets and store or accounting) and the data cleaned." } },
+      { title: { ar: "اللوحة", en: "Dashboard" }, text: { ar: "لوحة بالعربي تعمل على الكمبيوتر والجوال، مع صلاحيات لمن يراها، وتقرير أسبوعي بالبريد.", en: "An Arabic dashboard on desktop and mobile, with access control and a weekly e-mail report." } }
     ],
-    delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+    delivery: { ar: "10 أيام عمل", en: "10 business days" },
     terms: [
-      { ar: "شهر واحد بلا التزام بعده", en: "One month, no commitment after it" },
+      { ar: "حتى 12 مؤشراً ومصدرين للبيانات", en: "Up to 12 KPIs and 2 data sources" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
-    excludes: [{ ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" }],
-    price: 1999,
-    oldPrice: 2999
+    excludes: [{ ar: "تراخيص أدوات التقارير إن وُجدت", en: "Reporting tool licences, if any" }],
+    price: 2499,
+    oldPrice: 3999
   },
   {
     slug: "day-social",
@@ -839,38 +1071,6 @@ export const offers: Offer[] = [
     ],
     price: 1499,
     oldPrice: 2499
-  },
-  {
-    slug: "day-landing",
-    cycle: "daily",
-    service: "web-development",
-    icon: "MousePointerClick",
-    badge: { ar: "صفقة اليوم — صفحة هبوط", en: "Deal of the day — landing page" },
-    title: { ar: "صفحة هبوط احترافية لحملتك الإعلانية بـ 999 ريالاً", en: "A professional landing page for your ad campaign, SAR 999" },
-    text: { ar: "صفحة واحدة مصممة لتحويل زوار إعلانك إلى طلبات: عرض واضح، وزر طلب وواتساب، ونموذج يصل لبريدك، وبكسل يقيس كل طلب — أسرع وأرخص من موقع كامل.", en: "One page built to turn ad visitors into orders: a clear offer, order and WhatsApp buttons, a form to your inbox and a pixel that measures every order — faster and cheaper than a full site." },
-    forWho: { ar: "لمن يطلق حملة على سناب أو تيك توك أو جوجل لمنتج أو خدمة أو عرض محدد، ويريد صفحة تبيع بدل إرسال الزوار للصفحة الرئيسية.", en: "For anyone running a Snap, TikTok or Google campaign for one product, service or offer who wants a page that sells instead of sending visitors to the home page." },
-    features: [
-      { ar: "صفحة واحدة بتصميم مخصص", en: "One custom-designed page" },
-      { ar: "زر واتساب ونموذج طلب", en: "WhatsApp button and order form" },
-      { ar: "بكسل الإعلانات وتحليلات جوجل", en: "Ad pixels and Google Analytics" }
-    ],
-    deliverables: [
-      { title: { ar: "التصميم", en: "Design" }, text: { ar: "صفحة بهويتك متجاوبة مع الجوال: العرض، المميزات، آراء العملاء، الأسئلة المتكررة، وزر الطلب.", en: "A mobile-first page in your brand: the offer, benefits, testimonials, FAQs and the order button." } },
-      { title: { ar: "الطلبات", en: "Orders" }, text: { ar: "نموذج يصل لبريدك وزر واتساب برسالة جاهزة باسم العرض.", en: "A form to your inbox and a WhatsApp button with a ready message naming the offer." } },
-      { title: { ar: "القياس", en: "Measurement" }, text: { ar: "بكسل سناب وتيك توك وميتا وتحليلات جوجل مع تتبع كل طلب.", en: "Snap, TikTok and Meta pixels plus Google Analytics, tracking every order." } },
-      { title: { ar: "النشر", en: "Publishing" }, text: { ar: "رفعها على نطاقك أو نطاق فرعي، مع شهادة الأمان وتحسين السرعة.", en: "Published on your domain or a sub-domain, with SSL and speed optimisation." } }
-    ],
-    delivery: { ar: "5 أيام عمل من استلام المحتوى", en: "5 business days from receiving the content" },
-    terms: [
-      { ar: "صفحة واحدة بلغة واحدة وجولة تعديل واحدة", en: "One page in one language, one revision round" },
-      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
-    ],
-    excludes: [
-      { ar: "الاستضافة والنطاق (إن لم تكن لديك)", en: "Hosting and domain (if you don't have them)" },
-      { ar: "إدارة الحملة وميزانية الإعلانات", en: "Campaign management and ad budget" }
-    ],
-    price: 999,
-    oldPrice: 1799
   }
 ];
 

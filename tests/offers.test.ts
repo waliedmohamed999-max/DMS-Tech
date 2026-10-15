@@ -38,7 +38,7 @@ describe("packages & offers", () => {
     expect(mkt.notice.ar).toContain("ميزانية الإعلانات غير مشمولة");
     expect(mkt.tiers.every((t) => t.excludes.some((x) => x.ar.includes("ميزانية الإعلانات")))).toBe(true);
     // "from" prices only where the scope varies; longer team terms are cheaper per month
-    expect(tiers.filter((t) => t.from).map((t) => t.key).sort()).toEqual(["store-scale", "web-pro"]);
+    expect(tiers.filter((t) => t.from).map((t) => t.key).sort()).toEqual(["ai-custom", "store-scale", "web-pro"]);
     const team = packageGroups.find((g) => g.service === "dedicated-tech-team")!.tiers.map((t) => t.price!);
     expect(team[0] > team[1] && team[1] > team[2]).toBe(true);
   });
@@ -53,17 +53,28 @@ describe("packages & offers", () => {
     const price = (key: string) => packageGroups.flatMap((g) => g.tiers).find((t) => t.key === key)!.price!;
     const deal = (slug: string) => offers.find((o) => o.slug === slug)!;
     // deal → what it really costs as a package (WhatsApp: 3 months of Basic)
-    const refs: [string, number][] = [["day-website", price("web-starter")], ["day-store", price("store-launch")], ["day-whatsapp", price("wa-basic") * 3], ["day-marketing", price("mkt-growth")]];
+    const refs: [string, number][] = [["day-website", price("web-starter")], ["day-store", price("store-launch")], ["day-whatsapp", price("wa-basic") * 3], ["day-marketing", price("mkt-growth")], ["day-automation", price("ai-auto-starter")]];
     for (const [slug, ref] of refs) {
       expect(deal(slug).oldPrice).toBe(ref);
       expect(deal(slug).price).toBeLessThan(ref);
     }
     // weekly offers: struck price = the sum of the packages inside
     expect(deal("store-week").oldPrice).toBe(price("store-growth") + price("mkt-start"));
-    expect(deal("whatsapp-week").oldPrice).toBe(price("wa-pro") * 3);
-    expect(deal("launch-bundle-week").oldPrice).toBe(price("web-growth") + price("store-launch") + price("wa-basic") * 3);
+    expect(deal("ai-agent-week").oldPrice).toBe(price("ai-assistant"));
+    expect(deal("ai-bundle-week").oldPrice).toBe(price("ai-assistant") + price("ai-auto-starter"));
+    expect(deal("system-week").oldPrice).toBe(price("web-pro"));
     // a smaller deal never costs more than a bigger one of the same kind
     expect(deal("day-store").price).toBeLessThan(deal("day-ads-setup").price);
+    // the website-only AI bot is cheaper than the full assistant offer
+    expect(deal("day-ai-bot").price).toBeLessThan(deal("ai-agent-week").price);
+  });
+
+  it("8. every day shows at least one AI / automation / integration deal", () => {
+    const tech = new Set(["ai-automation", "digital-transformation"]);
+    for (let d = 0; d < 30; d++) {
+      const day = todaysDeals(new Date(Date.UTC(2026, 9, 1 + d, 12)));
+      expect(day.some((o) => tech.has(o.service))).toBe(true);
+    }
   });
 
   it("5. weekly offers end Saturday midnight (Riyadh); the deal of the day changes at midnight and is cheaper than the weekly offers", () => {
