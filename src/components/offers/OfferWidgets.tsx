@@ -156,25 +156,25 @@ export function DealsCarousel({ deals, labels, locale }: { deals: DealSlide[]; l
 
 export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; price: string | null; from: boolean; period: string | null; delivery: string; featured?: boolean; features: string[]; excludes: string[] };
 export type JourneyView = { icon: IconName; title: string; text: string; tier: string };
-export type GroupView = { service: string; icon: IconName; title: string; short: string; text: string; highlights: string[]; notice: string; startsAt: { price: string | null; period: string | null } | null; tiers: TierView[]; journey?: JourneyView[] };
-type BrowserLabels = { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string; prev: string; next: string };
+export type GroupView = { id: string; segment: "smb" | "business"; service: string; icon: IconName; title: string; short: string; text: string; highlights: string[]; notice: string; startsAt: { price: string | null; period: string | null } | null; tiers: TierView[]; journey?: JourneyView[] };
+type BrowserLabels = { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string; prev: string; next: string; quote: string };
 
 /** Packages by service (tabs), three tiers each; every tier links to its own shareable page. */
-export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[]; labels: BrowserLabels; locale: string }) {
-  const [active, setActive] = useState(groups[0]?.service);
-  const g = groups.find((x) => x.service === active) ?? groups[0];
-  // the hero tiles link to #pkg-<service>: open that tab and bring the packages into view
+export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }: { groups: GroupView[]; labels: BrowserLabels; locale: string; anchor?: string }) {
+  const [active, setActive] = useState(groups[0]?.id);
+  const g = groups.find((x) => x.id === active) ?? groups[0];
+  // the hero tiles link to #pkg-<group id>: open that tab and bring the packages into view
   useEffect(() => {
     const open = () => {
       const want = window.location.hash.startsWith("#pkg-") ? window.location.hash.slice(5) : null;
-      if (!want || !groups.some((x) => x.service === want)) return;
+      if (!want || !groups.some((x) => x.id === want)) return;
       setActive(want);
-      document.getElementById("packages")?.scrollIntoView({ behavior: "smooth" });
+      document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth" });
     };
     open();
     window.addEventListener("hashchange", open);
     return () => window.removeEventListener("hashchange", open);
-  }, [groups]);
+  }, [groups, anchor]);
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
   if (!g) return null;
   return (
@@ -182,18 +182,18 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0">
         {groups.map((x) => (
           <button
-            key={x.service}
+            key={x.id}
             type="button"
-            aria-pressed={x.service === g.service}
-            onClick={() => setActive(x.service)}
-            className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${x.service === g.service ? "border-iris bg-iris text-white" : "border-mist bg-white text-ink hover:border-iris/40"}`}
+            aria-pressed={x.id === g.id}
+            onClick={() => setActive(x.id)}
+            className={`inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition-colors ${x.id === g.id ? "border-iris bg-iris text-white" : "border-mist bg-white text-ink hover:border-iris/40"}`}
           >
             <Icon name={x.icon} size={15} /> {x.short}
           </button>
         ))}
       </div>
       {/* the service at a glance: what it delivers, beside a scene that shows it */}
-      <div key={g.service} className="sv-enter grid items-center gap-6 rounded-card border border-mist bg-white p-5 shadow-card md:grid-cols-[1.1fr_1fr] md:p-8">
+      <div key={g.id} className="sv-enter grid items-center gap-6 rounded-card border border-mist bg-white p-5 shadow-card md:grid-cols-[1.1fr_1fr] md:p-8">
         <div className="grid content-start gap-4">
           <span className="flex items-center gap-3">
             <span className="grid size-12 place-items-center rounded-2xl bg-gradient-to-br from-iris to-iris-soft text-white shadow-[0_0_0_5px_rgba(98,77,227,.12)]">
@@ -220,7 +220,7 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
         </div>
         <ServiceVisual service={g.service} locale={locale} className="h-72 md:h-80" />
       </div>
-      <CardSlider key={`tiers-${g.service}`} className="grid items-stretch gap-5 md:grid-cols-3" labels={{ prev: labels.prev, next: labels.next }} rtl={locale === "ar"}>
+      <CardSlider key={`tiers-${g.id}`} className="grid items-stretch gap-5 md:grid-cols-3" labels={{ prev: labels.prev, next: labels.next }} rtl={locale === "ar"}>
         {g.tiers.map((t) => (
           <div key={t.key} className={`relative grid content-start gap-5 rounded-card border p-7 ${t.featured ? "border-iris bg-white shadow-lg ring-4 ring-iris/10 md:-translate-y-2" : "border-mist bg-white shadow-card"}`}>
             {t.featured && <span className="absolute -top-3 start-6 rounded-full bg-iris px-3 py-1 text-xs font-semibold text-white">{labels.mostPopular}</span>}
@@ -275,7 +275,7 @@ export function PackagesBrowser({ groups, labels, locale }: { groups: GroupView[
               </div>
             )}
             <Link href={`/offers/${t.key}`} className={`btn mt-auto w-full justify-center ${t.featured ? "btn-primary" : "btn-outline"}`}>
-              {labels.choose} <Icon name={arrow} size={16} />
+              {g.segment === "business" ? labels.quote : labels.choose} <Icon name={arrow} size={16} />
             </Link>
           </div>
         ))}

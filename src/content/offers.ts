@@ -35,7 +35,9 @@ export type Tier = {
 export type JourneyStep = { icon: IconName; title: L; text: L; tier: string };
 /** `notice`: one sentence shown above the tiers (e.g. the store platform subscription is not included). */
 /** `short`: the tab / hero tile name · `highlights`: three things the service delivers, shown beside its visual. */
-export type PackageGroup = { service: string; icon: IconName; title: L; short: L; text: L; highlights: L[]; notice: L; tiers: Tier[]; journey?: JourneyStep[] };
+/** `id`: the tab / link key (#pkg-<id>) · `service`: the service page it belongs to · `segment`: smb = everyday packages,
+ * business = company solutions (quote-led). */
+export type PackageGroup = { id: string; segment: "smb" | "business"; service: string; icon: IconName; title: L; short: L; text: L; highlights: L[]; notice: L; tiers: Tier[]; journey?: JourneyStep[] };
 export type Offer = {
   slug: string;
   /** weekly: Sunday → Saturday, renews every week · daily: one deal per Riyadh day (24 hours) */
@@ -61,18 +63,20 @@ const oneTime: L = { ar: "دفعة واحدة", en: "one-time" };
 
 export const packageGroups: PackageGroup[] = [
   {
+    id: "web-development",
+    segment: "smb",
     service: "web-development",
     icon: "CodeXml",
-    title: { ar: "باقات المواقع والتطبيقات", en: "Website & app packages" },
-    short: { ar: "مواقع وتطبيقات", en: "Websites & apps" },
-    text: { ar: "من موقع تعريفي أنيق إلى نظام أو تطبيق متكامل.", en: "From an elegant company site to a complete system or app." },
+    title: { ar: "باقات المواقع الإلكترونية", en: "Website packages" },
+    short: { ar: "المواقع الإلكترونية", en: "Websites" },
+    text: { ar: "من موقع تعريفي أنيق لشركتك إلى موقع مؤسسي بتكاملات وصلاحيات.", en: "From an elegant company site to a corporate site with integrations and permissions." },
     highlights: [{ ar: "تصميم مخصص بهويتك يعمل على الجوال", en: "A custom design in your brand that works on mobile" }, { ar: "سرعة وتهيئة لمحركات البحث من اليوم الأول", en: "Speed and SEO from day one" }, { ar: "ملكية كاملة للموقع والكود", en: "Full ownership of the site and code" }],
     notice: { ar: "الأسعار تشمل التصميم والبرمجة والإطلاق. المحتوى (النصوص والصور) يقدمه العميل، ونساعدك في صياغته عند الحاجة.", en: "Prices cover design, development and launch. Content (text and images) comes from the client; we can help write it." },
     tiers: [
       {
         key: "web-starter",
         icon: "Monitor",
-        name: { ar: "الأساسية", en: "Starter" },
+        name: { ar: "الانطلاق", en: "Launch" },
         tagline: { ar: "حضور رقمي احترافي لشركتك", en: "A professional online presence" },
         idealFor: { ar: "المكاتب والعيادات والمقاولين والشركات الصغيرة", en: "Offices, clinics, contractors and small businesses" },
         price: 2499,
@@ -96,7 +100,7 @@ export const packageGroups: PackageGroup[] = [
       {
         key: "web-growth",
         icon: "Rocket",
-        name: { ar: "الاحترافية", en: "Professional" },
+        name: { ar: "الأعمال", en: "Business" },
         tagline: { ar: "موقع يجلب العملاء وتديره بنفسك", en: "A site that brings clients and you run yourself" },
         idealFor: { ar: "الشركات التي تعتمد على موقعها في جلب العملاء والحملات", en: "Companies that rely on their site for leads and campaigns" },
         price: 5999,
@@ -122,30 +126,376 @@ export const packageGroups: PackageGroup[] = [
       {
         key: "web-pro",
         icon: "Layers",
-        name: { ar: "المتقدمة", en: "Advanced" },
-        tagline: { ar: "نظام أو تطبيق مصمم على مقاس عملك", en: "A system or app built around your business" },
-        idealFor: { ar: "الشركات التي تحتاج بوابة عملاء أو نظاماً داخلياً أو تطبيق جوال", en: "Companies that need a client portal, an internal system or a mobile app" },
-        price: 14999,
+        name: { ar: "المؤسسات", en: "Enterprise" },
+        tagline: { ar: "موقع مؤسسي مخصص بتكاملات وصلاحيات", en: "A custom corporate site with integrations and permissions" },
+        idealFor: { ar: "الشركات الكبيرة والجهات التي تحتاج تصميماً وتكاملات خاصة", en: "Large companies and entities that need custom design and integrations" },
+        price: 9999,
         from: true,
         period: oneTime,
         delivery: { ar: "من 6 أسابيع حسب نطاق المشروع", en: "From 6 weeks, depending on scope" },
         features: [
-          { ar: "ورشة تحليل متطلبات ووثيقة نطاق مكتوبة قبل البدء", en: "A requirements workshop and a written scope before we start" },
-          { ar: "تطبيق ويب أو نظام إدارة بصلاحيات لكل دور", en: "A web app or management system with role permissions" },
-          { ar: "تطبيق جوال للآيفون والأندرويد عند الحاجة (يُسعَّر حسب متطلباته)", en: "iOS and Android app when needed (priced to its requirements)" },
-          { ar: "ربط مع أنظمتك: المحاسبة وإدارة العملاء وبوابات الدفع", en: "Integrations with your systems (accounting, CRM, payments) via API" },
-          { ar: "لوحات تقارير ومؤشرات للإدارة", en: "Reports and KPI dashboards for management" },
-          { ar: "ملكية كاملة للكود وتسليم موثق", en: "Full code ownership and documented hand-over" },
-          { ar: "دعم وصيانة لمدة 6 أشهر", en: "6 months of support and maintenance" }
+          { ar: "ورشة متطلبات ووثيقة نطاق متفق عليها", en: "A requirements workshop and an agreed scope" },
+          { ar: "تصميم مخصص بالكامل بهوية مؤسستك", en: "A fully custom design in your corporate identity" },
+          { ar: "لوحة إدارة بصلاحيات لكل دور", en: "An admin panel with role permissions" },
+          { ar: "تكاملات محددة مع أنظمتك (نظام العملاء، الحجوزات، الدفع)", en: "Defined integrations with your systems (CRM, bookings, payments)" },
+          { ar: "تحسين متقدم للسرعة ومحركات البحث", en: "Advanced speed and SEO work" },
+          { ar: "ملكية كاملة للكود ودعم 6 أشهر", en: "Full code ownership and 6 months of support" }
         ],
         excludes: [
-          { ar: "رسوم الخوادم ونشر التطبيق على متجري آبل وجوجل", en: "Server costs and app store fees (Apple / Google)" },
-          { ar: "تراخيص الأنظمة والخدمات الخارجية", en: "Third-party licences and services" }
+          { ar: "الاستضافة والتراخيص الخارجية", en: "Hosting and third-party licences" },
+          { ar: "تطبيقات الجوال (في تطوير الأنظمة والتطبيقات)", en: "Mobile apps (in systems & app development)" }
         ]
       }
     ]
   },
   {
+    id: "ecommerce",
+    segment: "smb",
+    service: "ecommerce",
+    icon: "ShoppingCart",
+    title: { ar: "باقات المتاجر الإلكترونية", en: "Online store packages" },
+    short: { ar: "متاجر إلكترونية", en: "Online stores" },
+    text: { ar: "متجر جاهز للبيع والإعلان على زد أو سلة أو شوبيفاي — من التأسيس حتى أول طلب، ثم نكمل معك التسويق شهرياً.", en: "A store ready to sell and advertise on Zid, Salla or Shopify — from founding to the first order, then monthly marketing with you." },
+    highlights: [{ ar: "متجر على زد أو سلة أو شوبيفاي جاهز للبيع", en: "A Zid, Salla or Shopify store ready to sell" }, { ar: "مدى وأبل باي وتابي وتمارا والشحن مربوطة", en: "mada, Apple Pay, Tabby, Tamara and shipping connected" }, { ar: "البكسل والكتالوج جاهزان للإعلان", en: "Pixels and catalogue ready for ads" }],
+    notice: { ar: "مهم: اشتراك منصة زد أو سلة أو شوبيفاي غير مشمول في الباقات — يُدفع للمنصة مباشرة وباسمك، ليبقى المتجر ملكك بالكامل. وكذلك ميزانية الإعلانات تُدفع لمنصات الإعلان من حسابك. نساعدك في اختيار باقة المنصة المناسبة لحجم مبيعاتك.", en: "Important: the Zid, Salla or Shopify subscription is not included — you pay the platform directly, in your name, so the store stays fully yours. Ad budgets are likewise paid to the ad platforms from your account. We help you choose the right platform plan." },
+    tiers: [
+      {
+        key: "store-launch",
+        icon: "ShoppingBag",
+        name: { ar: "الانطلاق", en: "Launch" },
+        tagline: { ar: "متجر جاهز للبيع والإعلان بسرعة", en: "A store ready to sell and advertise, fast" },
+        idealFor: { ar: "من يبيع على إنستغرام أو واتساب ويريد متجراً حقيقياً", en: "Sellers on Instagram or WhatsApp who want a real store" },
+        price: 1999,
+        from: false,
+        period: oneTime,
+        delivery: { ar: "5 أيام عمل", en: "5 business days" },
+        features: [
+          { ar: "إعداد المتجر على زد أو سلة بقالب المنصة وتخصيصه بشعارك وألوانك", en: "Store set up on Zid or Salla with a platform theme styled in your logo and colours" },
+          { ar: "رفع حتى 30 منتجاً بالصور والوصف والأسعار", en: "Up to 30 products with photos, descriptions and prices" },
+          { ar: "ربط مدى وأبل باي والبطاقات وشركات الشحن", en: "mada, Apple Pay, cards and shipping companies connected" },
+          { ar: "صفحات السياسات: الاسترجاع والشحن والخصوصية", en: "Policy pages: returns, shipping and privacy" },
+          { ar: "تركيب بكسل سناب وتيك توك وميتا وتحليلات جوجل", en: "Snap, TikTok and Meta pixels plus Google Analytics installed" },
+          { ar: "إنشاء حسابات المتجر على إنستغرام وتيك توك وسناب وربطها بالمتجر", en: "Store accounts on Instagram, TikTok and Snap created and linked to the store" },
+          { ar: "دعم فني أسبوعين بعد الإطلاق", en: "Two weeks of support after launch" }
+        ],
+        excludes: [
+          { ar: "اشتراك المنصة ورسوم بوابات الدفع والشحن", en: "Platform subscription, payment and shipping fees" },
+          { ar: "التصميم المخصص وتصوير المنتجات", en: "Custom design and product photography" },
+          { ar: "إدارة الحملات وميزانية الإعلانات", en: "Campaign management and ad budget" }
+        ]
+      },
+      {
+        key: "store-growth",
+        icon: "TrendingUp",
+        name: { ar: "النمو", en: "Growth" },
+        tagline: { ar: "متجر بهويتك وجاهز لحملة الإطلاق", en: "A store in your brand, ready for its launch campaign" },
+        idealFor: { ar: "العلامات التي تريد متجراً مميزاً وتعلن على السوشيال ميديا", en: "Brands that want a distinctive store and advertise on social media" },
+        price: 4499,
+        from: false,
+        period: oneTime,
+        delivery: { ar: "10 أيام عمل", en: "10 business days" },
+        featured: true,
+        features: [
+          { ar: "تصميم مخصص للصفحة الرئيسية وصفحة المنتج بهويتك", en: "Custom home and product page design in your brand" },
+          { ar: "رفع حتى 100 منتج بالخيارات (المقاس، اللون…) والتصنيفات", en: "Up to 100 products with options (size, colour…) and categories" },
+          { ar: "ربط الدفع والشحن والدفع عند الاستلام", en: "Payments, shipping and cash on delivery connected" },
+          { ar: "بكسل سناب وتيك توك وميتا مع تتبع الإضافة للسلة والشراء، وتحليلات جوجل", en: "Snap, TikTok and Meta pixels tracking add-to-cart and purchases, plus Google Analytics" },
+          { ar: "ربط كتالوج المنتجات بإنستغرام وفيسبوك شوب وتيك توك وسناب", en: "Product catalogue synced to Instagram & Facebook Shop, TikTok and Snap" },
+          { ar: "تجهيز الحسابات الإعلانية وإطلاق حملة الافتتاح على منصة واحدة", en: "Ad accounts set up and the opening campaign launched on one platform" },
+          { ar: "10 تصاميم سوشيال للإطلاق وكوبونات الخصم الأولى", en: "10 social launch designs and the first discount coupons" },
+          { ar: "إشعار الطلبات على واتساب + تدريب فريقك ودعم فني شهر", en: "WhatsApp order alerts + team training and one month of support" }
+        ],
+        excludes: [
+          { ar: "اشتراك المنصة ورسوم بوابات الدفع والشحن", en: "Platform subscription, payment and shipping fees" },
+          { ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" },
+          { ar: "إدارة الحملات بعد الإطلاق (في باقات التسويق الشهرية)", en: "Campaign management after launch (in the monthly marketing plans)" }
+        ]
+      },
+      {
+        key: "store-scale",
+        icon: "Building2",
+        name: { ar: "التجارة المتقدمة", en: "Advanced commerce" },
+        tagline: { ar: "متجر كبير بخطة إطلاق تسويقية كاملة", en: "A large store with a full launch marketing plan" },
+        idealFor: { ar: "المتاجر ذات المبيعات العالية أو الفروع أو التي تبيع خارج المملكة", en: "High-volume stores, multi-branch businesses or cross-border sellers" },
+        price: 8999,
+        from: true,
+        period: oneTime,
+        delivery: { ar: "من 4 أسابيع", en: "From 4 weeks" },
+        features: [
+          { ar: "متجر بتصميم كامل مخصص أو على شوبيفاي", en: "A fully custom store or a Shopify store" },
+          { ar: "ربط مع أنظمة المخزون والمحاسبة والفوترة الإلكترونية", en: "Inventory, accounting and e-invoicing integration" },
+          { ar: "بكسل كل المنصات مع تتبع دقيق من الخادم، وربط منتجاتك بتسوق جوجل", en: "Pixels on every platform with server-side tracking (Conversions API) and Google Merchant Center for Shopping" },
+          { ar: "خطة تسويق إطلاق 90 يوماً وإدارة الحملات أول شهر على كل المنصات", en: "A 90-day launch marketing plan and first-month campaign management on every platform" },
+          { ar: "استرداد السلات المتروكة برسائل واتساب تلقائية", en: "Automatic WhatsApp abandoned-cart recovery" },
+          { ar: "متعدد اللغات والعملات عند البيع خارج المملكة", en: "Multi-language and multi-currency for selling abroad" },
+          { ar: "تقارير مبيعات شهرية ودعم بأولوية لمدة 3 أشهر", en: "Monthly sales reports and 3 months of priority support" }
+        ],
+        excludes: [
+          { ar: "اشتراك المنصة وتطبيقاتها المدفوعة", en: "Platform subscription and paid apps" },
+          { ar: "رسوم بوابات الدفع والشحن وميزانية الإعلانات", en: "Payment and shipping fees and ad budget" }
+        ]
+      }
+    ],
+    journey: [
+      { icon: "Lightbulb", title: { ar: "التأسيس", en: "Founding" }, text: { ar: "نختار معك المنصة المناسبة ونجهز الشعار والألوان وصفحات السياسات.", en: "We choose the right platform with you and prepare your logo, colours and policy pages." }, tier: "store-launch" },
+      { icon: "ShoppingBag", title: { ar: "بناء المتجر", en: "Building the store" }, text: { ar: "تصميم المتجر ورفع المنتجات وربط الدفع والشحن.", en: "Store design, products uploaded, payments and shipping connected." }, tier: "store-growth" },
+      { icon: "Target", title: { ar: "التجهيز للإعلان", en: "Ready to advertise" }, text: { ar: "البكسل والتحليلات وكتالوج المنتجات والحسابات الإعلانية — كل طلب يُقاس.", en: "Pixels, analytics, the product catalogue and ad accounts — every order is measured." }, tier: "store-growth" },
+      { icon: "Rocket", title: { ar: "الإطلاق", en: "Launch" }, text: { ar: "تصاميم الافتتاح وكوبونات الخصم وأول حملة إعلانية.", en: "Opening designs, discount coupons and the first ad campaign." }, tier: "store-growth" },
+      { icon: "MessagesSquare", title: { ar: "أول الطلبات", en: "First orders" }, text: { ar: "واتساب يرد على العملاء ويبلغك بكل طلب ويسترجع السلات المتروكة.", en: "WhatsApp answers clients, alerts you to every order and recovers abandoned carts." }, tier: "wa-pro" },
+      { icon: "TrendingUp", title: { ar: "النمو المستمر", en: "Ongoing growth" }, text: { ar: "إدارة الحملات والسوشيال ميديا شهرياً بتقارير تقيس الطلبات والعائد.", en: "Monthly campaign and social media management with reports on orders and return." }, tier: "mkt-growth" }
+    ]
+  },
+  {
+    id: "digital-marketing",
+    segment: "smb",
+    service: "digital-marketing",
+    icon: "Megaphone",
+    title: { ar: "باقات إدارة الحملات الإعلانية", en: "Ad campaign management plans" },
+    short: { ar: "الحملات الإعلانية", en: "Ad campaigns" },
+    text: { ar: "ندير حملاتك على سناب وتيك توك وميتا وجوجل بخطة واضحة، ونتابعها ونحسّنها بتقارير تقيس النتائج الفعلية.", en: "We run your Snap, TikTok, Meta and Google campaigns with a clear plan, then monitor and improve them with reports on real results." },
+    highlights: [
+      { ar: "إعداد وإدارة الحملات على المنصات المناسبة لنشاطك", en: "Campaigns set up and run on the platforms that fit your business" },
+      { ar: "تصاميم إعلانية واختبار أكثر من إعلان", en: "Ad designs and testing several ads" },
+      { ar: "تقارير بالتكلفة والنتائج القابلة للقياس", en: "Reports on cost and measurable results" }
+    ],
+    notice: { ar: "الأسعار رسوم إدارة قبل الضريبة. الميزانية الإعلانية تُدفع للمنصات من حسابك مباشرة ومنفصلة عن الباقة، ولا نَعِد بعدد مبيعات أو نتائج مضمونة — نَعِد بإدارة احترافية وقياس شفاف.", en: "Prices are management fees before VAT. Ad spend is paid to the platforms from your own account, separately, and we don't promise a guaranteed number of sales — we promise professional management and transparent measurement." },
+    tiers: [
+      {
+        key: "mkt-start",
+        icon: "Megaphone",
+        name: { ar: "البداية", en: "Starter" },
+        tagline: { ar: "حملة واحدة تُدار باحتراف", en: "One campaign, professionally run" },
+        idealFor: { ar: "المشاريع التي تبدأ الإعلان لأول مرة", en: "Businesses advertising for the first time" },
+        price: 1499,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+        features: [
+          { ar: "إدارة حملة واحدة على منصة واحدة", en: "One campaign on one platform" },
+          { ar: "تصميمان إعلانيان شهرياً", en: "Two ad designs a month" },
+          { ar: "إعداد التتبع والتأكد من قياس الطلبات", en: "Tracking set up and order measurement checked" },
+          { ar: "متابعة وتحسين أسبوعي", en: "Weekly monitoring and optimisation" },
+          { ar: "تقرير شهري بالتكلفة والنتائج", en: "A monthly report on cost and results" }
+        ],
+        excludes: [
+          { ar: "الميزانية الإعلانية ورسوم المنصات", en: "Ad spend and platform fees" },
+          { ar: "التصوير وإنتاج الفيديو", en: "Photography and video production" }
+        ]
+      },
+      {
+        key: "mkt-growth",
+        icon: "ChartLine",
+        name: { ar: "النمو", en: "Growth" },
+        tagline: { ar: "حملات متعددة على منصتين", en: "Several campaigns on two platforms" },
+        idealFor: { ar: "المتاجر والشركات التي بدأت تبيع وتريد التوسع", en: "Stores and companies already selling that want to grow" },
+        price: 3499,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+        featured: true,
+        features: [
+          { ar: "إدارة حتى 3 حملات على منصتين", en: "Up to 3 campaigns on two platforms" },
+          { ar: "8 مواد إعلانية شهرياً", en: "8 ad creatives a month" },
+          { ar: "إعادة استهداف الزوار ومن ترك السلة", en: "Retargeting visitors and abandoned carts" },
+          { ar: "تتبع وتحسين دوري للجمهور والإعلانات", en: "Tracking and regular audience / ad optimisation" },
+          { ar: "تقرير مفصل شهرياً بالتوصيات", en: "A detailed monthly report with recommendations" }
+        ],
+        excludes: [
+          { ar: "الميزانية الإعلانية ورسوم المنصات", en: "Ad spend and platform fees" },
+          { ar: "إدارة حسابات السوشيال (في باقات السوشيال ميديا)", en: "Social account management (in the social media plans)" }
+        ]
+      },
+      {
+        key: "mkt-pro",
+        icon: "Sparkles",
+        name: { ar: "الأعمال", en: "Business" },
+        tagline: { ar: "إدارة إعلانية شاملة على 3 منصات", en: "Full ad management on 3 platforms" },
+        idealFor: { ar: "المتاجر والشركات ذات الميزانيات الإعلانية الأكبر", en: "Stores and companies with larger ad budgets" },
+        price: 6999,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "نبدأ خلال 7 أيام عمل", en: "We start within 7 business days" },
+        features: [
+          { ar: "إدارة حتى 6 حملات على 3 منصات", en: "Up to 6 campaigns on 3 platforms" },
+          { ar: "16 مادة إعلانية شهرياً", en: "16 ad creatives a month" },
+          { ar: "خطة لتحسين نسبة التحويل في متجرك أو موقعك", en: "A conversion-rate improvement plan for your store or site" },
+          { ar: "إعلانات جوجل في البحث والتسوق عند الحاجة", en: "Google Search and Shopping ads when needed" },
+          { ar: "اجتماعان شهرياً وتقارير مفصلة", en: "Two meetings a month and detailed reports" }
+        ],
+        excludes: [
+          { ar: "الميزانية الإعلانية ورسوم المنصات", en: "Ad spend and platform fees" },
+          { ar: "التصوير وأجور المؤثرين", en: "Photography and influencer fees" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "social-media",
+    segment: "smb",
+    service: "digital-marketing",
+    icon: "Share2",
+    title: { ar: "باقات إدارة السوشيال ميديا", en: "Social media management plans" },
+    short: { ar: "السوشيال ميديا", en: "Social media" },
+    text: { ar: "خلّ حضور علامتك التجارية يعكس قيمتها: تخطيط محتوى وتصاميم ونشر منظم يحافظ على حضور احترافي.", en: "Let your brand's presence reflect its value: content planning, designs and organised publishing for a professional presence." },
+    highlights: [
+      { ar: "تقويم محتوى شهري بهويتك", en: "A monthly content calendar in your brand" },
+      { ar: "تصاميم ونصوص وفيديوهات قصيرة من موادك", en: "Designs, captions and short videos from your material" },
+      { ar: "نشر منظم وتقارير شهرية", en: "Organised publishing and monthly reports" }
+    ],
+    notice: { ar: "المنشورات قطع محتوى فريدة تُعاد صياغتها للمنصات المشمولة، وليست عدداً مستقلاً لكل منصة. التصوير الميداني والتعليق الصوتي المدفوع والممثلون غير مشمولين، ولا نَعِد بعدد متابعين أو وصول محدد.", en: "Posts are unique pieces adapted to the included platforms, not a separate count per platform. On-site filming, paid voice-over and actors are not included, and we don't promise a set number of followers or reach." },
+    tiers: [
+      {
+        key: "social-presence",
+        icon: "Share2",
+        name: { ar: "الحضور", en: "Presence" },
+        tagline: { ar: "حساب نشط واحترافي", en: "One active, professional account" },
+        idealFor: { ar: "المشاريع الصغيرة التي تريد حضوراً منتظماً", en: "Small businesses that want a steady presence" },
+        price: 1499,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+        features: [
+          { ar: "8 منشورات شهرياً بالتصميم والكتابة", en: "8 posts a month, designed and written" },
+          { ar: "إدارة النشر على حساب واحد", en: "Publishing on one account" },
+          { ar: "تقويم محتوى شهري", en: "A monthly content calendar" },
+          { ar: "تقرير شهري", en: "A monthly report" }
+        ],
+        excludes: [
+          { ar: "التصوير والفيديو", en: "Filming and video" },
+          { ar: "الحملات الإعلانية (في باقات الحملات)", en: "Ad campaigns (in the campaign plans)" }
+        ]
+      },
+      {
+        key: "social-engage",
+        icon: "MessagesSquare",
+        name: { ar: "التفاعل", en: "Engagement" },
+        tagline: { ar: "محتوى وفيديو ومتابعة على منصتين", en: "Content, video and community on two platforms" },
+        idealFor: { ar: "العلامات التي تريد تفاعلاً أكبر مع جمهورها", en: "Brands that want more engagement with their audience" },
+        price: 2999,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+        featured: true,
+        features: [
+          { ar: "16 منشوراً شهرياً بالتصميم والكتابة", en: "16 posts a month, designed and written" },
+          { ar: "4 فيديوهات قصيرة بمونتاج موادك", en: "4 short videos edited from your footage" },
+          { ar: "النشر على منصتين", en: "Publishing on two platforms" },
+          { ar: "متابعة التعليقات في ساعات عمل متفق عليها", en: "Comment management during agreed working hours" },
+          { ar: "تقرير شهري", en: "A monthly report" }
+        ],
+        excludes: [
+          { ar: "التصوير الميداني والتعليق الصوتي المدفوع", en: "On-site filming and paid voice-over" },
+          { ar: "الحملات الإعلانية", en: "Ad campaigns" }
+        ]
+      },
+      {
+        key: "social-brand",
+        icon: "Sparkles",
+        name: { ar: "العلامة التجارية", en: "Brand" },
+        tagline: { ar: "حضور متكامل على 3 منصات", en: "A complete presence on 3 platforms" },
+        idealFor: { ar: "العلامات المتوسعة التي تبني صورتها باستمرار", en: "Growing brands building their image continuously" },
+        price: 4999,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "نبدأ خلال 7 أيام عمل", en: "We start within 7 business days" },
+        features: [
+          { ar: "20 منشوراً شهرياً بالتصميم والكتابة", en: "20 posts a month, designed and written" },
+          { ar: "6 فيديوهات قصيرة بمونتاج موادك", en: "6 short videos edited from your footage" },
+          { ar: "النشر على 3 منصات", en: "Publishing on 3 platforms" },
+          { ar: "تقويم محتوى وتحسين دوري", en: "A content calendar and regular improvement" },
+          { ar: "تقارير أداء شهرية", en: "Monthly performance reports" }
+        ],
+        excludes: [
+          { ar: "التصوير الميداني والممثلون والتعليق الصوتي المدفوع", en: "On-site filming, actors and paid voice-over" },
+          { ar: "الحملات الإعلانية", en: "Ad campaigns" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "whatsapp-automation",
+    segment: "smb",
+    service: "whatsapp-automation",
+    icon: "MessagesSquare",
+    title: { ar: "باقات واتساب والأتمتة", en: "WhatsApp solution packages" },
+    short: { ar: "حلول واتساب", en: "WhatsApp" },
+    text: { ar: "رد أسرع ومبيعات أكثر على القناة التي يفضلها عملاؤك.", en: "Faster replies and more sales on your clients' favourite channel." },
+    highlights: [{ ar: "رقمك الرسمي باسم نشاطك", en: "Your official number under your business name" }, { ar: "بوت يرد ويحجز ويؤهل العملاء 24 ساعة", en: "A bot that answers, books and qualifies 24/7" }, { ar: "صندوق محادثات واحد لكل فريقك", en: "One inbox for your whole team" }],
+    notice: { ar: "اشتراك شهري بلا عقد طويل، والإعداد مجاني. رسوم الرسائل التي تتقاضاها ميتا تُحتسب حسب استخدامك الفعلي، والرد على العميل خلال 24 ساعة من رسالته مجاني ضمن الحدود التي تحددها ميتا.", en: "A monthly subscription with no long contract, and free set-up. Meta's own message fees follow your actual usage; replying within 24 hours of a client's message is free within Meta's limits." },
+    tiers: [
+      {
+        key: "wa-basic",
+        icon: "MessageSquareMore",
+        name: { ar: "الأساسية", en: "Basic" },
+        tagline: { ar: "لا تفوّت أي رسالة", en: "Never miss a message" },
+        idealFor: { ar: "الأنشطة الصغيرة التي تنظم رسائل واتساب لأول مرة", en: "Small businesses organising WhatsApp for the first time" },
+        price: 199,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "يومان عمل", en: "2 business days" },
+        features: [
+          { ar: "ربط رقمك بمنصة واتساب للأعمال الرسمية", en: "Your number on the official WhatsApp Business Platform" },
+          { ar: "مستخدم واحد", en: "One user" },
+          { ar: "رسالة ترحيب ورد خارج أوقات العمل", en: "Welcome and out-of-hours messages" },
+          { ar: "10 ردود سريعة جاهزة للأسئلة المتكررة", en: "10 ready quick replies for frequent questions" },
+          { ar: "دعم فني عبر واتساب", en: "Support on WhatsApp" }
+        ],
+        excludes: [
+          { ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, by usage" },
+          { ar: "الشات بوت والحملات", en: "Chatbot and campaigns" }
+        ]
+      },
+      {
+        key: "wa-pro",
+        icon: "Bot",
+        name: { ar: "الاحترافية", en: "Professional" },
+        tagline: { ar: "بوت يرد 24 ساعة ويحوّل الجادّين لفريقك", en: "A 24/7 bot that hands serious leads to your team" },
+        idealFor: { ar: "العيادات والصالونات والمتاجر والشركات كثيرة الرسائل", en: "Clinics, salons, stores and companies with many messages" },
+        price: 499,
+        from: false,
+        period: perMonth,
+        delivery: { ar: "5 أيام عمل", en: "5 business days" },
+        featured: true,
+        features: [
+          { ar: "حتى 3 مستخدمين في صندوق محادثات مشترك", en: "Up to 3 users in a shared inbox" },
+          { ar: "شات بوت بتدفقات مصممة لنشاطك (قائمة خدمات، حجز، أسئلة)", en: "Chatbot flows designed for your business (menu, booking, FAQs)" },
+          { ar: "تأهيل العملاء وتحويلهم للموظف المناسب", en: "Lead qualification and hand-over to the right person" },
+          { ar: "5 قوالب رسائل معتمدة من ميتا", en: "5 Meta-approved message templates" },
+          { ar: "تعيين المحادثات والملاحظات الداخلية", en: "Conversation assignment and internal notes" },
+          { ar: "تقرير شهري بعدد المحادثات وسرعة الرد", en: "A monthly report on conversations and response time" }
+        ],
+        excludes: [
+          { ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, by usage" },
+          { ar: "الحملات الجماعية (في الباقة المتقدمة)", en: "Bulk campaigns (in Advanced)" }
+        ]
+      },
+      {
+        key: "wa-advanced",
+        icon: "Megaphone",
+        name: { ar: "أتمتة الأعمال", en: "Business automation" },
+        tagline: { ar: "واتساب مربوط بنظامك وتدفقات عمل تلقائية", en: "WhatsApp linked to your system with automatic workflows" },
+        idealFor: { ar: "الفرق والشركات التي تريد ربط المحادثات بعملياتها", en: "Teams and companies that want conversations tied to their operations" },
+        price: 1499,
+        from: true,
+        period: perMonth,
+        delivery: { ar: "بعد تحليل النطاق — عادة 2 إلى 3 أسابيع", en: "After scope analysis — usually 2–3 weeks" },
+        features: [
+          { ar: "كل مميزات الباقة الاحترافية", en: "Everything in Professional" },
+          { ar: "تدفقات عمل تلقائية (طلبات، حجوزات، متابعة)", en: "Automatic workflows (orders, bookings, follow-up)" },
+          { ar: "تكامل مع نظام عملاء واحد", en: "Integration with one CRM" },
+          { ar: "إشعارات للفريق عند الأحداث المهمة", en: "Team alerts on key events" },
+          { ar: "تقرير أداء شهري", en: "A monthly performance report" }
+        ],
+        excludes: [
+          { ar: "رسوم رسائل ميتا ورسوم مزود الخدمة حسب الاستخدام", en: "Meta message and provider fees, by usage" },
+          { ar: "أي تكامل إضافي يُسعَّر حسب النطاق", en: "Extra integrations priced by scope" }
+        ]
+      }
+    ]
+  },
+  {
+    id: "ai-automation",
+    segment: "business",
     service: "ai-automation",
     icon: "Bot",
     title: { ar: "باقات الذكاء الاصطناعي والأتمتة", en: "AI & automation packages" },
@@ -231,261 +581,91 @@ export const packageGroups: PackageGroup[] = [
     ]
   },
   {
-    service: "ecommerce",
-    icon: "ShoppingCart",
-    title: { ar: "باقات المتاجر الإلكترونية", en: "Online store packages" },
-    short: { ar: "متاجر إلكترونية", en: "Online stores" },
-    text: { ar: "متجر جاهز للبيع والإعلان على زد أو سلة أو شوبيفاي — من التأسيس حتى أول طلب، ثم نكمل معك التسويق شهرياً.", en: "A store ready to sell and advertise on Zid, Salla or Shopify — from founding to the first order, then monthly marketing with you." },
-    highlights: [{ ar: "متجر على زد أو سلة أو شوبيفاي جاهز للبيع", en: "A Zid, Salla or Shopify store ready to sell" }, { ar: "مدى وأبل باي وتابي وتمارا والشحن مربوطة", en: "mada, Apple Pay, Tabby, Tamara and shipping connected" }, { ar: "البكسل والكتالوج جاهزان للإعلان", en: "Pixels and catalogue ready for ads" }],
-    notice: { ar: "مهم: اشتراك منصة زد أو سلة أو شوبيفاي غير مشمول في الباقات — يُدفع للمنصة مباشرة وباسمك، ليبقى المتجر ملكك بالكامل. وكذلك ميزانية الإعلانات تُدفع لمنصات الإعلان من حسابك. نساعدك في اختيار باقة المنصة المناسبة لحجم مبيعاتك.", en: "Important: the Zid, Salla or Shopify subscription is not included — you pay the platform directly, in your name, so the store stays fully yours. Ad budgets are likewise paid to the ad platforms from your account. We help you choose the right platform plan." },
-    tiers: [
-      {
-        key: "store-launch",
-        icon: "ShoppingBag",
-        name: { ar: "الانطلاق", en: "Launch" },
-        tagline: { ar: "متجر جاهز للبيع والإعلان بسرعة", en: "A store ready to sell and advertise, fast" },
-        idealFor: { ar: "من يبيع على إنستغرام أو واتساب ويريد متجراً حقيقياً", en: "Sellers on Instagram or WhatsApp who want a real store" },
-        price: 1999,
-        from: false,
-        period: oneTime,
-        delivery: { ar: "5 أيام عمل", en: "5 business days" },
-        features: [
-          { ar: "إعداد المتجر على زد أو سلة بقالب المنصة وتخصيصه بشعارك وألوانك", en: "Store set up on Zid or Salla with a platform theme styled in your logo and colours" },
-          { ar: "رفع حتى 30 منتجاً بالصور والوصف والأسعار", en: "Up to 30 products with photos, descriptions and prices" },
-          { ar: "ربط مدى وأبل باي والبطاقات وشركات الشحن", en: "mada, Apple Pay, cards and shipping companies connected" },
-          { ar: "صفحات السياسات: الاسترجاع والشحن والخصوصية", en: "Policy pages: returns, shipping and privacy" },
-          { ar: "تركيب بكسل سناب وتيك توك وميتا وتحليلات جوجل", en: "Snap, TikTok and Meta pixels plus Google Analytics installed" },
-          { ar: "إنشاء حسابات المتجر على إنستغرام وتيك توك وسناب وربطها بالمتجر", en: "Store accounts on Instagram, TikTok and Snap created and linked to the store" },
-          { ar: "دعم فني أسبوعين بعد الإطلاق", en: "Two weeks of support after launch" }
-        ],
-        excludes: [
-          { ar: "اشتراك المنصة ورسوم بوابات الدفع والشحن", en: "Platform subscription, payment and shipping fees" },
-          { ar: "التصميم المخصص وتصوير المنتجات", en: "Custom design and product photography" },
-          { ar: "إدارة الحملات وميزانية الإعلانات", en: "Campaign management and ad budget" }
-        ]
-      },
-      {
-        key: "store-growth",
-        icon: "TrendingUp",
-        name: { ar: "النمو", en: "Growth" },
-        tagline: { ar: "متجر بهويتك وجاهز لحملة الإطلاق", en: "A store in your brand, ready for its launch campaign" },
-        idealFor: { ar: "العلامات التي تريد متجراً مميزاً وتعلن على السوشيال ميديا", en: "Brands that want a distinctive store and advertise on social media" },
-        price: 4499,
-        from: false,
-        period: oneTime,
-        delivery: { ar: "10 أيام عمل", en: "10 business days" },
-        featured: true,
-        features: [
-          { ar: "تصميم مخصص للصفحة الرئيسية وصفحة المنتج بهويتك", en: "Custom home and product page design in your brand" },
-          { ar: "رفع حتى 100 منتج بالخيارات (المقاس، اللون…) والتصنيفات", en: "Up to 100 products with options (size, colour…) and categories" },
-          { ar: "ربط الدفع والشحن والدفع عند الاستلام", en: "Payments, shipping and cash on delivery connected" },
-          { ar: "بكسل سناب وتيك توك وميتا مع تتبع الإضافة للسلة والشراء، وتحليلات جوجل", en: "Snap, TikTok and Meta pixels tracking add-to-cart and purchases, plus Google Analytics" },
-          { ar: "ربط كتالوج المنتجات بإنستغرام وفيسبوك شوب وتيك توك وسناب", en: "Product catalogue synced to Instagram & Facebook Shop, TikTok and Snap" },
-          { ar: "تجهيز الحسابات الإعلانية وإطلاق حملة الافتتاح على منصة واحدة", en: "Ad accounts set up and the opening campaign launched on one platform" },
-          { ar: "10 تصاميم سوشيال للإطلاق وكوبونات الخصم الأولى", en: "10 social launch designs and the first discount coupons" },
-          { ar: "إشعار الطلبات على واتساب + تدريب فريقك ودعم فني شهر", en: "WhatsApp order alerts + team training and one month of support" }
-        ],
-        excludes: [
-          { ar: "اشتراك المنصة ورسوم بوابات الدفع والشحن", en: "Platform subscription, payment and shipping fees" },
-          { ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" },
-          { ar: "إدارة الحملات بعد الإطلاق (في باقات التسويق الشهرية)", en: "Campaign management after launch (in the monthly marketing plans)" }
-        ]
-      },
-      {
-        key: "store-scale",
-        icon: "Building2",
-        name: { ar: "التوسع", en: "Scale" },
-        tagline: { ar: "متجر كبير بخطة إطلاق تسويقية كاملة", en: "A large store with a full launch marketing plan" },
-        idealFor: { ar: "المتاجر ذات المبيعات العالية أو الفروع أو التي تبيع خارج المملكة", en: "High-volume stores, multi-branch businesses or cross-border sellers" },
-        price: 9999,
-        from: true,
-        period: oneTime,
-        delivery: { ar: "من 4 أسابيع", en: "From 4 weeks" },
-        features: [
-          { ar: "متجر بتصميم كامل مخصص أو على شوبيفاي", en: "A fully custom store or a Shopify store" },
-          { ar: "ربط مع أنظمة المخزون والمحاسبة والفوترة الإلكترونية", en: "Inventory, accounting and e-invoicing integration" },
-          { ar: "بكسل كل المنصات مع تتبع دقيق من الخادم، وربط منتجاتك بتسوق جوجل", en: "Pixels on every platform with server-side tracking (Conversions API) and Google Merchant Center for Shopping" },
-          { ar: "خطة تسويق إطلاق 90 يوماً وإدارة الحملات أول شهر على كل المنصات", en: "A 90-day launch marketing plan and first-month campaign management on every platform" },
-          { ar: "استرداد السلات المتروكة برسائل واتساب تلقائية", en: "Automatic WhatsApp abandoned-cart recovery" },
-          { ar: "متعدد اللغات والعملات عند البيع خارج المملكة", en: "Multi-language and multi-currency for selling abroad" },
-          { ar: "تقارير مبيعات شهرية ودعم بأولوية لمدة 3 أشهر", en: "Monthly sales reports and 3 months of priority support" }
-        ],
-        excludes: [
-          { ar: "اشتراك المنصة وتطبيقاتها المدفوعة", en: "Platform subscription and paid apps" },
-          { ar: "رسوم بوابات الدفع والشحن وميزانية الإعلانات", en: "Payment and shipping fees and ad budget" }
-        ]
-      }
+    id: "software-development",
+    segment: "business",
+    service: "web-development",
+    icon: "Layers",
+    title: { ar: "تطوير الأنظمة والتطبيقات", en: "Systems & app development" },
+    short: { ar: "الأنظمة والتطبيقات", en: "Systems & apps" },
+    text: { ar: "من تصميم واجهات تطبيقك إلى نظام متكامل لشركتك: نفهم المتطلبات، نوثّق النطاق، ونسلّم على مراحل مع اختبارات ودعم.", en: "From your app's interface design to a complete company system: we understand requirements, document the scope and deliver in stages with testing and support." },
+    highlights: [
+      { ar: "وثيقة نطاق مكتوبة قبل أي برمجة", en: "A written scope before any development" },
+      { ar: "تسليم على مراحل مع نسخ تجريبية", en: "Delivery in stages with test versions" },
+      { ar: "ملكية كاملة للكود وتوثيق للتسليم", en: "Full code ownership and documented hand-over" }
     ],
-    journey: [
-      { icon: "Lightbulb", title: { ar: "التأسيس", en: "Founding" }, text: { ar: "نختار معك المنصة المناسبة ونجهز الشعار والألوان وصفحات السياسات.", en: "We choose the right platform with you and prepare your logo, colours and policy pages." }, tier: "store-launch" },
-      { icon: "ShoppingBag", title: { ar: "بناء المتجر", en: "Building the store" }, text: { ar: "تصميم المتجر ورفع المنتجات وربط الدفع والشحن.", en: "Store design, products uploaded, payments and shipping connected." }, tier: "store-growth" },
-      { icon: "Target", title: { ar: "التجهيز للإعلان", en: "Ready to advertise" }, text: { ar: "البكسل والتحليلات وكتالوج المنتجات والحسابات الإعلانية — كل طلب يُقاس.", en: "Pixels, analytics, the product catalogue and ad accounts — every order is measured." }, tier: "store-growth" },
-      { icon: "Rocket", title: { ar: "الإطلاق", en: "Launch" }, text: { ar: "تصاميم الافتتاح وكوبونات الخصم وأول حملة إعلانية.", en: "Opening designs, discount coupons and the first ad campaign." }, tier: "store-growth" },
-      { icon: "MessagesSquare", title: { ar: "أول الطلبات", en: "First orders" }, text: { ar: "واتساب يرد على العملاء ويبلغك بكل طلب ويسترجع السلات المتروكة.", en: "WhatsApp answers clients, alerts you to every order and recovers abandoned carts." }, tier: "wa-pro" },
-      { icon: "TrendingUp", title: { ar: "النمو المستمر", en: "Ongoing growth" }, text: { ar: "إدارة الحملات والسوشيال ميديا شهرياً بتقارير تقيس الطلبات والعائد.", en: "Monthly campaign and social media management with reports on orders and return." }, tier: "mkt-growth" }
-    ]
-  },
-  {
-    service: "digital-marketing",
-    icon: "Megaphone",
-    title: { ar: "باقات تسويق المتاجر الشهرية", en: "Monthly store marketing plans" },
-    short: { ar: "تسويق المتاجر", en: "Store marketing" },
-    text: { ar: "بعد الإطلاق نكمل معك: حملات إعلانية وسوشيال ميديا ونتائج تُقاس بالطلبات، لا بالإعجابات.", en: "After launch we keep going with you: ad campaigns and social media, measured in orders — not likes." },
-    highlights: [{ ar: "حملات على سناب وتيك توك وميتا وجوجل", en: "Campaigns on Snap, TikTok, Meta and Google" }, { ar: "محتوى وتصاميم وفيديوهات شهرية", en: "Monthly content, designs and videos" }, { ar: "تقارير بالطلبات وتكلفة الطلب، لا بالإعجابات", en: "Reports on orders and cost per order — not likes" }],
-    notice: { ar: "ميزانية الإعلانات غير مشمولة — تُدفع مباشرة لمنصات الإعلان من حسابك وباسمك ونحن ندير الحملات (نوصي بـ 1,500 ريال شهرياً على الأقل). نوصي بـ 3 أشهر لتظهر النتائج، والإلغاء بإشعار قبل 30 يوماً.", en: "Ad budget is not included — you pay the ad platforms directly from your own account and we run the campaigns (we recommend at least SAR 1,500 a month). We recommend 3 months for results; cancel with 30 days' notice." },
+    notice: { ar: "أسعار البداية تُحدَّد نهائياً بعد جلسة تحليل المتطلبات. تطبيقات الآيفون والأندرويد الأصلية، والاستضافة، وتكاليف نماذج الذكاء الاصطناعي غير مشمولة تلقائياً في أسعار البداية.", en: "Starting prices are finalised after a requirements session. Native iOS / Android apps, hosting and AI model costs are not automatically included in starting prices." },
     tiers: [
       {
-        key: "mkt-start",
-        icon: "Megaphone",
-        name: { ar: "البداية", en: "Starter" },
-        tagline: { ar: "حضور منتظم وحملة على منصة واحدة", en: "A steady presence and campaigns on one platform" },
-        idealFor: { ar: "المتاجر الجديدة في أشهرها الأولى", en: "New stores in their first months" },
-        price: 1499,
-        from: false,
-        period: perMonth,
-        delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
-        features: [
-          { ar: "إدارة حسابين (مثل إنستغرام وتيك توك)", en: "Two accounts managed (e.g. Instagram and TikTok)" },
-          { ar: "12 منشوراً شهرياً بالتصميم والنص", en: "12 posts a month, designed and written" },
-          { ar: "إدارة الحملات الإعلانية على منصة واحدة (سناب أو تيك توك أو ميتا)", en: "Ad campaigns on one platform (Snap, TikTok or Meta)" },
-          { ar: "4 تصاميم إعلانية شهرياً وتحسين أسبوعي للحملة", en: "4 ad designs a month and weekly optimisation" },
-          { ar: "فحص البكسل والتتبع شهرياً", en: "Monthly pixel and tracking check" },
-          { ar: "تقرير شهري بالطلبات وتكلفة الطلب الواحد", en: "A monthly report on orders and cost per order" }
-        ],
-        excludes: [
-          { ar: "ميزانية الإعلانات", en: "Ad budget" },
-          { ar: "تصوير الفيديو والمنتجات", en: "Video and product shoots" }
-        ]
-      },
-      {
-        key: "mkt-growth",
-        icon: "ChartLine",
-        name: { ar: "نمو المبيعات", en: "Sales growth" },
-        tagline: { ar: "حملات على كل المنصات المهمة ومحتوى فيديو", en: "Campaigns on every key platform, plus video content" },
-        idealFor: { ar: "المتاجر التي بدأت تبيع وتريد مضاعفة الطلبات", en: "Stores already selling that want to multiply orders" },
+        key: "ux-ui",
+        icon: "PenTool",
+        name: { ar: "تصميم واجهات UX/UI", en: "UX/UI design" },
+        tagline: { ar: "تصميم فقط — بدون برمجة", en: "Design only — no development" },
+        idealFor: { ar: "رواد الأعمال والشركات قبل بدء برمجة تطبيق أو نظام", en: "Founders and companies before building an app or system" },
         price: 2999,
         from: false,
-        period: perMonth,
-        delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
-        featured: true,
+        period: oneTime,
+        delivery: { ar: "14 يوم عمل", en: "14 business days" },
         features: [
-          { ar: "إدارة 3 حسابات: 20 منشوراً و4 فيديوهات قصيرة (ريلز) شهرياً", en: "3 accounts: 20 posts and 4 short videos (reels) a month" },
-          { ar: "حملات على سناب وتيك توك وميتا معاً", en: "Campaigns on Snap, TikTok and Meta together" },
-          { ar: "إعادة استهداف زوار المتجر ومن ترك السلة", en: "Retargeting store visitors and abandoned carts" },
-          { ar: "8 تصاميم إعلانية شهرياً واختبار أكثر من إعلان لكل حملة", en: "8 ad designs a month, A/B testing several ads per campaign" },
-          { ar: "الرد على التعليقات والرسائل في أوقات العمل", en: "Replies to comments and messages during working hours" },
-          { ar: "حملات المواسم: رمضان واليوم الوطني والجمعة البيضاء", en: "Seasonal campaigns: Ramadan, National Day, White Friday" },
-          { ar: "تقرير كل أسبوعين واجتماع شهري", en: "A report every two weeks and a monthly meeting" }
+          { ar: "حتى 15 شاشة ضمن تدفق استخدام واحد متفق عليه", en: "Up to 15 screens within one agreed user flow" },
+          { ar: "رحلة المستخدم وتخطيط الشاشات قبل التصميم", en: "User journey and wireframes before design" },
+          { ar: "نموذج تفاعلي قابل للتجربة", en: "A clickable interactive prototype" },
+          { ar: "جولتان من التعديلات", en: "Two revision rounds" },
+          { ar: "تسليم ملفات التصميم منظمة للمطورين", en: "Design files handed over, organised for developers" }
         ],
         excludes: [
-          { ar: "ميزانية الإعلانات", en: "Ad budget" },
-          { ar: "جلسات التصوير الاحترافي (الفيديو من تصويرك ونحن نحرره)", en: "Professional shoots (you film, we edit)" }
+          { ar: "برمجة التطبيق أو النظام", en: "Developing the app or system" },
+          { ar: "الشعار والهوية البصرية", en: "Logo and brand identity" }
         ]
       },
       {
-        key: "mkt-pro",
-        icon: "Sparkles",
-        name: { ar: "الإدارة الكاملة", en: "Full management" },
-        tagline: { ar: "فريق تسويق كامل لمتجرك", en: "A complete marketing team for your store" },
-        idealFor: { ar: "المتاجر ذات المبيعات العالية والعلامات المتوسعة", en: "High-volume stores and growing brands" },
-        price: 5499,
-        from: false,
-        period: perMonth,
-        delivery: { ar: "نبدأ خلال 7 أيام عمل", en: "We start within 7 business days" },
+        key: "app-mvp",
+        icon: "Rocket",
+        name: { ar: "تطبيق ويب أولي (MVP)", en: "Web app MVP" },
+        tagline: { ar: "نسخة أولى تعمل لاختبار فكرتك في السوق", en: "A working first version to test your idea" },
+        idealFor: { ar: "الشركات الناشئة والمشاريع الجديدة", en: "Start-ups and new ventures" },
+        price: 14999,
+        from: true,
+        period: oneTime,
+        delivery: { ar: "من 8 أسابيع حسب النطاق", en: "From 8 weeks, depending on scope" },
         features: [
-          { ar: "كل مميزات نمو المبيعات", en: "Everything in Sales growth" },
-          { ar: "30 منشوراً و8 فيديوهات شهرياً بسيناريو مكتوب", en: "30 posts and 8 scripted videos a month" },
-          { ar: "إعلانات جوجل في البحث والتسوق", en: "Google Search and Shopping ads" },
-          { ar: "جلسة تصوير منتجات شهرية حتى 20 منتجاً", en: "A monthly product shoot of up to 20 products" },
-          { ar: "تنسيق حملات المؤثرين وحملات واتساب للعملاء السابقين", en: "Influencer campaigns and WhatsApp campaigns to past customers" },
-          { ar: "توصيات شهرية لتحسين المتجر ورفع نسبة الشراء", en: "Monthly store improvements to raise conversion" },
-          { ar: "مدير حساب مخصص وتقرير أسبوعي", en: "A dedicated account manager and a weekly report" }
+          { ar: "تحليل المتطلبات ووثيقة نطاق محددة", en: "Requirements analysis and a defined scope" },
+          { ar: "واجهات أساسية بالعربي والإنجليزي", en: "Core screens in Arabic and English" },
+          { ar: "قاعدة بيانات وحسابات مستخدمين عند الحاجة", en: "A database and user accounts when needed" },
+          { ar: "اختبارات قبل التسليم", en: "Testing before hand-over" },
+          { ar: "تسليم موثق ودعم لمدة 3 أشهر", en: "Documented hand-over and 3 months of support" }
         ],
         excludes: [
-          { ar: "ميزانية الإعلانات", en: "Ad budget" },
-          { ar: "أجور المؤثرين", en: "Influencer fees" }
+          { ar: "تطبيقات الآيفون والأندرويد الأصلية", en: "Native iOS and Android apps" },
+          { ar: "الاستضافة والخدمات الخارجية", en: "Hosting and third-party services" }
+        ]
+      },
+      {
+        key: "enterprise-systems",
+        icon: "Building2",
+        name: { ar: "أنظمة الشركات والتكاملات", en: "Enterprise systems & integrations" },
+        tagline: { ar: "نظام على مقاس عمليات شركتك", en: "A system built around your operations" },
+        idealFor: { ar: "الشركات المتوسطة والكبيرة ذات العمليات والأنظمة المتعددة", en: "Mid-size and large companies with many processes and systems" },
+        price: 19999,
+        from: true,
+        period: oneTime,
+        delivery: { ar: "تُحدَّد بعد جلسة التحليل", en: "Set after the analysis session" },
+        features: [
+          { ar: "لوحات إدارة وأدوار وصلاحيات", en: "Admin dashboards, roles and permissions" },
+          { ar: "تكاملات مع أنظمتك (ERP، المحاسبة، نظام العملاء)", en: "Integrations with your systems (ERP, accounting, CRM)" },
+          { ar: "تقارير ومؤشرات للإدارة", en: "Reports and KPIs for management" },
+          { ar: "سجل تدقيق وحماية للبيانات", en: "Audit trail and data protection" },
+          { ar: "تسليم على مراحل ودعم وصيانة", en: "Staged delivery, support and maintenance" }
+        ],
+        excludes: [
+          { ar: "الخوادم والتراخيص الخارجية", en: "Servers and third-party licences" },
+          { ar: "تطبيقات الجوال الأصلية (تُسعَّر منفصلة)", en: "Native mobile apps (priced separately)" }
         ]
       }
     ]
   },
   {
-    service: "whatsapp-automation",
-    icon: "MessagesSquare",
-    title: { ar: "باقات حلول واتساب", en: "WhatsApp solution packages" },
-    short: { ar: "حلول واتساب", en: "WhatsApp" },
-    text: { ar: "رد أسرع ومبيعات أكثر على القناة التي يفضلها عملاؤك.", en: "Faster replies and more sales on your clients' favourite channel." },
-    highlights: [{ ar: "رقمك الرسمي باسم نشاطك", en: "Your official number under your business name" }, { ar: "بوت يرد ويحجز ويؤهل العملاء 24 ساعة", en: "A bot that answers, books and qualifies 24/7" }, { ar: "صندوق محادثات واحد لكل فريقك", en: "One inbox for your whole team" }],
-    notice: { ar: "اشتراك شهري بلا عقد طويل، والإعداد مجاني. رسوم الرسائل التي تتقاضاها ميتا تُحتسب حسب استخدامك الفعلي، والرد على العميل خلال 24 ساعة من رسالته مجاني ضمن الحدود التي تحددها ميتا.", en: "A monthly subscription with no long contract, and free set-up. Meta's own message fees follow your actual usage; replying within 24 hours of a client's message is free within Meta's limits." },
-    tiers: [
-      {
-        key: "wa-basic",
-        icon: "MessageSquareMore",
-        name: { ar: "الأساسية", en: "Basic" },
-        tagline: { ar: "لا تفوّت أي رسالة", en: "Never miss a message" },
-        idealFor: { ar: "الأنشطة الصغيرة التي تنظم رسائل واتساب لأول مرة", en: "Small businesses organising WhatsApp for the first time" },
-        price: 199,
-        from: false,
-        period: perMonth,
-        delivery: { ar: "يومان عمل", en: "2 business days" },
-        features: [
-          { ar: "ربط رقمك بمنصة واتساب للأعمال الرسمية", en: "Your number on the official WhatsApp Business Platform" },
-          { ar: "مستخدم واحد", en: "One user" },
-          { ar: "رسالة ترحيب ورد خارج أوقات العمل", en: "Welcome and out-of-hours messages" },
-          { ar: "10 ردود سريعة جاهزة للأسئلة المتكررة", en: "10 ready quick replies for frequent questions" },
-          { ar: "دعم فني عبر واتساب", en: "Support on WhatsApp" }
-        ],
-        excludes: [
-          { ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, by usage" },
-          { ar: "الشات بوت والحملات", en: "Chatbot and campaigns" }
-        ]
-      },
-      {
-        key: "wa-pro",
-        icon: "Bot",
-        name: { ar: "الاحترافية", en: "Professional" },
-        tagline: { ar: "بوت يرد 24 ساعة ويحوّل الجادّين لفريقك", en: "A 24/7 bot that hands serious leads to your team" },
-        idealFor: { ar: "العيادات والصالونات والمتاجر والشركات كثيرة الرسائل", en: "Clinics, salons, stores and companies with many messages" },
-        price: 499,
-        from: false,
-        period: perMonth,
-        delivery: { ar: "5 أيام عمل", en: "5 business days" },
-        featured: true,
-        features: [
-          { ar: "حتى 3 مستخدمين في صندوق محادثات مشترك", en: "Up to 3 users in a shared inbox" },
-          { ar: "شات بوت بتدفقات مصممة لنشاطك (قائمة خدمات، حجز، أسئلة)", en: "Chatbot flows designed for your business (menu, booking, FAQs)" },
-          { ar: "تأهيل العملاء وتحويلهم للموظف المناسب", en: "Lead qualification and hand-over to the right person" },
-          { ar: "5 قوالب رسائل معتمدة من ميتا", en: "5 Meta-approved message templates" },
-          { ar: "تعيين المحادثات والملاحظات الداخلية", en: "Conversation assignment and internal notes" },
-          { ar: "تقرير شهري بعدد المحادثات وسرعة الرد", en: "A monthly report on conversations and response time" }
-        ],
-        excludes: [
-          { ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, by usage" },
-          { ar: "الحملات الجماعية (في الباقة المتقدمة)", en: "Bulk campaigns (in Advanced)" }
-        ]
-      },
-      {
-        key: "wa-advanced",
-        icon: "Megaphone",
-        name: { ar: "المتقدمة", en: "Advanced" },
-        tagline: { ar: "حملات وأتمتة كاملة مرتبطة بأنظمتك", en: "Campaigns and full automation linked to your systems" },
-        idealFor: { ar: "الفرق الكبيرة والمتاجر التي تسوّق عبر واتساب", en: "Large teams and stores that market on WhatsApp" },
-        price: 999,
-        from: false,
-        period: perMonth,
-        delivery: { ar: "10 أيام عمل", en: "10 business days" },
-        features: [
-          { ar: "حتى 10 مستخدمين وصلاحيات لكل دور", en: "Up to 10 users with role permissions" },
-          { ar: "كل مميزات الباقة الاحترافية", en: "Everything in Professional" },
-          { ar: "حملات تسويقية بشرائح العملاء وجدولتها", en: "Segmented, scheduled marketing campaigns" },
-          { ar: "ربط مع متجرك (زد / سلة) ونظام العملاء", en: "Store (Zid / Salla) and CRM integration" },
-          { ar: "استرداد السلات المتروكة تلقائياً", en: "Automatic abandoned-cart recovery" },
-          { ar: "تقارير أداء الحملات ومدير حساب مخصص", en: "Campaign reports and a dedicated account manager" }
-        ],
-        excludes: [{ ar: "رسوم رسائل ميتا حسب الاستخدام", en: "Meta message fees, by usage" }]
-      }
-    ]
-  },
-  {
+    id: "dedicated-tech-team",
+    segment: "business",
     service: "dedicated-tech-team",
     icon: "Users",
     title: { ar: "باقات الفريق التقني المتكامل", en: "Dedicated tech team plans" },
@@ -558,6 +738,7 @@ export const packageGroups: PackageGroup[] = [
       }
     ]
   }
+
 ];
 
 /**
@@ -678,42 +859,37 @@ export const offers: Offer[] = [
     cycle: "weekly",
     service: "ecommerce",
     icon: "ShoppingCart",
-    badge: { ar: "عرض الأسبوع — من الصفر لأول طلب", en: "Offer of the week — from zero to first order" },
-    title: { ar: "متجرك جاهز للبيع + أول شهر تسويق", en: "Your store, ready to sell + your first marketing month" },
-    text: { ar: "باقة النمو للمتاجر (4,499) مع أول شهر من تسويق «البداية» (1,499) بسعر واحد: متجر بهويتك على زد أو سلة، الدفع بمدى وأبل باي وتابي وتمارا، الشحن مربوط، البكسل والكتالوج جاهزان، ثم شهر كامل نشغّل فيه حملاتك وحساباتك حتى تصلك الطلبات.", en: "The store Growth package (4,499) plus the first month of Marketing Starter (1,499) at one price: a branded store on Zid or Salla, mada, Apple Pay, Tabby and Tamara payments, shipping connected, pixels and catalogue ready, then a full month running your campaigns and accounts until orders arrive." },
-    forWho: { ar: "لأصحاب المشاريع في المملكة الذين يبدؤون من الصفر — أو ينتقلون من البيع على إنستغرام وواتساب — ويريدون جهة واحدة تأخذهم من تأسيس المتجر حتى أول الطلبات.", en: "For business owners in Saudi Arabia starting from zero — or moving from selling on Instagram and WhatsApp — who want one partner from founding the store to the first orders." },
+    badge: { ar: "عرض الأسبوع — متجر وانطلاقة تسويقية", en: "Offer of the week — store + marketing launch" },
+    title: { ar: "متجرك + انطلاقة تسويقية: من فكرة متجر إلى إطلاق متكامل", en: "Your store + a marketing launch: from idea to a complete launch" },
+    text: { ar: "باقة «الانطلاق» للمتاجر (1,999) مع أول شهر من «البداية» للحملات (1,499) و«الحضور» للسوشيال (1,499) — متجر جاهز وحملة افتتاح ومحتوى إطلاق بسعر واحد بدل 4,997 ريالاً.", en: "The store Launch package (1,999) with a first month of Starter campaigns (1,499) and Presence social (1,499) — a ready store, an opening campaign and launch content at one price instead of SAR 4,997." },
+    forWho: { ar: "لأصحاب المشاريع الجديدة والعلامات التي تبيع من إنستغرام أو واتساب وتريد متجراً وإطلاقاً تسويقياً معاً.", en: "For new businesses and brands selling on Instagram or WhatsApp that want a store and a marketing launch together." },
     features: [
-      { ar: "متجر بتصميم مخصص وحتى 100 منتج", en: "A custom-designed store with up to 100 products" },
-      { ar: "مدى وأبل باي وتابي وتمارا والدفع عند الاستلام", en: "mada, Apple Pay, Tabby, Tamara and cash on delivery" },
-      { ar: "بكسل سناب وتيك توك وميتا + ربط الكتالوج", en: "Snap, TikTok and Meta pixels + catalogue sync" },
-      { ar: "حملة الافتتاح و10 تصاميم إطلاق", en: "The opening campaign and 10 launch designs" },
-      { ar: "أول شهر تسويق: 12 منشوراً وحملة بتحسين أسبوعي", en: "First marketing month: 12 posts and a weekly-optimised campaign" }
+      { ar: "متجر على سلة أو زد بهويتك", en: "A Salla or Zid store in your brand" },
+      { ar: "رفع حتى 50 منتجاً", en: "Up to 50 products uploaded" },
+      { ar: "حملة افتتاح تُدار 14 يوماً", en: "An opening campaign run for 14 days" },
+      { ar: "6 تصاميم إعلانية و8 منشورات", en: "6 ad designs and 8 posts" },
+      { ar: "جلسة متابعة وتوصيات", en: "A follow-up and recommendations session" }
     ],
     deliverables: [
-      { title: { ar: "المتجر", en: "The store" }, text: { ar: "تصميم مخصص للرئيسية وصفحة المنتج بهويتك، رفع حتى 100 منتج بالخيارات والتصنيفات، وصفحات الاسترجاع والشحن والخصوصية.", en: "A custom home and product page in your brand, up to 100 products with options and categories, and returns, shipping and privacy pages." } },
-      { title: { ar: "الدفع والشحن", en: "Payments & shipping" }, text: { ar: "مدى وأبل باي والبطاقات، تابي وتمارا للتقسيط، الدفع عند الاستلام، وربط شركات الشحن مثل سمسا وأرامكس وسبل.", en: "mada, Apple Pay and cards, Tabby and Tamara instalments, cash on delivery, and shipping such as SMSA, Aramex and SPL." } },
-      { title: { ar: "التوثيق والضريبة", en: "Verification & VAT" }, text: { ar: "مساعدتك في توثيق المتجر عبر المركز السعودي للأعمال، وضبط الضريبة والفاتورة على المنصة إن كنت مسجلاً في ضريبة القيمة المضافة.", en: "Help verifying the store through the Saudi Business Center, and VAT and invoice settings on the platform if you are VAT-registered." } },
-      { title: { ar: "التتبع", en: "Tracking" }, text: { ar: "بكسل سناب وتيك توك وميتا بتتبع الإضافة للسلة والشراء، وتحليلات جوجل، وربط الكتالوج بإنستغرام وتيك توك وسناب.", en: "Snap, TikTok and Meta pixels tracking add-to-cart and purchase, Google Analytics, and the catalogue synced to Instagram, TikTok and Snap." } },
-      { title: { ar: "الإطلاق", en: "Launch" }, text: { ar: "10 تصاميم افتتاح، كوبونات الخصم الأولى، تجهيز الحسابات الإعلانية وإطلاق حملة الافتتاح.", en: "10 opening designs, the first discount coupons, ad accounts set up and the opening campaign launched." } },
-      { title: { ar: "أول شهر تسويق", en: "First marketing month" }, text: { ar: "إدارة حسابين، 12 منشوراً بالتصميم والنص، حملة على منصة واحدة بـ 4 تصاميم إعلانية وتحسين أسبوعي، وتقرير بالطلبات وتكلفة الطلب الواحد.", en: "Two accounts, 12 designed posts, a one-platform campaign with 4 ad designs and weekly optimisation, and a report on orders and cost per order." } },
-      { title: { ar: "واتساب", en: "WhatsApp" }, text: { ar: "زر واتساب في المتجر وإشعار بكل طلب جديد على رقمك.", en: "A WhatsApp button in the store and an alert for every new order." } },
-      { title: { ar: "التدريب والدعم", en: "Training & support" }, text: { ar: "جلسة أونلاين لفريقك على الطلبات والمنتجات والكوبونات وقراءة التقارير، ودعم فني لمدة شهرين.", en: "An online session for your team on orders, products, coupons and reports, and two months of support." } }
+      { title: { ar: "المتجر", en: "The store" }, text: { ar: "إعداد المتجر على سلة أو زد بقالب متاح مخصص بهويتك، والصفحات والسياسات من بياناتك.", en: "The store set up on Salla or Zid with a theme styled in your brand, pages and policies from your details." } },
+      { title: { ar: "المنتجات", en: "Products" }, text: { ar: "رفع حتى 50 منتجاً من بيانات وصور جاهزة.", en: "Up to 50 products from ready data and photos." } },
+      { title: { ar: "الدفع والشحن", en: "Payments & shipping" }, text: { ar: "تهيئة وسائل الدفع والشحن المتاحة لحسابك، وزر واتساب وتحليلات أساسية.", en: "Your available payment and shipping options set up, a WhatsApp button and basic analytics." } },
+      { title: { ar: "حملة الافتتاح", en: "Opening campaign" }, text: { ar: "إعداد حملة افتتاح على منصة واحدة بـ 6 تصاميم إعلانية وإدارتها 14 يوماً بعد الإطلاق.", en: "An opening campaign on one platform with 6 ad designs, run for 14 days after launch." } },
+      { title: { ar: "محتوى الإطلاق", en: "Launch content" }, text: { ar: "8 منشورات سوشيال ميديا بالتصميم والنص.", en: "8 designed and written social posts." } },
+      { title: { ar: "المتابعة", en: "Follow-up" }, text: { ar: "جلسة متابعة بعد الإطلاق بالنتائج وتوصيات للتطوير.", en: "A post-launch session with results and recommendations." } }
     ],
-    delivery: { ar: "المتجر خلال 10 أيام عمل من استلام المنتجات والشعار، ثم يبدأ شهر التسويق مباشرة", en: "The store in 10 business days from receiving your products and logo, then the marketing month starts right away" },
+    delivery: { ar: "المتجر خلال 10 أيام عمل، ثم 14 يوم إدارة إعلانية", en: "The store in 10 business days, then 14 days of ad management" },
     terms: [
-      { ar: "اشتراك منصة زد أو سلة وميزانية الإعلانات على حساب العميل وباسمه (نوصي بـ 1,500 ريال للإعلانات في الشهر الأول)", en: "The Zid or Salla subscription and the ad budget are in the client's name and paid by the client (we recommend SAR 1,500 of ads in month one)" },
+      { ar: "اشتراك سلة أو زد والميزانية الإعلانية على حساب العميل وباسمه", en: "The Salla / Zid subscription and ad spend are the client's, in their name" },
       { ar: "الدفع: 50% عند البدء و50% عند تسليم المتجر", en: "Payment: 50% to start, 50% on store delivery" },
-      { ar: "جولتان من التعديلات على تصميم المتجر", en: "Two revision rounds on the store design" },
-      { ar: "بعد الشهر الأول تستمر باقة التسويق بسعرها المعتاد (1,499 شهرياً) أو تتوقف بلا التزام", en: "After the first month marketing continues at its normal price (1,499/month) or stops with no commitment" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل انتهاء العداد", en: "The price is locked for requests sent before the countdown ends" }
     ],
     excludes: [
-      { ar: "تصوير المنتجات (متاح في باقة التسويق «الإدارة الكاملة»)", en: "Product photography (in the Full management marketing plan)" },
-      { ar: "رسوم بوابات الدفع وشركات الشحن وتابي وتمارا", en: "Payment gateway, shipping, Tabby and Tamara fees" },
-      { ar: "اشتراك المنصة وتطبيقاتها المدفوعة", en: "The platform subscription and its paid apps" }
+      { ar: "التصوير وكتابة أوصاف المنتجات من الصفر", en: "Photography and writing product descriptions from scratch" },
+      { ar: "رسوم المنصة والإنفاق الإعلاني", en: "Platform fees and ad spend" }
     ],
     price: 3999,
-    oldPrice: 5998
+    oldPrice: 4997
   },
   {
     slug: "day-automation",
@@ -839,28 +1015,32 @@ export const offers: Offer[] = [
     cycle: "daily",
     service: "digital-marketing",
     icon: "Megaphone",
-    badge: { ar: "صفقة اليوم — تسويق", en: "Deal of the day — marketing" },
-    title: { ar: "أول شهر من باقة «نمو المبيعات» بـ 1,999 ريالاً", en: "Your first Sales Growth month for SAR 1,999" },
-    text: { ar: "باقة «نمو المبيعات» لشهر كامل بسعر اليوم: ندير 3 حسابات، 20 منشوراً و4 فيديوهات قصيرة، وحملاتك على سناب وتيك توك وميتا مع إعادة استهداف من ترك السلة.", en: "The Sales Growth plan for a full month at today's price: 3 accounts, 20 posts and 4 short videos, and your Snap, TikTok and Meta campaigns with abandoned-cart retargeting." },
-    forWho: { ar: "للمتاجر والمشاريع التي تريد تجربة إدارة التسويق الكاملة معنا قبل الالتزام.", en: "For stores and businesses that want to try our full marketing management before committing." },
+    badge: { ar: "صفقة اليوم — تجربة التسويق", en: "Deal of the day — try our marketing" },
+    title: { ar: "تجربة التسويق لأول شهر: محتوى + حملة إعلانية بـ 1,999 ريالاً", en: "Try our marketing for a month: content + an ad campaign, SAR 1,999" },
+    text: { ar: "باقة «البداية» للحملات (1,499) مع باقة «الحضور» للسوشيال (1,499) لشهرك الأول بسعر واحد: خطة تسويق، ومحتوى منتظم، وحملة إعلانية تُدار وتُقاس.", en: "The Starter campaign plan (1,499) and the Presence social plan (1,499) for your first month at one price: a marketing plan, regular content and a managed, measured ad campaign." },
+    forWho: { ar: "للمشاريع التي تريد تجربة إدارة التسويق معنا قبل اختيار باقة شهرية.", en: "For businesses that want to try our marketing before choosing a monthly plan." },
     features: [
-      { ar: "20 منشوراً و4 فيديوهات قصيرة", en: "20 posts and 4 short videos" },
-      { ar: "حملات على سناب وتيك توك وميتا", en: "Campaigns on Snap, TikTok and Meta" },
-      { ar: "تقرير بالطلبات وتكلفتها", en: "A report on orders and their cost" }
+      { ar: "جلسة تأسيس لخطة التسويق", en: "A marketing plan kick-off session" },
+      { ar: "12 منشوراً وفيديوهان قصيران", en: "12 posts and 2 short videos" },
+      { ar: "إدارة حملة إعلانية واحدة", en: "One managed ad campaign" }
     ],
     deliverables: [
-      { title: { ar: "المحتوى", en: "Content" }, text: { ar: "خطة محتوى للشهر، 20 منشوراً و4 فيديوهات قصيرة (من تصويرك ونحن نحررها) على 3 حسابات.", en: "A monthly content plan, 20 posts and 4 short videos (you film, we edit) on 3 accounts." } },
-      { title: { ar: "الإعلانات", en: "Ads" }, text: { ar: "حملات على سناب وتيك توك وميتا بـ 8 تصاميم إعلانية، وإعادة استهداف زوار المتجر ومن ترك السلة، وتحسين أسبوعي.", en: "Snap, TikTok and Meta campaigns with 8 ad designs, retargeting of visitors and abandoned carts, and weekly optimisation." } },
-      { title: { ar: "القياس", en: "Measurement" }, text: { ar: "فحص البكسل وتقرير كل أسبوعين بالطلبات وتكلفة الطلب الواحد.", en: "A pixel check and a report every two weeks on orders and cost per order." } }
+      { title: { ar: "خطة التسويق", en: "Marketing plan" }, text: { ar: "جلسة لفهم نشاطك وجمهورك وتحديد الرسائل والمنصات المناسبة.", en: "A session on your business and audience to set the right messages and platforms." } },
+      { title: { ar: "المحتوى", en: "Content" }, text: { ar: "12 منشوراً بالتصميم والنص، وفيديوهان قصيران بمونتاج موادك، وجدولتها على منصتين.", en: "12 designed and written posts, 2 short videos edited from your footage, scheduled on two platforms." } },
+      { title: { ar: "الحملة", en: "Campaign" }, text: { ar: "إعداد وإدارة حملة إعلانية واحدة على منصة واحدة مع تتبع النتائج.", en: "One ad campaign set up and run on one platform, with results tracked." } },
+      { title: { ar: "التقرير", en: "Report" }, text: { ar: "تقرير نهاية الشهر بالنتائج والتوصيات للشهر التالي.", en: "An end-of-month report with results and recommendations." } }
     ],
     delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
     terms: [
-      { ar: "شهر واحد بلا التزام بعده", en: "One month, no commitment after it" },
+      { ar: "السعر للشهر الأول فقط، وبعده تختار باقة شهرية بموافقتك — لا يوجد تجديد تلقائي", en: "The price is for the first month only; then you choose a monthly plan — no automatic renewal" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
-    excludes: [{ ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" }],
+    excludes: [
+      { ar: "الميزانية الإعلانية (تُدفع للمنصة من حسابك)", en: "Ad spend (paid to the platform from your account)" },
+      { ar: "التصوير الميداني", en: "On-site filming" }
+    ],
     price: 1999,
-    oldPrice: 2999
+    oldPrice: 2998
   },
   {
     slug: "day-whatsapp",
@@ -1011,29 +1191,28 @@ export const offers: Offer[] = [
     service: "digital-marketing",
     icon: "Share2",
     badge: { ar: "صفقة اليوم — سوشيال ميديا", en: "Deal of the day — social media" },
-    title: { ar: "شهر سوشيال ميديا كامل: 30 منشوراً بالتصميم والنشر بـ 1,999 ريالاً", en: "A full social media month: 30 posts designed and published for SAR 1,999" },
-    text: { ar: "شهر كامل من المحتوى بهويتك: 30 منشوراً بالتصميم والنص، و4 فيديوهات قصيرة نحررها، وننشرها ونجدولها لك على 3 حسابات.", en: "A full month of content in your brand: 30 designed and written posts, 4 short videos we edit, published and scheduled on 3 accounts." },
-    forWho: { ar: "لمن يريد حسابات نشطة باحترافية كل يوم دون أن يشغل نفسه بالتصميم والنشر — بدون حملات إعلانية.", en: "For anyone who wants professionally active accounts every day without handling design and posting — without ad campaigns." },
+    title: { ar: "أول شهر من باقة «التفاعل» للسوشيال ميديا بـ 1,999 ريالاً", en: "Your first Engagement social media month, SAR 1,999" },
+    text: { ar: "باقة «التفاعل» (2,999) لشهرك الأول بسعر اليوم: 16 منشوراً بالتصميم والكتابة، و4 فيديوهات قصيرة من موادك، ونشر منظم على منصتين مع متابعة التعليقات.", en: "The Engagement plan (2,999) for your first month at today's price: 16 designed and written posts, 4 short videos from your footage and organised publishing on two platforms with comment management." },
+    forWho: { ar: "للعلامات التي تريد حضوراً احترافياً وتفاعلاً أكبر دون أن تشغل نفسها بالتصميم والنشر.", en: "For brands that want a professional presence and more engagement without handling design and publishing." },
     features: [
-      { ar: "30 منشوراً بالتصميم والنص", en: "30 designed and written posts" },
-      { ar: "4 فيديوهات قصيرة (ريلز) نحررها", en: "4 short videos (reels) we edit" },
-      { ar: "النشر والجدولة على 3 حسابات", en: "Publishing and scheduling on 3 accounts" }
+      { ar: "16 منشوراً بالتصميم والكتابة", en: "16 designed and written posts" },
+      { ar: "4 فيديوهات قصيرة بمونتاج موادك", en: "4 short videos edited from your footage" },
+      { ar: "النشر على منصتين ومتابعة التعليقات", en: "Publishing on two platforms with comment management" }
     ],
     deliverables: [
-      { title: { ar: "خطة المحتوى", en: "Content plan" }, text: { ar: "جدول شهري بالأفكار والمواعيد المناسبة لجمهورك.", en: "A monthly calendar of ideas and the right posting times." } },
-      { title: { ar: "التصاميم", en: "Designs" }, text: { ar: "30 تصميماً بمقاسي المنشور والستوري، مع جولة تعديل.", en: "30 designs in post and story sizes, with a revision round." } },
-      { title: { ar: "النصوص", en: "Captions" }, text: { ar: "نص تسويقي لكل منشور بالعربية مع الهاشتاقات.", en: "A marketing caption for each post in Arabic, with hashtags." } },
-      { title: { ar: "الفيديو", en: "Video" }, text: { ar: "تحرير 4 فيديوهات قصيرة من تصويرك بالنصوص والموسيقى المناسبة.", en: "4 short videos edited from your footage, with captions and music." } },
-      { title: { ar: "النشر", en: "Publishing" }, text: { ar: "نجدول وننشر المحتوى على 3 حسابات (مثل إنستغرام وتيك توك وسناب) في أفضل الأوقات لجمهورك.", en: "We schedule and publish on 3 accounts (e.g. Instagram, TikTok and Snap) at your audience's best times." } }
+      { title: { ar: "خطة المحتوى", en: "Content plan" }, text: { ar: "تقويم شهري بالأفكار والمواعيد المناسبة لجمهورك.", en: "A monthly calendar of ideas and the right times for your audience." } },
+      { title: { ar: "التصاميم والنصوص", en: "Designs & captions" }, text: { ar: "16 منشوراً بهويتك مع نص تسويقي لكل منشور.", en: "16 posts in your brand with a caption for each." } },
+      { title: { ar: "الفيديو", en: "Video" }, text: { ar: "4 فيديوهات قصيرة بمونتاج موادك المصورة.", en: "4 short videos edited from your footage." } },
+      { title: { ar: "النشر والمتابعة", en: "Publishing & community" }, text: { ar: "نشر منظم على منصتين ومتابعة التعليقات في ساعات العمل المتفق عليها، وتقرير شهري.", en: "Organised publishing on two platforms, comment management in agreed hours and a monthly report." } }
     ],
-    delivery: { ar: "7 أيام عمل", en: "7 business days" },
+    delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
     terms: [
-      { ar: "جولة تعديل واحدة على الدفعة كاملة", en: "One revision round on the whole batch" },
+      { ar: "السعر للشهر الأول فقط، وبعده تستمر بسعر الباقة (2,999) أو تتوقف", en: "First month only; then the plan price (2,999) or stop" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
     excludes: [
-      { ar: "الحملات الإعلانية والرد على الرسائل (في باقات التسويق الشهرية)", en: "Ad campaigns and replying to messages (in the monthly marketing plans)" },
-      { ar: "تصوير الفيديو (التصوير منك ونحن نحرره)", en: "Filming (you film, we edit)" }
+      { ar: "التصوير الميداني والتعليق الصوتي المدفوع", en: "On-site filming and paid voice-over" },
+      { ar: "الحملات الإعلانية", en: "Ad campaigns" }
     ],
     price: 1999,
     oldPrice: 2999
@@ -1043,31 +1222,30 @@ export const offers: Offer[] = [
     cycle: "daily",
     service: "digital-marketing",
     icon: "Target",
-    badge: { ar: "صفقة اليوم — إعلانات", en: "Deal of the day — ads" },
-    title: { ar: "جاهز للإعلان: البكسل + الكتالوج + حملتين وإدارتها أسبوعين بـ 1,499 ريالاً", en: "Ready to advertise: pixels + catalogue + two campaigns managed for two weeks, SAR 1,499" },
-    text: { ar: "نجهز متجرك أو موقعك للإعلان بالشكل الصحيح: نركّب البكسل ونربط كتالوج منتجاتك، ثم نطلق حملتين على منصتين وندير ونحسّن أداءهما أسبوعين كاملين.", en: "We get your store or site ready to advertise properly: pixels installed and your catalogue connected, then two campaigns on two platforms launched and optimised for two full weeks." },
-    forWho: { ar: "لمن يعلن بدون قياس أو يريد البدء بالإعلانات بشكل صحيح من أول ريال.", en: "For anyone advertising without measurement, or starting ads the right way from the first riyal." },
+    badge: { ar: "صفقة اليوم — أول حملة إعلانية", en: "Deal of the day — your first campaign" },
+    title: { ar: "أول حملة إعلانية لمشروعك: تجهيز وإدارة 14 يوماً بـ 1,499 ريالاً", en: "Your first ad campaign: set-up and 14 days of management, SAR 1,499" },
+    text: { ar: "عندك متجر أو مشروع؟ ابدأ إعلاناتك بخطة واضحة وتتبع للنتائج: نراجع جاهزية موقعك، ونجهز التتبع، ونطلق حملتين وندير ونحسّن أداءهما 14 يوماً.", en: "Have a store or business? Start advertising with a clear plan and tracked results: we check your site's readiness, set up tracking, launch two campaigns and run them for 14 days." },
+    forWho: { ar: "لمن يبدأ الإعلان لأول مرة أو يعلن بدون قياس واضح للنتائج.", en: "For anyone advertising for the first time, or without clear measurement." },
     features: [
-      { ar: "بكسل سناب وتيك توك وميتا مع تتبع الشراء", en: "Snap, TikTok and Meta pixels with purchase tracking" },
-      { ar: "ربط كتالوج المنتجات", en: "Product catalogue connected" },
-      { ar: "حملتان على منصتين و4 تصاميم إعلانية", en: "Two campaigns on two platforms and 4 ad designs" },
-      { ar: "إدارة وتحسين أسبوعين", en: "Two weeks of management and optimisation" }
+      { ar: "مراجعة جاهزية الموقع أو المتجر", en: "Site / store readiness review" },
+      { ar: "حملتان على منصة واحدة و4 مواد إعلانية", en: "Two campaigns on one platform and 4 creatives" },
+      { ar: "إدارة وتحسين 14 يوماً وتقرير ختامي", en: "14 days of management and a final report" }
     ],
     deliverables: [
-      { title: { ar: "البكسل والتتبع", en: "Pixels & tracking" }, text: { ar: "تركيب البكسل وتجربة أحداث المشاهدة والإضافة للسلة والشراء، وربط تحليلات جوجل.", en: "Pixels installed, view / add-to-cart / purchase events tested, Google Analytics connected." } },
-      { title: { ar: "الحسابات الإعلانية", en: "Ad accounts" }, text: { ar: "إنشاء أو ترتيب حساباتك الإعلانية وربطها بالمتجر وطرق الدفع.", en: "Your ad accounts created or tidied and linked to the store and payment methods." } },
-      { title: { ar: "الكتالوج", en: "Catalogue" }, text: { ar: "ربط منتجات متجرك بكتالوج ميتا وتيك توك وسناب لإعلانات المنتجات الديناميكية.", en: "Your store products synced to the Meta, TikTok and Snap catalogues for dynamic product ads." } },
-      { title: { ar: "الحملات", en: "Campaigns" }, text: { ar: "إعداد الجمهور وإطلاق حملتين على منصتين بـ 4 تصاميم إعلانية.", en: "Audiences set up and two campaigns launched on two platforms with 4 ad designs." } },
-      { title: { ar: "أسبوعا إدارة", en: "Two weeks of management" }, text: { ar: "متابعة يومية وتحسين الإعلانات والميزانية أسبوعين، وتقرير بالطلبات وتكلفة الطلب في النهاية.", en: "Daily monitoring and ad / budget optimisation for two weeks, ending with a report on orders and cost per order." } }
+      { title: { ar: "مراجعة الجاهزية", en: "Readiness review" }, text: { ar: "نراجع صفحاتك وسرعتها وطريقة الطلب قبل صرف أي ريال على الإعلان.", en: "We review your pages, speed and ordering flow before any riyal is spent on ads." } },
+      { title: { ar: "التتبع", en: "Tracking" }, text: { ar: "إعداد أداة التتبع المناسبة للمنصة المختارة والتأكد من قياس الطلبات.", en: "The right tracking for the chosen platform set up, with orders measured." } },
+      { title: { ar: "الحملات", en: "Campaigns" }, text: { ar: "إطلاق حملتين على منصة واحدة بـ 4 مواد إعلانية من محتواك.", en: "Two campaigns launched on one platform with 4 creatives from your content." } },
+      { title: { ar: "الإدارة والتقرير", en: "Management & report" }, text: { ar: "متابعة وتحسين 14 يوماً، ثم تقرير بالتكاليف والنتائج القابلة للقياس.", en: "14 days of monitoring and optimisation, then a report on costs and measurable results." } }
     ],
-    delivery: { ar: "التجهيز خلال 3 أيام عمل، ثم أسبوعا إدارة", en: "Set up in 3 business days, then two weeks of management" },
+    delivery: { ar: "التجهيز خلال 3 أيام عمل، ثم 14 يوم إدارة", en: "Set up in 3 business days, then 14 days of management" },
     terms: [
-      { ar: "منصتان إعلانيتان يختارهما العميل", en: "Two ad platforms of the client's choice" },
+      { ar: "منصة إعلانية واحدة يختارها العميل", en: "One ad platform of the client's choice" },
+      { ar: "النتائج تعتمد على المنتج والسوق والميزانية، ولا نضمن عدد مبيعات", en: "Results depend on product, market and budget; no guaranteed sales" },
       { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
     ],
     excludes: [
-      { ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" },
-      { ar: "الإدارة بعد الأسبوعين (في باقات التسويق الشهرية)", en: "Management after two weeks (in the monthly marketing plans)" }
+      { ar: "ميزانية الإعلانات", en: "Ad spend" },
+      { ar: "التصوير وتصميم صفحات هبوط جديدة", en: "Photography and new landing pages" }
     ],
     price: 1499,
     oldPrice: 2499
@@ -1154,8 +1332,8 @@ export function offerLabel(key: string): string | null {
 
 export const offersCopy = {
   eyebrow: { ar: "الباقات والعروض", en: "Packages & offers" } as L,
-  title: { ar: "اختر الباقة *المناسبة لنشاطك*", en: "Choose the package *that fits your business*" } as L,
-  sub: { ar: "باقات واضحة لكل خدمة، وعروض لفترة محدودة — واطلب ما يناسبك في دقيقة.", en: "Clear packages for every service and limited-time offers — request what fits you in a minute." } as L,
+  title: { ar: "حلول تقنية وتسويقية *تساعد أعمالك تنمو*", en: "Tech and marketing solutions *that help your business grow*" } as L,
+  sub: { ar: "مواقع ومتاجر إلكترونية، تسويق رقمي، ذكاء اصطناعي وأتمتة أعمال. اختر الحل المناسب لمرحلة مشروعك بخدمات واضحة وأسعار شفافة.", en: "Websites and online stores, digital marketing, AI and business automation. Choose the solution that fits your stage, with clear services and transparent prices." } as L,
   seePackages: { ar: "تصفح الباقات", en: "Browse packages" } as L,
   whatsapp: { ar: "اسألنا على واتساب", en: "Ask us on WhatsApp" } as L,
   offersTitle: { ar: "عروض *هذا الأسبوع*", en: "This week's *offers*" } as L,
@@ -1178,7 +1356,7 @@ export const offersCopy = {
   details: { ar: "التفاصيل والطلب", en: "Details & order" } as L,
   packagesTitle: { ar: "الباقات", en: "Packages" } as L,
   packagesSub: { ar: "أسعار ثابتة وواضحة، وكل باقة تذكر بالضبط ما تشمله وما لا تشمله — والباقات المتقدمة تُسعَّر حسب نطاق مشروعك.", en: "Clear, fixed prices — every package says exactly what it includes and what it doesn't; Advanced packages are priced to your scope." } as L,
-  mostPopular: { ar: "الأكثر طلباً", en: "Most popular" } as L,
+  mostPopular: { ar: "الباقة المقترحة", en: "Recommended" } as L,
   idealFor: { ar: "مناسبة لـ", en: "Best for" } as L,
   notIncluded: { ar: "غير مشمول", en: "Not included" } as L,
   from: { ar: "يبدأ من", en: "From" } as L,
@@ -1221,6 +1399,23 @@ export const offersCopy = {
   dealTotal: { ar: "الإجمالي", en: "Total" } as L,
   dealOnRequest: { ar: "يُحدد السعر بعد مناقشة التفاصيل معكم", en: "Pricing follows a short discussion with you" } as L,
   dealValid: { ar: "صالح حتى", en: "Valid until" } as L,
+  seeOffers: { ar: "استعرض العروض", en: "Browse offers" } as L,
+  consult: { ar: "اطلب استشارة", en: "Book a consultation" } as L,
+  quote: { ar: "اطلب عرض سعر", en: "Request a quote" } as L,
+  solutionsTitle: { ar: "حلول *الشركات*", en: "Business *solutions*" } as L,
+  solutionsSub: { ar: "أتمتة بالذكاء الاصطناعي، وأنظمة مخصصة، وفريق تقني متكامل — للشركات المتوسطة والكبيرة. نبدأ بجلسة تحليل، ثم عرض سعر مكتوب بنطاق واضح.", en: "AI automation, custom systems and a complete tech team — for mid-size and large companies. We start with an analysis session, then a written quote with a clear scope." } as L,
+  projectsTitle: { ar: "من *أعمالنا*", en: "From *our work*" } as L,
+  projectsSub: { ar: "مشاريع حقيقية نفذناها لعملائنا.", en: "Real projects we delivered for our clients." } as L,
+  allProjects: { ar: "كل أعمالنا", en: "All our work" } as L,
+  termsTitle: { ar: "الشروط العامة", en: "General terms" } as L,
+  generalTerms: [
+    { ar: "جميع الأسعار قبل ضريبة القيمة المضافة 15%، وتصدر لكل دفعة فاتورة ضريبية.", en: "All prices exclude 15% VAT, and every payment gets a tax invoice." },
+    { ar: "الاشتراكات الخارجية (المنصات، الإعلانات، رسائل ميتا، استخدام الذكاء الاصطناعي) تُدفع باسم العميل وعلى حسابه.", en: "External subscriptions (platforms, ads, Meta messages, AI usage) are paid by the client, in the client's name." },
+    { ar: "تبدأ مدة التنفيذ بعد استلام المحتوى والصلاحيات المطلوبة واعتماد النطاق.", en: "Delivery time starts after we receive the content and access we need and the scope is approved." },
+    { ar: "نطاق كل باقة مكتوب، وأي إضافة خارجه تُسعَّر منفصلة بعد موافقتك.", en: "Every package has a written scope; anything outside it is priced separately after your approval." },
+    { ar: "لا نضمن عدد مبيعات أو متابعين أو ترتيباً محدداً في محركات البحث — نلتزم بجودة التنفيذ والقياس الشفاف.", en: "We don't guarantee a number of sales, followers or a search ranking — we commit to quality work and transparent measurement." },
+    { ar: "تنتقل لك ملكية الأعمال والحسابات بالكامل عند سداد المستحقات.", en: "Full ownership of the work and accounts passes to you once payments are settled." }
+  ],
   heroPoints: [
     { ar: "أسعار معلنة بلا رسوم خفية", en: "Published prices, no hidden fees" },
     { ar: "الدفع على دفعات", en: "Pay in instalments" },

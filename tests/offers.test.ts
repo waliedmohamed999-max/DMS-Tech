@@ -18,7 +18,7 @@ describe("packages & offers", () => {
     const keys = packageGroups.flatMap((g) => g.tiers.map((t) => t.key));
     expect(new Set(keys).size).toBe(keys.length);
     expect(packageGroups.flatMap((g) => g.tiers).every((t) => t.price === null || t.price > 0)).toBe(true);
-    expect(offerLabel("pkg:web-growth")).toBe("باقات المواقع والتطبيقات — الاحترافية");
+    expect(offerLabel("pkg:web-growth")).toBe("باقات المواقع الإلكترونية — الأعمال");
     expect(offerLabel("pkg:nope")).toBeNull();
     expect(offerLabel("anything")).toBeNull();
   });
@@ -34,11 +34,15 @@ describe("packages & offers", () => {
     const keys = new Set(tiers.map((t) => t.key));
     expect(store.journey!.length).toBeGreaterThanOrEqual(5);
     expect(store.journey!.every((j) => keys.has(j.tier))).toBe(true);
-    const mkt = packageGroups.find((g) => g.service === "digital-marketing")!;
-    expect(mkt.notice.ar).toContain("ميزانية الإعلانات غير مشمولة");
-    expect(mkt.tiers.every((t) => t.excludes.some((x) => x.ar.includes("ميزانية الإعلانات")))).toBe(true);
+    const mkt = packageGroups.find((g) => g.id === "digital-marketing")!;
+    expect(mkt.notice.ar).toContain("الميزانية الإعلانية");
+    expect(mkt.notice.ar).toContain("لا نَعِد");
+    expect(mkt.tiers.every((t) => t.excludes.some((x) => x.ar.includes("الميزانية الإعلانية")))).toBe(true);
+    // ids are unique (they are the tab and link keys); smb packages come before company solutions
+    expect(new Set(packageGroups.map((g) => g.id)).size).toBe(packageGroups.length);
+    expect(packageGroups.findIndex((g) => g.segment === "business")).toBeGreaterThan(packageGroups.findLastIndex((g) => g.segment === "smb"));
     // "from" prices only where the scope varies; longer team terms are cheaper per month
-    expect(tiers.filter((t) => t.from).map((t) => t.key).sort()).toEqual(["ai-custom", "store-scale", "web-pro"]);
+    expect(tiers.filter((t) => t.from).map((t) => t.key).sort()).toEqual(["ai-custom", "app-mvp", "enterprise-systems", "store-scale", "wa-advanced", "web-pro"]);
     const team = packageGroups.find((g) => g.service === "dedicated-tech-team")!.tiers.map((t) => t.price!);
     expect(team[0] > team[1] && team[1] > team[2]).toBe(true);
   });
@@ -53,16 +57,16 @@ describe("packages & offers", () => {
     const price = (key: string) => packageGroups.flatMap((g) => g.tiers).find((t) => t.key === key)!.price!;
     const deal = (slug: string) => offers.find((o) => o.slug === slug)!;
     // deal → what it really costs as a package (WhatsApp: 3 months of Basic)
-    const refs: [string, number][] = [["day-website", price("web-starter")], ["day-store", price("store-launch")], ["day-whatsapp", price("wa-basic") * 3], ["day-marketing", price("mkt-growth")], ["day-automation", price("ai-auto-starter")]];
+    const refs: [string, number][] = [["day-website", price("web-starter")], ["day-store", price("store-launch")], ["day-whatsapp", price("wa-basic") * 3], ["day-marketing", price("mkt-start") + price("social-presence")], ["day-social", price("social-engage")], ["day-automation", price("ai-auto-starter")]];
     for (const [slug, ref] of refs) {
       expect(deal(slug).oldPrice).toBe(ref);
       expect(deal(slug).price).toBeLessThan(ref);
     }
     // weekly offers: struck price = the sum of the packages inside
-    expect(deal("store-week").oldPrice).toBe(price("store-growth") + price("mkt-start"));
+    expect(deal("store-week").oldPrice).toBe(price("store-launch") + price("mkt-start") + price("social-presence"));
     expect(deal("ai-agent-week").oldPrice).toBe(price("ai-assistant"));
     expect(deal("ai-bundle-week").oldPrice).toBe(price("ai-assistant") + price("ai-auto-starter"));
-    expect(deal("system-week").oldPrice).toBe(price("web-pro"));
+    expect(deal("system-week").oldPrice).toBe(price("app-mvp"));
     // a smaller deal never costs more than a bigger one of the same kind
     expect(deal("day-store").price).toBeLessThan(deal("day-ads-setup").price);
     // the website-only AI bot is cheaper than the full assistant offer
@@ -115,7 +119,7 @@ describe("packages & offers", () => {
 
   it("4. the e-mail to the company names the package", () => {
     const m = buildLeadMail(websiteLeadSchema.parse(lead({ offer: "pkg:wa-pro" })), { saved: true });
-    expect(m.text).toContain("الباقة / العرض: باقات حلول واتساب — الاحترافية");
+    expect(m.text).toContain("الباقة / العرض: باقات واتساب والأتمتة — الاحترافية");
     expect(m.text).toContain("النموذج: الباقات والعروض");
   });
 });

@@ -137,7 +137,7 @@ export async function getPackageGroups(locale: Locale) {
       const t = g.tiers.filter((x) => x.price !== null).sort((a, b) => a.price! - b.price!)[0];
       return t ? { price: offerMoney(t.price, locale), period: t.period ? localize(t.period, locale) : null } : null;
     })(),
-    service: g.service, icon: g.icon, tiers: g.tiers.map((t) => ({ ...localize(t, locale), price: offerMoney(t.price, locale) })), ...(g.journey ? { journey: localize(g.journey, locale) } : {}) }));
+    id: g.id, segment: g.segment, service: g.service, icon: g.icon, tiers: g.tiers.map((t) => ({ ...localize(t, locale), price: offerMoney(t.price, locale) })), ...(g.journey ? { journey: localize(g.journey, locale) } : {}) }));
 }
 /** An offer with its localized details and the end of its current cycle (end of today / of this week). */
 function offerView(o: Offer, locale: Locale) {

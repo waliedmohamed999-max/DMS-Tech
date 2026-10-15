@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
 import { site } from "@/content/site";
-import { getActiveOffers, getOffersCopy, getPackageGroups } from "@/lib/content";
+import { getActiveOffers, getOffersCopy, getPackageGroups, getProjects } from "@/lib/content";
 import { Highlight, SectionHeading } from "@/components/ui/Section";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
@@ -19,25 +20,51 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const c = await getOffersCopy(locale as Locale);
-  return { title: c.eyebrow, description: c.sub };
+  return { title: c.eyebrow, description: c.sub, alternates: { canonical: locale === "ar" ? "/offers" : `/${locale}/offers` }, openGraph: { title: c.eyebrow, description: c.sub } };
 }
 
 /**
- * Packages & offers: a hero with one tile per service (each opens its packages), today's 24-hour deals (sliding
- * banner), this week's offers (one countdown to Saturday midnight), the packages with a scene per service, why us,
- * FAQ and a closing call to action.
+ * Packages & offers, in three groups: DEALS (today's 24-hour deals + this week's offers), PACKAGES (everyday services
+ * with fixed prices) and BUSINESS SOLUTIONS (AI, systems, tech team — quote-led). Then real projects, why us, FAQ with
+ * the general terms, and a closing call to action. Every package / offer has its own page (/offers/<key>) to link ads to.
  */
 export default async function OffersPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: raw } = await params;
   const locale = raw as Locale;
   setRequestLocale(locale);
-  const [c, groups, offers] = await Promise.all([getOffersCopy(locale), getPackageGroups(locale), getActiveOffers(locale)]);
+  const [c, groups, offers, projects] = await Promise.all([getOffersCopy(locale), getPackageGroups(locale), getActiveOffers(locale), getProjects(locale)]);
+  const smb = groups.filter((g) => g.segment === "smb");
+  const business = groups.filter((g) => g.segment === "business");
+  const browserLabels = { mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded, journeyTitle: c.journeyTitle, journeySub: c.journeySub, journeyStep: c.journeyStep, aboutService: c.aboutService, prev: c.prev, next: c.next, quote: c.quote };
+  // structured data: the published packages as an offer catalogue (prices before VAT, in SAR)
+  const base = site.url.replace(/\/$/, "");
+  const prefix = locale === "ar" ? "" : `/${locale}`;
+  const catalog = {
+    "@context": "https://schema.org",
+    "@type": "OfferCatalog",
+    name: c.eyebrow,
+    url: `${base}${prefix}/offers`,
+    itemListElement: groups.map((g) => ({
+      "@type": "OfferCatalog",
+      name: g.title,
+      itemListElement: g.tiers
+        .filter((t) => t.price)
+        .map((t) => ({
+          "@type": "Offer",
+          name: `${g.title} — ${t.name}`,
+          url: `${base}${prefix}/offers/${t.key}`,
+          priceSpecification: { "@type": "PriceSpecification", price: Number(String(t.price).replace(/[^0-9.]/g, "")), priceCurrency: "SAR", valueAddedTaxIncluded: false },
+          seller: { "@type": "Organization", name: site.name }
+        }))
+    }))
+  };
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
   const cd = { endsIn: c.endsIn, days: c.days, hours: c.hours, minutes: c.minutes };
   const today = offers.today;
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(catalog).replace(/</g, "\\u003c") }} />
       <section className="on-dark relative overflow-hidden">
         <TechBackdrop />
         <div className="container-site relative grid items-center gap-10 py-14 md:py-20 lg:grid-cols-[1.05fr_1fr]">
@@ -58,10 +85,13 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
               ))}
             </ul>
             <div className="flex flex-wrap items-center gap-3">
-              <a href="#packages" className="btn btn-primary">
-                {c.seePackages} <Icon name={arrow} size={17} />
+              <a href="#deals" className="btn btn-primary">
+                {c.seeOffers} <Icon name={arrow} size={17} />
               </a>
-              <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+              <Link href="/quote" className="btn btn-outline">
+                {c.consult}
+              </Link>
+              <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost text-white">
                 <BrandIcon slug="whatsapp" size={17} /> {c.whatsapp}
               </a>
             </div>
@@ -73,8 +103,8 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {groups.map((g, i) => (
                 <a
-                  key={g.service}
-                  href={`#pkg-${g.service}`}
+                  key={g.id}
+                  href={`#pkg-${g.id}`}
                   className="hero-tile grid content-start gap-2 rounded-2xl border border-white/10 bg-white/[.06] p-4 backdrop-blur-sm transition hover:-translate-y-1 hover:border-iris-light/60 hover:bg-white/10"
                   style={{ animationDelay: `${i * 0.08}s` }}
                 >
@@ -177,14 +207,49 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
       <section id="packages" className="section scroll-mt-24 bg-cloud">
         <div className="container-site">
           <SectionHeading title={c.packagesTitle} sub={c.packagesSub} />
-          <PackagesBrowser
-            groups={groups}
-            labels={{ mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded, journeyTitle: c.journeyTitle, journeySub: c.journeySub, journeyStep: c.journeyStep, aboutService: c.aboutService, prev: c.prev, next: c.next }}
-            locale={locale}
-          />
+          <PackagesBrowser groups={smb} labels={browserLabels} locale={locale} />
           <p className="mt-6 text-center text-xs text-graphite">{c.vatNote}</p>
         </div>
       </section>
+
+      {/* business solutions: AI, systems and the tech team — quote-led */}
+      <section id="solutions" className="section scroll-mt-24">
+        <div className="container-site">
+          <SectionHeading title={c.solutionsTitle} sub={c.solutionsSub}>
+            <Link href="/quote" className="btn btn-dark">
+              {c.quote} <Icon name={arrow} size={16} />
+            </Link>
+          </SectionHeading>
+          <PackagesBrowser groups={business} labels={browserLabels} locale={locale} anchor="solutions" />
+          <p className="mt-6 text-center text-xs text-graphite">{c.vatNote}</p>
+        </div>
+      </section>
+
+      {/* real client projects only (src/content/projects.ts) */}
+      {projects.length > 0 && (
+        <section className="section bg-cloud">
+          <div className="container-site">
+            <SectionHeading title={c.projectsTitle} sub={c.projectsSub}>
+              <Link href="/clients" className="link-arrow">
+                {c.allProjects} <Icon name={arrow} size={15} />
+              </Link>
+            </SectionHeading>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+              {projects.slice(0, 6).map((pr) => (
+                <Link key={pr.slug} href={`/clients/${pr.slug}`} className="card group grid content-start overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
+                  <span className="relative block aspect-[16/10] overflow-hidden bg-white">
+                    <Image src={pr.cover} alt={pr.name} fill sizes="(min-width: 768px) 33vw, 50vw" className={`transition duration-500 group-hover:scale-105 ${pr.coverFit === "contain" ? "object-contain p-6" : "object-cover"}`} />
+                  </span>
+                  <span className="grid gap-1 p-4">
+                    <b className="text-[15px]">{pr.name}</b>
+                    <span className="text-xs text-iris">{pr.category}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="section">
         <div className="container-site">
@@ -216,6 +281,19 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
                 <p className="mt-3 leading-relaxed text-iron">{f.a}</p>
               </details>
             ))}
+          </div>
+          <div className="grid gap-3 rounded-2xl border border-mist bg-white p-6">
+            <h3 className="flex items-center gap-2 text-lg font-bold">
+              <Icon name="ClipboardList" size={18} className="text-iris" /> {c.termsTitle}
+            </h3>
+            <ul className="grid gap-2">
+              {c.generalTerms.map((t) => (
+                <li key={t} className="flex items-start gap-2 text-[14.5px] text-iron">
+                  <Icon name="Check" size={15} className="mt-1 shrink-0 text-iris" />
+                  {t}
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
