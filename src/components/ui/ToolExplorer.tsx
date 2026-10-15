@@ -21,12 +21,12 @@ export default function ToolExplorer({ tools }: { tools: ExplorerTool[] }) {
   const fade = picked ? "motion-safe:animate-[fadeIn_.35s_ease]" : "";
 
   return (
-    <div className="grid items-start gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
-      <ul className="grid gap-2" role="tablist" aria-orientation="vertical">
+    <div className="grid min-w-0 items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-12">
+      <ul className="grid min-w-0 gap-2" role="tablist" aria-orientation="vertical">
         {tools.map((t, i) => {
           const on = i === active;
           return (
-            <li key={t.title} className={`rounded-2xl border transition-colors duration-300 ${on ? "border-mist bg-white shadow-card" : "border-transparent hover:bg-white/70"}`}>
+            <li key={t.title} className={`min-w-0 rounded-2xl border transition-colors duration-300 ${on ? "border-mist bg-white shadow-card" : "border-transparent hover:bg-white/70"}`}>
               <button
                 type="button"
                 role="tab"
@@ -44,7 +44,7 @@ export default function ToolExplorer({ tools }: { tools: ExplorerTool[] }) {
                 <span className="font-mono text-xs text-graphite">{String(i + 1).padStart(2, "0")}</span>
               </button>
               {on && (
-                <div role="tabpanel" className={`grid gap-3 px-4 pb-4 ${fade}`}>
+                <div role="tabpanel" className={`grid min-w-0 gap-3 px-4 pb-4 ${fade}`}>
                   <p className="text-[15px] leading-relaxed text-iron">{t.text}</p>
                   <ul className="grid gap-2 sm:grid-cols-2">
                     {t.points.map((p) => (
@@ -55,7 +55,7 @@ export default function ToolExplorer({ tools }: { tools: ExplorerTool[] }) {
                     ))}
                   </ul>
                   {/* phones: the screen sits right under the chosen tool */}
-                  <div className="mt-1 lg:hidden" aria-hidden>
+                  <div className="mt-1 min-w-0 lg:hidden" aria-hidden>
                     <ProductMockup name={t.visual} locale={locale} />
                   </div>
                 </div>

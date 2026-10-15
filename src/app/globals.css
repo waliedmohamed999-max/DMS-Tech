@@ -220,6 +220,12 @@
   .card-slider > * { scroll-snap-align: start; scroll-snap-stop: always; transform: none !important; }
 }
 
+/* browsers without overflow: clip (Safari before 16, older Android browsers): never let a page grow wider than the screen */
+@supports not (overflow: clip) {
+  html,
+  body { overflow-x: hidden; }
+}
+
 [data-motion-paused],
 [data-motion-paused] * {
   animation-play-state: paused !important;
