@@ -3,7 +3,8 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
-import { Link } from "@/i18n/navigation";
+import { Link, redirect } from "@/i18n/navigation";
+import { groupAliases } from "@/content/offers";
 import { site } from "@/content/site";
 import {
   getOfferItem,
@@ -87,6 +88,8 @@ export default async function OfferItemPage({ params }: Props) {
   const { locale: raw, slug } = await params;
   const locale = raw as Locale;
   setRequestLocale(locale);
+  // section links (/offers/marketing, /offers/whatsapp…) open their packages tab
+  if (groupAliases[slug]) redirect({ href: `/offers#pkg-${groupAliases[slug]}`, locale });
   const [c, item, services, nav, projects] = await Promise.all([
     getOffersCopy(locale),
     getOfferItem(slug, locale),

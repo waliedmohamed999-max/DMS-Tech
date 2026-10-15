@@ -261,6 +261,29 @@ export const packageGroups: PackageGroup[] = [
     notice: { ar: "الأسعار رسوم إدارة قبل الضريبة. الميزانية الإعلانية تُدفع للمنصات من حسابك مباشرة ومنفصلة عن الباقة، ولا نَعِد بعدد مبيعات أو نتائج مضمونة — نَعِد بإدارة احترافية وقياس شفاف.", en: "Prices are management fees before VAT. Ad spend is paid to the platforms from your own account, separately, and we don't promise a guaranteed number of sales — we promise professional management and transparent measurement." },
     tiers: [
       {
+        key: "ads-launch",
+        icon: "Target",
+        name: { ar: "جاهز للإعلان", en: "Ready to advertise" },
+        tagline: { ar: "أول حملة لمشروعك: تجهيز وإدارة 14 يوماً", en: "Your first campaign: set-up and 14 days of management" },
+        idealFor: { ar: "من يبدأ الإعلان لأول مرة أو يعلن دون قياس واضح", en: "Anyone advertising for the first time, or without clear measurement" },
+        price: 1499,
+        from: false,
+        period: { ar: "لمدة 14 يوماً", en: "for 14 days" },
+        delivery: { ar: "التجهيز خلال 3 أيام عمل، ثم 14 يوم إدارة", en: "Set up in 3 business days, then 14 days of management" },
+        features: [
+          { ar: "مراجعة جاهزية الموقع أو المتجر للإعلان", en: "A readiness review of your site or store" },
+          { ar: "إعداد التتبع على المنصة المختارة", en: "Tracking set up on the chosen platform" },
+          { ar: "إطلاق حملتين على منصة واحدة", en: "Two campaigns launched on one platform" },
+          { ar: "4 مواد إعلانية من محتواك", en: "4 ad creatives from your content" },
+          { ar: "إدارة وتحسين 14 يوماً", en: "14 days of management and optimisation" },
+          { ar: "تقرير ختامي بالنتائج القابلة للقياس", en: "A final report on measurable results" }
+        ],
+        excludes: [
+          { ar: "الميزانية الإعلانية ورسوم المنصات", en: "Ad spend and platform fees" },
+          { ar: "التصوير وتصميم صفحات هبوط جديدة", en: "Photography and new landing pages" }
+        ]
+      },
+      {
         key: "mkt-start",
         icon: "Megaphone",
         name: { ar: "البداية", en: "Starter" },
@@ -819,7 +842,20 @@ export const questionsFor = (service: string) => leadQuestions[service] ?? (["de
  */
 export const offerAliases: Record<string, string> = {
   "store-marketing": "store-week",
-  "business-website": "web-starter"
+  "business-website": "web-starter",
+  "ads-launch": "ads-launch"
+};
+/** Section links (/offers/<alias>) → the packages tab they open on /offers. */
+export const groupAliases: Record<string, string> = {
+  marketing: "digital-marketing",
+  "social-media": "social-media",
+  websites: "web-development",
+  stores: "ecommerce",
+  whatsapp: "whatsapp-automation",
+  "business-automation": "ai-automation",
+  "app-development": "software-development",
+  "enterprise-solutions": "software-development",
+  "dedicated-team": "dedicated-tech-team"
 };
 
 export const offers: Offer[] = [
@@ -1291,39 +1327,6 @@ export const offers: Offer[] = [
     ],
     price: 1999,
     oldPrice: 2999
-  },
-  {
-    slug: "day-ads-setup",
-    cycle: "daily",
-    service: "digital-marketing",
-    icon: "Target",
-    badge: { ar: "صفقة اليوم — أول حملة إعلانية", en: "Deal of the day — your first campaign" },
-    title: { ar: "أول حملة إعلانية لمشروعك: تجهيز وإدارة 14 يوماً بـ 1,499 ريالاً", en: "Your first ad campaign: set-up and 14 days of management, SAR 1,499" },
-    text: { ar: "عندك متجر أو مشروع؟ ابدأ إعلاناتك بخطة واضحة وتتبع للنتائج: نراجع جاهزية موقعك، ونجهز التتبع، ونطلق حملتين وندير ونحسّن أداءهما 14 يوماً.", en: "Have a store or business? Start advertising with a clear plan and tracked results: we check your site's readiness, set up tracking, launch two campaigns and run them for 14 days." },
-    forWho: { ar: "لمن يبدأ الإعلان لأول مرة أو يعلن بدون قياس واضح للنتائج.", en: "For anyone advertising for the first time, or without clear measurement." },
-    features: [
-      { ar: "مراجعة جاهزية الموقع أو المتجر", en: "Site / store readiness review" },
-      { ar: "حملتان على منصة واحدة و4 مواد إعلانية", en: "Two campaigns on one platform and 4 creatives" },
-      { ar: "إدارة وتحسين 14 يوماً وتقرير ختامي", en: "14 days of management and a final report" }
-    ],
-    deliverables: [
-      { title: { ar: "مراجعة الجاهزية", en: "Readiness review" }, text: { ar: "نراجع صفحاتك وسرعتها وطريقة الطلب قبل صرف أي ريال على الإعلان.", en: "We review your pages, speed and ordering flow before any riyal is spent on ads." } },
-      { title: { ar: "التتبع", en: "Tracking" }, text: { ar: "إعداد أداة التتبع المناسبة للمنصة المختارة والتأكد من قياس الطلبات.", en: "The right tracking for the chosen platform set up, with orders measured." } },
-      { title: { ar: "الحملات", en: "Campaigns" }, text: { ar: "إطلاق حملتين على منصة واحدة بـ 4 مواد إعلانية من محتواك.", en: "Two campaigns launched on one platform with 4 creatives from your content." } },
-      { title: { ar: "الإدارة والتقرير", en: "Management & report" }, text: { ar: "متابعة وتحسين 14 يوماً، ثم تقرير بالتكاليف والنتائج القابلة للقياس.", en: "14 days of monitoring and optimisation, then a report on costs and measurable results." } }
-    ],
-    delivery: { ar: "التجهيز خلال 3 أيام عمل، ثم 14 يوم إدارة", en: "Set up in 3 business days, then 14 days of management" },
-    terms: [
-      { ar: "منصة إعلانية واحدة يختارها العميل", en: "One ad platform of the client's choice" },
-      { ar: "النتائج تعتمد على المنتج والسوق والميزانية، ولا نضمن عدد مبيعات", en: "Results depend on product, market and budget; no guaranteed sales" },
-      { ar: "يُثبَّت السعر لمن يرسل الطلب قبل منتصف الليل", en: "The price is locked for requests sent before midnight" }
-    ],
-    excludes: [
-      { ar: "ميزانية الإعلانات", en: "Ad spend" },
-      { ar: "التصوير وتصميم صفحات هبوط جديدة", en: "Photography and new landing pages" }
-    ],
-    price: 1499,
-    oldPrice: 2499
   }
 ];
 
