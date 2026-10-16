@@ -110,9 +110,8 @@ export const chatbot = {
   channels: [
     { icon: "MessagesSquare", brand: "whatsapp", title: { ar: "واتساب API", en: "WhatsApp API" }, text: { ar: "ربط رسمي مع WhatsApp Business Platform تحت علامتك التجارية.", en: "Official connection to the WhatsApp Business Platform under your brand." } },
     { icon: "ShoppingBag", brand: null, title: { ar: "زد (Zid)", en: "Zid" }, text: { ar: "مزامنة تلقائية لطلبات ومنتجات متجرك على منصة زد.", en: "Automatic sync of your Zid store's orders and products." } },
-    { icon: "ShoppingCart", brand: null, title: { ar: "سلة (Salla)", en: "Salla" }, text: { ar: "مزامنة تلقائية لطلبات ومنتجات متجرك على منصة سلة.", en: "Automatic sync of your Salla store's orders and products." } },
-    { icon: "Sparkles", brand: null, soon: true, title: { ar: "قنوات جديدة قريباً", en: "More channels soon" }, text: { ar: "نعمل على إضافة قنوات وتكاملات جديدة — ترقّب التحديثات.", en: "New channels and integrations are on the way — stay tuned." } }
-  ] as (Item & { brand: string | null; soon?: boolean })[],
+    { icon: "ShoppingCart", brand: null, title: { ar: "سلة (Salla)", en: "Salla" }, text: { ar: "مزامنة تلقائية لطلبات ومنتجات متجرك على منصة سلة.", en: "Automatic sync of your Salla store's orders and products." } }
+  ] as (Item & { brand: string | null })[],
   tools: [
     { icon: "Megaphone", title: { ar: "الحملات", en: "Campaigns" }, text: { ar: "أرسل حملات جماعية وأتمتة استرداد السلة المتروكة.", en: "Bulk campaigns and automated abandoned-cart recovery." } },
     { icon: "Users", title: { ar: "جهات الاتصال", en: "Contacts" }, text: { ar: "نظام CRM بسيط مبني حول محادثات عملائك الفعلية.", en: "A simple CRM built around your real customer conversations." } },

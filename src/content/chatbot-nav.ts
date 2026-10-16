@@ -13,8 +13,6 @@ export const chatbotNav = {
   title: { ar: "DMS Chat Bot", en: "DMS Chat Bot" },
   desc: { ar: "إدارة محادثات واتساب وحملاتك من مكان واحد", en: "WhatsApp conversations and campaigns in one place" },
   live: { ar: "متاح الآن", en: "Available now" },
-  /** only for channels still on the way (the channels list) — the platform itself is live */
-  soon: { ar: "قريباً", en: "Soon" },
   start: { ar: "ابدأ الآن", en: "Start now" },
   loginLabel: { ar: "تسجيل الدخول", en: "Log in" },
   partner: { ar: "ابدأ كشريك", en: "Become a partner" },

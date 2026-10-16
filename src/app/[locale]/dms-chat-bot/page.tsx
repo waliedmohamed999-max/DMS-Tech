@@ -114,7 +114,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
               </h3>
               <ul className="grid gap-2.5">
                 {c.channels.map((it) => (
-                  <li key={it.title} className={`flex items-center gap-3 rounded-2xl border bg-white p-4 ${it.soon ? "border-dashed border-line" : "border-mist shadow-card"}`}>
+                  <li key={it.title} className="flex items-center gap-3 rounded-2xl border border-mist bg-white p-4 shadow-card">
                     <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-cloud text-iris">
                       {it.brand ? <BrandIcon slug={it.brand} size={20} colored /> : <Icon name={it.icon} size={19} />}
                     </span>
@@ -122,8 +122,8 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
                       <span className="font-semibold text-ink">{it.title}</span>
                       <span className="text-sm leading-relaxed text-iron">{it.text}</span>
                     </span>
-                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11.5px] font-semibold ${it.soon ? "bg-lilac text-iris" : "bg-mint text-fern"}`}>
-                      {it.soon ? c.ui.soon : c.channelReady}
+                    <span className="shrink-0 rounded-full bg-mint px-2.5 py-0.5 text-[11.5px] font-semibold text-fern">
+                      {c.channelReady}
                     </span>
                   </li>
                 ))}
