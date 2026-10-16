@@ -162,10 +162,9 @@ export default function Header({ services }: { services: NavService[] }) {
                       </Link>
                     </li>
                     <li>
-                      <a href={chatbotNav.platform} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-sm font-medium text-[#e6e7e8] transition hover:bg-white/5 hover:text-white">
+                      <a href={chatbotNav.platform} className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-sm font-medium text-[#e6e7e8] transition hover:bg-white/5 hover:text-white">
                         <Icon name="MessagesSquare" size={15} className="text-graphite" />
                         {chatbotNav.title[lang]}
-                        <Icon name="ExternalLink" size={12} className="text-graphite" />
                       </a>
                     </li>
                   </ul>
@@ -267,9 +266,9 @@ function MenuLink({ href, icon, title, desc, badge, light }: MenuItem & { light?
       </span>
     </>
   );
-  // external products (DMS Chat Bot) open in a new tab
+  // our own platforms (DMS Chat Bot) open in the same tab, like any page of the site
   return href.startsWith("https://") || href.startsWith("http://") ? (
-    <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
+    <a href={href} className={cls}>
       {body}
     </a>
   ) : (

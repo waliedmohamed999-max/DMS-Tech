@@ -51,13 +51,13 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
               </p>
               <p className="lead">{c.description}</p>
               <div className="flex flex-wrap items-center gap-3">
-                <a href={c.ui.register} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                <a href={c.ui.register} className="btn btn-primary">
                   {c.ui.start} <Icon name={arrow} size={17} />
                 </a>
-                <a href={c.ui.login} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                <a href={c.ui.login} className="btn btn-outline">
                   {c.ui.loginLabel}
                 </a>
-                <a href={c.ui.partners} target="_blank" rel="noopener noreferrer" className="btn btn-ghost text-white">
+                <a href={c.ui.partners} className="btn btn-ghost text-white">
                   <Icon name="Users" size={16} /> {c.ui.partner}
                 </a>
               </div>
@@ -197,10 +197,10 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
             </h2>
             <DarkSteps steps={c.method} />
             <div className="flex flex-wrap justify-center gap-3">
-              <a href={c.ui.register} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+              <a href={c.ui.register} className="btn btn-primary">
                 {c.ui.start} <Icon name={arrow} size={17} />
               </a>
-              <a href={c.ui.partners} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+              <a href={c.ui.partners} className="btn btn-outline">
                 {c.ui.partner}
               </a>
               <Link href={quote} className="btn btn-ghost text-white">

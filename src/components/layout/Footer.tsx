@@ -40,7 +40,7 @@ export default async function Footer({ services }: { services: ServiceView[] }) 
   const nav = await getTranslations("nav");
   const locale = await getLocale();
 
-  const cols: { title: string; links: { href: string; label: string; badge?: string; external?: boolean }[] }[] = [
+  const cols: { title: string; links: { href: string; label: string; badge?: string; external?: boolean; sameTab?: boolean }[] }[] = [
     { title: t("services"), links: services.slice(0, 6).map((s) => ({ href: `/services/${s.slug}`, label: s.eyebrow })) },
     {
       title: t("resources"),
@@ -48,7 +48,7 @@ export default async function Footer({ services }: { services: ServiceView[] }) 
         { href: offersNav.href, label: offersNav.title[locale === "ar" ? "ar" : "en"] },
         { href: "/blog", label: nav("blog") },
         { href: "/nova-ai", label: "NOVA AI", badge: nav("newBadge") },
-        { href: chatbotNav.platform, label: chatbotNav.title[locale === "ar" ? "ar" : "en"], external: true },
+        { href: chatbotNav.platform, label: chatbotNav.title[locale === "ar" ? "ar" : "en"], external: true, sameTab: true },
         { href: "/clients#platforms", label: nav("platforms") },
         { href: "/quote", label: nav("quote") }
       ]
@@ -101,7 +101,7 @@ export default async function Footer({ services }: { services: ServiceView[] }) 
                 {c.links.map((l) =>
                   l.external ? (
                     <li key={l.label}>
-                      <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-iron transition hover:text-ink" dir="auto">
+                      <a href={l.href} {...(l.sameTab ? {} : { target: "_blank", rel: "noopener noreferrer" })} className="text-iron transition hover:text-ink" dir="auto">
                         {l.label}
                       </a>
                     </li>
