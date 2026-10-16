@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing, type Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
-import { getCompany, getProject, getProjectSlugs, getProjects, getProjectsCopy } from "@/lib/content";
+import { getCaseCopy, getCaseStudy, getCompany, getProject, getProjectSlugs, getProjects, getProjectsCopy } from "@/lib/content";
+import { CaseStudyDetail } from "@/components/clients/CaseStudy";
 import { SectionHeading } from "@/components/ui/Section";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { Icon } from "@/components/ui/Icon";
@@ -34,7 +35,7 @@ export default async function ClientProjectPage({ params }: Props) {
   const project = await getProject(slug, locale);
   if (!project) notFound();
 
-  const [nav, home, pc, all, company] = await Promise.all([getTranslations("nav"), getTranslations("home"), getProjectsCopy(locale), getProjects(locale), getCompany(locale)]);
+  const [nav, home, pc, all, company, caseStudy, cc] = await Promise.all([getTranslations("nav"), getTranslations("home"), getProjectsCopy(locale), getProjects(locale), getCompany(locale), getCaseStudy(slug, locale), getCaseCopy(locale)]);
   const rtl = locale === "ar";
   const host = hostOf(project.link);
   const cover = project.gallery.find((g) => g.src === project.cover) ?? project.gallery[0];
@@ -95,6 +96,8 @@ export default async function ClientProjectPage({ params }: Props) {
           )}
         </div>
       </section>
+
+      {caseStudy && <CaseStudyDetail c={caseStudy} copy={cc} rtl={rtl} />}
 
       {(paragraphs.length > 1 || project.gallery.length > 1) && (
         <section className="section">

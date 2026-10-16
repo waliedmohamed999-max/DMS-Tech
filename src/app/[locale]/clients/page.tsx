@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
-import { getCompany, getIndustries, getIntegrations, getProjects, getProjectsCopy } from "@/lib/content";
+import { getCompany, getIndustries, getIntegrations, getProjects, getProjectsCopy, getCaseStudies, getCaseCopy } from "@/lib/content";
+import { CaseCards } from "@/components/clients/CaseStudy";
 import { PageHero, SectionHeading } from "@/components/ui/Section";
 import { Icon } from "@/components/ui/Icon";
 import { FinalCta, IntegrationsWall } from "@/components/home/Sections";
@@ -29,10 +30,21 @@ export default async function ClientsPage({ params }: { params: Promise<{ locale
     getProjects(locale),
     getProjectsCopy(locale)
   ]);
+  const [cases, cc] = await Promise.all([getCaseStudies(locale), getCaseCopy(locale)]);
 
   return (
     <>
       <PageHero eyebrow={nav("industries")} title={t("clientsTitle")} sub={t("clientsSub")} />
+
+      {/* case studies (src/content/case-studies.ts): drafts show only in development */}
+      {cases.length > 0 && (
+        <section id="case-studies" className="section scroll-mt-24 bg-cloud">
+          <div className="container-site">
+            <SectionHeading title={cc.title} sub={cc.sub} />
+            <CaseCards cases={cases} copy={cc} rtl={locale === "ar"} />
+          </div>
+        </section>
+      )}
 
       {/* projects delivered for clients (src/content/projects.ts) */}
       <section id="projects" className="section scroll-mt-24">

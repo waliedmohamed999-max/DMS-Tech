@@ -9,6 +9,7 @@ import { careersCopy, jobs } from "@/content/careers";
 import { activeOffers, cycleEnd, findDeal, findOffer, offerAliases, offerEndInstant, offers, offersCopy, packageGroups, questionsFor, todaysDeals, type Offer } from "@/content/offers";
 import { formatMoney } from "@/lib/commercial/calc";
 import { clientProjects } from "@/content/projects";
+import { caseCopy, visibleCaseStudies } from "@/content/case-studies";
 import { projectsCopy } from "@/content/projects-copy";
 import { chatbot } from "@/content/chatbot";
 import { chatbotNav } from "@/content/chatbot-nav";
@@ -105,6 +106,23 @@ export async function getProject(slug: string, locale: Locale) {
 
 export async function getProjectSlugs() {
   return clientProjects.map((p) => p.slug);
+}
+
+/** Case studies with their project's card data (name, cover) and the matching package page. */
+export async function getCaseStudies(locale: Locale) {
+  return visibleCaseStudies()
+    .map((c) => {
+      const p = clientProjects.find((x) => x.slug === c.slug);
+      if (!p) return null;
+      return { ...localize(c, locale), name: localize(p.name, locale), category: p.category ? localize(p.category, locale) : null, cover: p.cover, coverFit: p.coverFit, packageHref: `/offers/${c.package}` };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+}
+export async function getCaseStudy(slug: string, locale: Locale) {
+  return (await getCaseStudies(locale)).find((c) => c.slug === slug) ?? null;
+}
+export async function getCaseCopy(locale: Locale) {
+  return localize(caseCopy, locale);
 }
 
 export async function getProjectsCopy(locale: Locale) {
