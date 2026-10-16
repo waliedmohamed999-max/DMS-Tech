@@ -29,7 +29,7 @@ export default async function CareersPage({ params }: { params: Promise<{ locale
     .map((s) => ({ slug: s.slug, title: s.eyebrow, icon: s.icon as IconName, count: jobs.filter((j) => j.service === s.slug).length }))
     .filter((g) => g.count > 0);
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
-  const generalMail = `mailto:${site.email}?subject=${encodeURIComponent(`${c.mailSubject} — ${t("careersGeneralCta")}`)}`;
+  const generalMail = `mailto:${site.careersEmail}?subject=${encodeURIComponent(`${c.mailSubject} — ${t("careersGeneralCta")}`)}`;
 
   return (
     <>

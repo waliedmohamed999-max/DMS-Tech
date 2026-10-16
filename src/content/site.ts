@@ -3,6 +3,8 @@ export const site = {
   name: "DMS Tech",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://dmstech.sa",
   email: "info@dmstech.sa",
+  /** job applications (careers pages) */
+  careersEmail: "careers@dmstech.sa",
   phoneDisplay: "0550881255",
   whatsapp: "966550881255",
   socialHandle: "DMS1T",

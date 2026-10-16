@@ -67,7 +67,7 @@ export default async function JobPage({ params }: Props) {
     .sort((a, b) => Number(b.service === job.service) - Number(a.service === job.service))
     .slice(0, 6);
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
-  const apply = `mailto:${site.email}?subject=${encodeURIComponent(`${c.mailSubject} — ${job.title}`)}&body=${encodeURIComponent(c.mailBody.replace("{job}", job.title))}`;
+  const apply = `mailto:${site.careersEmail}?subject=${encodeURIComponent(`${c.mailSubject} — ${job.title}`)}&body=${encodeURIComponent(c.mailBody.replace("{job}", job.title))}`;
 
   const facts: [IconName, string, string][] = [
     ["Layers", job.team, ""],
@@ -153,8 +153,8 @@ export default async function JobPage({ params }: Props) {
             <div className="grid gap-2 border-t border-mist pt-5">
               <h3 className="font-bold">{c.applyTitle}</h3>
               <p className="text-sm leading-relaxed text-iron">{c.applyText}</p>
-              <a href={`mailto:${site.email}`} className="text-sm font-semibold text-iris" dir="ltr">
-                {site.email}
+              <a href={`mailto:${site.careersEmail}`} className="text-sm font-semibold text-iris" dir="ltr">
+                {site.careersEmail}
               </a>
             </div>
             <a href={apply} className="btn btn-primary w-full justify-center">

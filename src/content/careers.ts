@@ -2,7 +2,7 @@ import type { IconName } from "@/components/ui/Icon";
 import type { Job, L } from "./types";
 
 /**
- * Careers: open roles (/careers, /careers/[slug]) and the page copy. Applications go by e-mail to site.email with
+ * Careers: open roles (/careers, /careers/[slug]) and the page copy. Applications go by e-mail to site.careersEmail with
  * the CV attached (the subject names the role). Benefits list only what the company offers by how it works
  * (remote-friendly, real projects, learning) — no salary or insurance claims.
  */
