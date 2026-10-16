@@ -48,7 +48,7 @@ export default async function Footer({ services }: { services: ServiceView[] }) 
         { href: offersNav.href, label: offersNav.title[locale === "ar" ? "ar" : "en"] },
         { href: "/blog", label: nav("blog") },
         { href: "/nova-ai", label: "NOVA AI", badge: nav("newBadge") },
-        { href: chatbotNav.href, label: chatbotNav.title[locale === "ar" ? "ar" : "en"], badge: chatbotNav.soon[locale === "ar" ? "ar" : "en"] },
+        { href: chatbotNav.platform, label: chatbotNav.title[locale === "ar" ? "ar" : "en"], external: true },
         { href: "/clients#platforms", label: nav("platforms") },
         { href: "/quote", label: nav("quote") }
       ]

@@ -3,7 +3,7 @@ import type { MockupKey } from "@/components/ui/ProductMockups";
 import type { L } from "./types";
 
 /**
- * DMS Chat Bot — the company's WhatsApp CRM platform ("Digital Messaging System"), marked "coming soon".
+ * DMS Chat Bot — the company's WhatsApp CRM platform ("Digital Messaging System"), live (links in chatbot-nav.ts).
  * Content follows the product's own marketing pages (repo DMS-Chat-Boot-new: siteContent defaults, services,
  * channels & tools, solutions, vision, methodology, pricing FAQ — Arabic there; English here is a faithful
  * translation). Deliberately NOT carried over: placeholder statistics, testimonials and client logos (not real
@@ -155,7 +155,7 @@ export const chatbot = {
 
   faqTitle: { ar: "الأسئلة الشائعة", en: "Frequently asked questions" } as L,
   faq: [
-    { q: { ar: "متى تُطلق المنصة؟", en: "When does the platform launch?" }, a: { ar: "المنصة قيد الإطلاق. سجّل اهتمامك وسنتواصل معك فور فتح الاشتراكات.", en: "The platform is about to launch. Register your interest and we'll contact you as soon as subscriptions open." } },
+    { q: { ar: "كيف أبدأ؟", en: "How do I start?" }, a: { ar: "المنصة متاحة الآن: أنشئ حسابك من زر «ابدأ الآن»، أو سجّل دخولك إن كان لديك حساب. وللوكالات والمسوّقين برنامج شراكة بعمولة من زر «ابدأ كشريك».", en: "The platform is live: create your account with Start now, or log in if you already have one. Agencies and marketers can join the commission partner programme with Become a partner." } },
     { q: { ar: "هل الربط مع واتساب رسمي؟", en: "Is the WhatsApp connection official?" }, a: { ar: "نعم، المنصة مبنية على WhatsApp Business Platform الرسمي من Meta، مع قوالب رسائل معتمدة ودعم لفريق متعدد على نفس الرقم.", en: "Yes — it's built on Meta's official WhatsApp Business Platform, with approved message templates and support for multiple team members on one number." } },
     { q: { ar: "هل تتكامل مع متجري؟", en: "Does it integrate with my store?" }, a: { ar: "نعم، مع زد وسلة لمزامنة الطلبات والمنتجات تلقائياً وتشغيل حملات استرداد السلة المتروكة، ويمكن أيضاً ربط رقم واتساب Cloud API يدوياً.", en: "Yes — with Zid and Salla to sync orders and products automatically and run abandoned-cart recovery, and you can also connect a WhatsApp Cloud API number manually." } },
     { q: { ar: "هل توجد فترة تجريبية مجانية؟", en: "Is there a free trial?" }, a: { ar: "نعم، كل باقة تبدأ بفترة تجريبية مجانية تتيح لك تجربة المنصة كاملة قبل أي التزام مالي.", en: "Yes — every plan starts with a free trial so you can try the full platform before any financial commitment." } },

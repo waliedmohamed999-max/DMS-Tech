@@ -58,7 +58,7 @@ export default function Header({ services }: { services: NavService[] }) {
     { href: "/about#values", icon: "Award", title: t("whyUs"), desc: t("whyUsDesc") },
     { href: "/about#process", icon: "Route", title: t("process"), desc: t("processDesc") },
     { href: "/nova-ai", icon: "Sparkles", title: t("nova"), desc: t("novaDesc") },
-    { href: chatbotNav.href, icon: "MessagesSquare", title: chatbotNav.title[lang], desc: chatbotNav.desc[lang], badge: chatbotNav.soon[lang] }
+    { href: chatbotNav.platform, icon: "MessagesSquare", title: chatbotNav.title[lang], desc: chatbotNav.desc[lang] }
   ];
   const clientLinks: MenuItem[] = [
     { href: "/clients#projects", icon: "Briefcase", title: projectsCopy.navTitle[lang], desc: projectsCopy.navDesc[lang] },
@@ -162,11 +162,11 @@ export default function Header({ services }: { services: NavService[] }) {
                       </Link>
                     </li>
                     <li>
-                      <Link href={chatbotNav.href} className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-sm font-medium text-[#e6e7e8] transition hover:bg-white/5 hover:text-white">
+                      <a href={chatbotNav.platform} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-sm font-medium text-[#e6e7e8] transition hover:bg-white/5 hover:text-white">
                         <Icon name="MessagesSquare" size={15} className="text-graphite" />
                         {chatbotNav.title[lang]}
-                        <span className="rounded-full bg-white/15 px-2 py-0.5 text-[11px] font-semibold text-white">{chatbotNav.soon[lang]}</span>
-                      </Link>
+                        <Icon name="ExternalLink" size={12} className="text-graphite" />
+                      </a>
                     </li>
                   </ul>
                 </div>
@@ -252,8 +252,9 @@ function Dropdown({ show, className, children }: { show: boolean; className?: st
 type MenuItem = { href: string; icon: IconName; title: string; desc: string; badge?: string };
 
 function MenuLink({ href, icon, title, desc, badge, light }: MenuItem & { light?: boolean }) {
-  return (
-    <Link href={href} className={`group flex items-start gap-3 rounded-xl p-2.5 transition ${light ? "hover:bg-cloud" : "hover:bg-white/5"}`}>
+  const cls = `group flex items-start gap-3 rounded-xl p-2.5 transition ${light ? "hover:bg-cloud" : "hover:bg-white/5"}`;
+  const body = (
+    <>
       <span className={`grid size-8 shrink-0 place-items-center rounded-icon ${light ? "bg-cloud text-iris" : "bg-white/5 text-graphite group-hover:text-white"}`}>
         <Icon name={icon} size={16} />
       </span>
@@ -264,6 +265,16 @@ function MenuLink({ href, icon, title, desc, badge, light }: MenuItem & { light?
         </span>
         {desc && <span className={`mt-0.5 block text-[12.5px] leading-normal ${light ? "text-iron" : "text-graphite"}`}>{desc}</span>}
       </span>
+    </>
+  );
+  // external products (DMS Chat Bot) open in a new tab
+  return href.startsWith("https://") || href.startsWith("http://") ? (
+    <a href={href} target="_blank" rel="noopener noreferrer" className={cls}>
+      {body}
+    </a>
+  ) : (
+    <Link href={href} className={cls}>
+      {body}
     </Link>
   );
 }

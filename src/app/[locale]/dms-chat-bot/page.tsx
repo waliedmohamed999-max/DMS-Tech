@@ -20,10 +20,9 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 /**
- * DMS Chat Bot — product page (src/content/chatbot.ts), same design language as the NOVA AI page, marked "coming
- * soon": hero + coded product screen, features, a tools explorer (each tool with its screen), channels & tools,
- * solutions, vision & a step path, FAQ.
- * "Register your interest" opens the quote form with the product preselected.
+ * DMS Chat Bot — product page (src/content/chatbot.ts), same design language as the NOVA AI page: hero + coded product
+ * screen, features, a tools explorer (each tool with its screen), channels & tools, solutions, vision & a step path,
+ * FAQ. The platform is live: "Start now" (sign-up), "Log in" and "Become a partner" open it (src/content/chatbot-nav.ts).
  */
 export default async function ChatbotPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: raw } = await params;
@@ -42,7 +41,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
           <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.1fr]">
             <div className="grid gap-6">
               <span className="inline-flex w-fit items-center gap-2 rounded-pill border border-white/15 bg-white/5 px-4 py-1.5 text-[13px] font-semibold text-iris-light">
-                <Icon name="Timer" size={15} /> {c.ui.soonLong}
+                <span className="size-2 rounded-full bg-fern" /> {c.ui.live}
               </span>
               <h1 className="h-hero">
                 <Highlight text={c.tagline} />
@@ -52,13 +51,19 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
               </p>
               <p className="lead">{c.description}</p>
               <div className="flex flex-wrap items-center gap-3">
-                <Link href={quote} className="btn btn-primary">
-                  {c.ui.notify} <Icon name={arrow} size={17} />
-                </Link>
-                <a href="#method" className="btn btn-outline">
-                  {c.ui.howItWorks}
+                <a href={c.ui.register} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                  {c.ui.start} <Icon name={arrow} size={17} />
+                </a>
+                <a href={c.ui.login} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                  {c.ui.loginLabel}
+                </a>
+                <a href={c.ui.partners} target="_blank" rel="noopener noreferrer" className="btn btn-ghost text-white">
+                  <Icon name="Users" size={16} /> {c.ui.partner}
                 </a>
               </div>
+              <a href="#method" className="link-arrow w-fit text-sm text-iris-light">
+                {c.ui.howItWorks} <Icon name={arrow} size={14} />
+              </a>
             </div>
             <div className="relative" aria-hidden>
               <ChatbotHeroMockup locale={locale === "ar" ? "ar" : "en"} />
@@ -191,9 +196,15 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
               <Highlight text={c.methodTitle} />
             </h2>
             <DarkSteps steps={c.method} />
-            <div className="flex justify-center">
-              <Link href={quote} className="btn btn-primary">
-                {c.ui.notify} <Icon name={arrow} size={17} />
+            <div className="flex flex-wrap justify-center gap-3">
+              <a href={c.ui.register} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                {c.ui.start} <Icon name={arrow} size={17} />
+              </a>
+              <a href={c.ui.partners} target="_blank" rel="noopener noreferrer" className="btn btn-outline">
+                {c.ui.partner}
+              </a>
+              <Link href={quote} className="btn btn-ghost text-white">
+                {c.ui.contact}
               </Link>
             </div>
           </div>
@@ -212,7 +223,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
         title={c.tagline.replace(/\*/g, "")}
         sub={c.description}
         input={home("ctaInput")}
-        button={c.ui.notify}
+        button={c.ui.contact}
         alt={home("ctaAlt")}
         checks={c.features.slice(0, 3).map((f) => f.title)}
       />
