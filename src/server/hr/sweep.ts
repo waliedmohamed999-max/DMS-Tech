@@ -5,6 +5,7 @@ import { addDays, todayIn, ymd } from "../commercial/dates";
 import { withLease } from "../jobs/lease";
 import { workingDaysBetween } from "./attendance";
 import { revokeEmployeeAccessTx } from "./offboarding";
+import { sweepExpiries } from "./expiries";
 import { log } from "../obs/log";
 
 /**
@@ -14,6 +15,7 @@ import { log } from "../obs/log";
  *   · leave starting within 2 days → employee + manager reminder (claim: LeaveRequest.startNotifiedAt)
  *   · performance reviews due within 7 days → reviewer reminder (claim: dueNotifiedAt)
  *   · sent offers expiring within 2 days → recruiter reminder (claim: expiryNotifiedAt)
+ *   · iqama / visa / passport / contract expiring → HR warning, final reminder, expired notice (see expiries.ts)
  *   · Phase 11 offboarding: termination effective (date ≤ today) or archived, access not yet revoked → disable the
  *     linked account + revoke sessions (claim: Employee.accessRevokedAt; see offboarding.ts)
  * Notifications carry entity dedupe keys. Never touches payroll.
@@ -27,7 +29,7 @@ async function runSweep(organizationId: string, now: Date) {
   const org = await prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { timezone: true } });
   const today = todayIn(org.timezone, now);
   const ctx = systemCtx(organizationId, { ip: "system", userAgent: "hr-sweep" });
-  const out = { missingAttendance: 0, leaveStarting: 0, reviewsDue: 0, offersExpiring: 0, accessRevoked: 0, offboardingBlocked: 0 };
+  const out = { missingAttendance: 0, leaveStarting: 0, reviewsDue: 0, offersExpiring: 0, documentsExpiring: 0, accessRevoked: 0, offboardingBlocked: 0 };
 
   const leavers = await prisma.employee.findMany({
     where: { organizationId, accessRevokedAt: null, OR: [{ status: "TERMINATED", terminationDate: { lte: today } }, { status: "ARCHIVED" }] },
@@ -92,6 +94,8 @@ async function runSweep(organizationId: string, now: Date) {
       out.offersExpiring++;
     });
   }
+
+  out.documentsExpiring = await sweepExpiries(organizationId, today, now, ctx);
   return out;
 }
 

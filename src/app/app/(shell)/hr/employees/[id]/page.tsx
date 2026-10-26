@@ -13,11 +13,12 @@ import { bankAccounts, compensationHistory } from "@/server/hr/compensation";
 import { attendanceMonth } from "@/server/hr/attendance";
 import { balances } from "@/server/hr/leave";
 import { employeePerformance } from "@/server/hr/performance";
-import { attendanceTone, employeeTone, hrOptions, leaveTone, nameOf, payrollTone } from "@/lib/os/hr-page";
+import { employeeExpiries, FINAL_WARNING_DAYS } from "@/server/hr/expiries";
+import { attendanceTone, employeeTone, expiryTone, hrOptions, leaveTone, nameOf, payrollTone } from "@/lib/os/hr-page";
 import { personName } from "@/lib/os/crm-page";
 import { formatMoney } from "@/lib/commercial/calc";
 import {
-  addCompensationAction, adjustBalanceAction, createAccountAction, createGoalAction, createReviewAction, employeeStatusAction, recordAttendanceAction, revealIbanAction, setBankAction, updateEmployeeAction, updateGoalAction, updateReviewAction
+  addCompensationAction, adjustBalanceAction, createAccountAction, createGoalAction, createReviewAction, employeeStatusAction, recordAttendanceAction, revealIbanAction, setBankAction, setExpiryAction, updateEmployeeAction, updateGoalAction, updateReviewAction
 } from "@/lib/os/hr-actions";
 import { Badge, EmptyState, fmtDate, fmtDateTime, PermissionDenied, SectionCard } from "@/components/os/ui";
 import { ActionForm, RevealIban } from "@/components/hr/Forms";
@@ -45,6 +46,7 @@ export default async function EmployeePage({ params, searchParams }: { params: P
     [
       ["overview", true],
       ["employment", true],
+      ["expiries", d.rel.hr || d.rel.self],
       ["attendance", c.attendance],
       ["leave", c.leave],
       ["compensation", c.compensation || c.bank],
@@ -211,6 +213,49 @@ export default async function EmployeePage({ params, searchParams }: { params: P
             {row(t("f.city"), [e.city, e.country].filter(Boolean).join(", "))}
             {row(t("f.nationality"), e.nationality)}
           </dl>
+        </SectionCard>
+      )}
+
+      {tab === "expiries" && (
+        <SectionCard title={t("exp.employeeTitle")}>
+          <ul className="divide-y divide-os-line text-sm">
+            {(await employeeExpiries(ctx, id)).map(({ kind, record: r }) => (
+              <li key={kind} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                <span className="min-w-0 flex-1">
+                  <span className="font-medium">{t(`exp.kind.${kind}` as "exp.kind.IQAMA")}</span>
+                  {r?.number && (
+                    <span className="mx-2 text-xs text-os-faint" dir="ltr">
+                      {r.number}
+                    </span>
+                  )}
+                  <span className="block text-xs text-os-muted">
+                    {r ? `${fmtDate(r.expiryDate, locale)} · ${r.days < 0 ? t("exp.overdue", { n: -r.days }) : r.days === 0 ? t("exp.today") : t("exp.daysLeft", { n: r.days })}` : t("exp.notSet")}
+                  </span>
+                </span>
+                {r && (
+                  <Badge tone={expiryTone(r.stage)} dot>
+                    {t(`exp.stage.${r.stage}` as "exp.stage.ok")}
+                  </Badge>
+                )}
+                {c.edit && d.rel.hr && (
+                  <ActionForm
+                    action={setExpiryAction}
+                    args={[id, kind]}
+                    trigger={r ? t("a.edit") : `+ ${t("exp.add")}`}
+                    triggerClass="os-btn-ghost h-8 px-3 text-xs"
+                    title={t(`exp.kind.${kind}` as "exp.kind.IQAMA")}
+                    submitLabel={t("save")}
+                    note={t("exp.editNote", { final: FINAL_WARNING_DAYS })}
+                    fields={[
+                      { name: "expiryDate", label: t("exp.col.expiry"), type: "date", value: r ? r.expiryDate.toISOString().slice(0, 10) : "" },
+                      // a masked number is left out, so saving keeps it
+                      ...(kind === "CONTRACT" || r?.number === "••••" ? [] : [{ name: "number", label: t("exp.col.number"), value: r?.number ?? "", dir: "ltr" as const }])
+                    ]}
+                  />
+                )}
+              </li>
+            ))}
+          </ul>
         </SectionCard>
       )}
 

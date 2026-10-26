@@ -2643,7 +2643,8 @@
         "openJobs": "Open jobs",
         "interviewing": "In interviews",
         "newHires": "New hires this month",
-        "probation": "Probation ending ≤14d"
+        "probation": "Probation ending ≤14d",
+        "expiring": "Documents expiring"
       },
       "tabs": {
         "overview": "Overview",
@@ -2655,7 +2656,8 @@
         "performance": "Performance",
         "documents": "Documents",
         "activity": "Activity",
-        "assets": "Assets"
+        "assets": "Assets",
+        "expiries": "Iqama & contract"
       },
       "contact": "Contact",
       "team": "Reporting line",
@@ -3202,6 +3204,48 @@
         "FIELD_DECRYPTION_FAILED": "The bank details could not be decrypted (wrong key or altered data).",
         "FIELD_KEY_UNAVAILABLE": "The key for this bank record version is not available.",
         "LAST_SUPER_ADMIN": "This employee is the only active Super Admin. Provision a second named admin before offboarding them."
+      },
+      "exp": {
+        "title": "Expiry alerts",
+        "subtitle": "Early warning before an iqama, work visa, passport or employment contract expires — renew on time and avoid fines",
+        "employeeTitle": "Iqama, visa, passport and contract",
+        "kind": {
+          "IQAMA": "Iqama",
+          "VISA": "Work visa",
+          "PASSPORT": "Passport",
+          "CONTRACT": "Employment contract"
+        },
+        "stage": {
+          "expired": "Expired",
+          "final": "Expires in days",
+          "warning": "Expiring soon",
+          "ok": "Valid"
+        },
+        "kpi": {
+          "expired": "Expired — renew now",
+          "final": "Within {final} days",
+          "warning": "Within {n} days"
+        },
+        "col": {
+          "kind": "Document",
+          "number": "Document number",
+          "expiry": "Expiry date",
+          "status": "Status"
+        },
+        "needAction": "Needs action",
+        "showAll": "All documents",
+        "allKinds": "All types",
+        "daysLeft": "{n} days left",
+        "overdue": "{n} days overdue",
+        "today": "Expires today",
+        "notSet": "Not recorded",
+        "add": "Add",
+        "empty": "Nothing needs action",
+        "emptyText": "Record iqama, visa, passport and contract dates on each employee's profile (\"Iqama & contract\" tab).",
+        "warnSetting": "Warn {n} days ahead",
+        "warnDays": "First warning (days before expiry)",
+        "warnNote": "HR gets a first warning this many days ahead, a final reminder {final} days before, and a notice on expiry.",
+        "editNote": "Leave the date empty to remove the record. When renewed, enter the new date and the warnings start again (first warning, then a reminder {final} days before)."
       }
     },
     "ops": {

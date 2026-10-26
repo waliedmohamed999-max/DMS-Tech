@@ -109,6 +109,8 @@ model Organization {
   quoteExpiryWarningDays             Int      @default(3)
   /// Active contracts become EXPIRING this many days before their end date.
   contractExpiryWarningDays          Int      @default(30)
+  /// HR: iqama / visa / passport / employment-contract expiry is first flagged this many days ahead (final reminder at 14).
+  employeeExpiryWarningDays          Int      @default(60)
   /// Phase 4: allow creating a project straight from an accepted quotation (no contract)
   projectFromQuotationAllowed        Boolean  @default(false)
   /// Phase 4: allow INTERNAL projects without a client
@@ -2296,11 +2298,43 @@ model Employee {
 
   assetAssignments AssetAssignment[]
   assignedAssets   Asset[]
+  expiries         EmployeeExpiry[]
 
   @@unique([organizationId, number])
   @@index([organizationId, status])
   @@index([organizationId, departmentId])
   @@index([managerId])
+}
+
+enum EmployeeExpiryKind {
+  IQAMA
+  VISA
+  PASSPORT
+  CONTRACT
+}
+
+/// One expiring document per employee and kind (iqama, work visa, passport, employment contract). Changing the date
+/// clears the claims so the HR sweep warns again for the new date (docs/HR.md).
+model EmployeeExpiry {
+  id                String             @id @default(cuid())
+  organizationId    String
+  employeeId        String
+  kind              EmployeeExpiryKind
+  /// document number (iqama / passport / visa) — HR-only, never shown in notifications
+  number            String?
+  expiryDate        DateTime           @db.Date
+  /// sweep claims: first warning (warning window), final reminder (14 days), expired
+  warnedAt          DateTime?
+  finalWarnedAt     DateTime?
+  expiredNotifiedAt DateTime?
+  updatedById       String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, kind])
+  @@index([organizationId, expiryDate])
 }
 
 /// Protected salary history (hr.compensation.*). Rows are never edited: a new row closes the open one.

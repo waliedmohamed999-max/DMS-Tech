@@ -98,6 +98,7 @@ export const NAV: NavGroup[] = [
     items: [
       m("hr", "/app/hr", "Users", "لوحة الموارد البشرية", "People overview", "الموظفون والحضور والإجازات والرواتب والتوظيف", "Employees, attendance, leave, payroll and hiring", 6, true, "hr.dashboard.view"),
       m("employees", "/app/hr/employees", "Network", "الموظفون", "Employees", "ملفات الموظفين والهيكل الإداري", "Employee profiles and reporting lines", 6, true, "hr.employees.view"),
+      m("expiries", "/app/hr/expiries", "CalendarClock", "انتهاء الإقامات والعقود", "Expiry alerts", "تنبيه مبكر قبل انتهاء الإقامة والتأشيرة والجواز والعقد", "Early warning before iqama, visa, passport or contract expiry", 6, true, "hr.employees.view"),
       m("attendance", "/app/hr/attendance", "Clock", "الحضور", "Attendance", "الحضور اليومي والتصحيحات", "Daily attendance and corrections", 6, true, "hr.attendance.view"),
       m("leave", "/app/hr/leave", "Calendar", "الإجازات", "Leave", "طلبات الإجازة والأرصدة", "Leave requests and balances", 6, true, "hr.leave.view"),
       { ...m("payroll", "/app/hr/payroll", "Briefcase", "الرواتب", "Payroll", "مسيرات الرواتب بصلاحيات مشددة", "Payroll runs with strict permissions", 6, true, "hr.payroll.view"), anyOf: ["hr.payroll.prepare", "hr.payroll.approve", "hr.payroll.pay"] },

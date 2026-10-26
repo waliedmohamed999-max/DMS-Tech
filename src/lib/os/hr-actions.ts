@@ -3,6 +3,7 @@
 import "@/server";
 import { changeEmployeeStatus, createEmployee, createSystemAccount, linkUser, updateEmployee } from "@/server/hr/employees";
 import { addCompensation, revealBankAccount, setBankAccount } from "@/server/hr/compensation";
+import { setEmployeeExpiry, setExpiryWarningDays } from "@/server/hr/expiries";
 import { addHoliday, recordAttendance, removeHoliday, savePolicy, selfCheck } from "@/server/hr/attendance";
 import { adjustBalance, cancelLeaveRequest, createLeaveRequest, grantOpeningBalances, saveLeaveType, submitLeaveRequest } from "@/server/hr/leave";
 import { addAdjustment, calculatePeriod, closePeriod, createPeriod, markPayrollPaid, removeAdjustment, submitPayroll, withdrawPayroll } from "@/server/hr/payroll";
@@ -22,6 +23,10 @@ export const createAccountAction = async (id: string, roleIds: string[]) => runA
 export const addCompensationAction = async (id: string, input: R) => runAction(async (ctx) => void (await addCompensation(ctx, id, input)));
 export const setBankAction = async (id: string, input: R) => runAction(async (ctx) => void (await setBankAccount(ctx, id, input)));
 export const revealIbanAction = async (bankAccountId: string) => runAction(async (ctx) => (await revealBankAccount(ctx, bankAccountId)).iban, { revalidate: false });
+
+// iqama / visa / passport / contract expiry
+export const setExpiryAction = async (employeeId: string, kind: string, input: R) => runAction(async (ctx) => void (await setEmployeeExpiry(ctx, employeeId, kind, input)));
+export const expiryWarningDaysAction = async (input: R) => runAction(async (ctx) => void (await setExpiryWarningDays(ctx, input)));
 
 // attendance
 export const recordAttendanceAction = async (input: R) => runAction(async (ctx) => void (await recordAttendance(ctx, input)));

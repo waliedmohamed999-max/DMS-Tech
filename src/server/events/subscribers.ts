@@ -264,6 +264,27 @@ export function registerSubscribers() {
       });
     });
   }
+  // iqama / visa / passport / contract expiry → HR with full scope (sweep, one per stage and date; no document numbers)
+  // f = feminine noun in Arabic (verb agreement)
+  const EXPIRY_KIND: Record<string, { ar: string; en: string; f: boolean }> = { IQAMA: { ar: "الإقامة", en: "Iqama", f: true }, VISA: { ar: "تأشيرة العمل", en: "Work visa", f: true }, PASSPORT: { ar: "جواز السفر", en: "Passport", f: false }, CONTRACT: { ar: "عقد العمل", en: "Employment contract", f: false } };
+  subscribe("employee.expiry", async (e) => {
+    const p = (e.payload ?? {}) as Record<string, string>;
+    const ids = await usersWithAll(e.organizationId, ["hr.employees.edit", "hr.records.all"]);
+    if (!ids.length) return;
+    const users = await prisma.user.findMany({ where: { id: { in: ids }, organizationId: e.organizationId, status: "ACTIVE" }, select: { id: true, locale: true } });
+    const k = EXPIRY_KIND[p.kind] ?? { ar: p.kind, en: p.kind, f: false };
+    const title = (en: boolean) =>
+      p.stage === "expired"
+        ? en ? `${k.en} of ${p.name} expired on ${p.date} — renew now to avoid fines` : `${k.f ? "انتهت" : "انتهى"} ${k.ar} لـ ${p.nameAr} في ${p.date} — ${k.f ? "جدّدها" : "جدّده"} فورًا لتجنّب المخالفات`
+        : p.stage === "final"
+          ? en ? `Final reminder: ${k.en} of ${p.name} expires ${p.date} (${p.days} days)` : `تذكير أخير: ${k.ar} لـ ${p.nameAr} ${k.f ? "تنتهي" : "ينتهي"} ${p.date} (بعد ${p.days} يوم)`
+          : en ? `${k.en} of ${p.name} expires ${p.date} (${p.days} days) — start the renewal` : `${k.ar} لـ ${p.nameAr} ${k.f ? "تنتهي" : "ينتهي"} ${p.date} (بعد ${p.days} يوم) — ابدأ التجديد`;
+    await prisma.notification.createMany({
+      data: users.map((u) => ({ organizationId: e.organizationId, userId: u.id, category: "HR" as const, priority: p.stage === "warning" ? ("MEDIUM" as const) : p.stage === "final" ? ("HIGH" as const) : ("URGENT" as const), title: title(u.locale === "en"), href: `/app/hr/employees/${p.employeeId}?tab=expiries`, entityType: "Employee", entityId: p.employeeId, dedupeKey: `employee.expiry:${p.expiryId}:${p.stage}:${p.date}` })),
+      skipDuplicates: true
+    });
+  });
+
   // payroll paid → "payslip available" to every employee of the period that has an account (one per entry)
   subscribe("payroll.paid", async (e) => {
     const entries = await prisma.payrollEntry.findMany({ where: { periodId: e.entityId ?? "" }, select: { id: true, employee: { select: { user: { select: { id: true, locale: true, status: true } } } } } });

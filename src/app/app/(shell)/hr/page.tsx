@@ -6,6 +6,7 @@ import { can } from "@/server/context";
 import { hrDashboard } from "@/server/hr/insights";
 import { attendanceToday } from "@/server/hr/attendance";
 import { sweepHrIfDue } from "@/server/hr/sweep";
+import { expiringCount } from "@/server/hr/expiries";
 import { employeeWhere } from "@/server/hr/access";
 import { attendanceTone, nameOf, payrollTone } from "@/lib/os/hr-page";
 import { Badge, EmptyState, fmtDate, PageHeader, PermissionDenied, SectionCard } from "@/components/os/ui";
@@ -18,10 +19,11 @@ export default async function HrDashboardPage() {
   await sweepHrIfDue(ctx.organizationId);
   const locale = await getLocale();
   const t = await getTranslations("os.hr");
-  const [d, today, pending] = await Promise.all([
+  const [d, today, pending, expiring] = await Promise.all([
     hrDashboard(ctx),
     can(ctx, "hr.attendance.view") ? attendanceToday(ctx) : Promise.resolve(null),
-    prisma.leaveRequest.findMany({ where: { organizationId: ctx.organizationId, status: "SUBMITTED", employee: await employeeWhere(ctx) }, orderBy: { startDate: "asc" }, take: 8, include: { employee: { select: { id: true, displayName: true, nameAr: true } }, leaveType: { select: { nameAr: true, nameEn: true } } } })
+    prisma.leaveRequest.findMany({ where: { organizationId: ctx.organizationId, status: "SUBMITTED", employee: await employeeWhere(ctx) }, orderBy: { startDate: "asc" }, take: 8, include: { employee: { select: { id: true, displayName: true, nameAr: true } }, leaveType: { select: { nameAr: true, nameEn: true } } } }),
+    expiringCount(ctx)
   ]);
   const cells: [string, string | number | null, string, string?][] = [
     ["active", d.active, "/app/hr/employees"],
@@ -31,7 +33,8 @@ export default async function HrDashboardPage() {
     ["openJobs", d.openJobs, "/app/hr/recruitment"],
     ["interviewing", d.interviewing, "/app/hr/recruitment"],
     ["newHires", d.newHires, "/app/hr/employees"],
-    ["probation", d.probation, "/app/hr/employees?status=PROBATION", d.probation ? "text-warning" : undefined]
+    ["probation", d.probation, "/app/hr/employees?status=PROBATION", d.probation ? "text-warning" : undefined],
+    ["expiring", expiring, "/app/hr/expiries", expiring ? "text-danger" : undefined]
   ];
   return (
     <div className="grid gap-5">
@@ -47,7 +50,7 @@ export default async function HrDashboardPage() {
           ) : undefined
         }
       />
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-os-line bg-os-line md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-os-line bg-os-line md:grid-cols-3 max-md:[&>*:last-child:nth-child(odd)]:col-span-2 md:[&>*:last-child:nth-child(3n+1)]:col-span-3 md:[&>*:last-child:nth-child(3n+2)]:col-span-2">
         {cells
           .filter(([, v]) => v !== null)
           .map(([k, v, href, cls]) => (

@@ -10,6 +10,7 @@ export const attendanceTone = (s: string): Tone => (s === "PRESENT" || s === "RE
 export const payrollTone = (s: string): Tone => (s === "PAID" || s === "CLOSED" ? "success" : s === "APPROVED" ? "info" : s === "REVIEW" ? "warning" : "neutral");
 export const stageTone = (s: string): Tone => (s === "HIRED" ? "success" : s === "REJECTED" ? "danger" : s === "OFFER" ? "iris" : ["INTERVIEW", "TECHNICAL", "FINAL_INTERVIEW"].includes(s) ? "info" : "neutral");
 export const offerTone = (s: string): Tone => (s === "ACCEPTED" ? "success" : s === "REJECTED" || s === "WITHDRAWN" ? "danger" : s === "PENDING_APPROVAL" ? "warning" : s === "APPROVED" || s === "SENT" ? "info" : "neutral");
+export const expiryTone = (s: string): Tone => (s === "expired" ? "danger" : s === "final" ? "warning" : s === "warning" ? "info" : "success");
 export const nameOf = (e: { displayName: string; nameAr: string | null }, locale: string) => (locale === "ar" && e.nameAr) || e.displayName;
 
 export async function hrOptions(ctx: Ctx, locale: string) {
