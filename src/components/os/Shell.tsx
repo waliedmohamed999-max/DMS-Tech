@@ -142,7 +142,9 @@ function CreateMenu({ items }: { items: ShellCreateItem[] }) {
         <span className="hidden sm:inline">{t("create")}</span>
       </button>
       {pOpen && (
-        <div className={`${panel} w-64 p-1.5`}>
+        <div className={`${panel} w-64 max-sm:fixed max-sm:inset-x-4 max-sm:top-14 max-sm:w-auto`}>
+          {/* long list: scroll inside the panel so the last items stay reachable on short / phone screens */}
+          <div className="max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain p-1.5">
           {items.map((it) =>
             it.href ? (
               <Link key={it.key} href={it.href} onClick={() => pSetOpen(false)} className="flex h-9 items-center gap-2.5 rounded-md px-2.5 text-sm text-os-text hover:bg-os-raised">
@@ -157,6 +159,7 @@ function CreateMenu({ items }: { items: ShellCreateItem[] }) {
               </span>
             )
           )}
+          </div>
         </div>
       )}
     </div>

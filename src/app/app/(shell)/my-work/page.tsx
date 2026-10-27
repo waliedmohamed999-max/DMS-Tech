@@ -53,6 +53,17 @@ export default async function MyWorkPage({ searchParams }: { searchParams: Promi
   return (
     <div className="grid gap-5">
       <PageHeader icon="ClipboardList" title={t("my.title")} subtitle={t("my.subtitle")} actions={projects.length ? <TaskCreate projects={projects} milestones={[]} members={[]} canAssign={false} autoOpen={sp.new === "task"} /> : null} />
+      {/* "+ Create → Task" with no project to put it in: say why instead of doing nothing */}
+      {sp.new === "task" && !projects.length && (
+        <p className="rounded-lg border border-warning/40 bg-warning/10 px-4 py-2.5 text-sm text-warning">
+          {t("my.noProjectForTask")}{" "}
+          {can(ctx, "projects.create") && (
+            <Link href="/app/projects/new" className="font-semibold underline">
+              {t("my.createProject")}
+            </Link>
+          )}
+        </p>
+      )}
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid content-start gap-4">
           {bucket("overdue", w.overdue, "danger")}

@@ -32,6 +32,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
               endpoint="/app/documents/upload"
               trigger={`+ ${t("a.companyDocument")}`}
               redirectTo="/app/documents/:id"
+              autoOpen={sp.new === "1"}
               note={t("companyUploadNote")}
               fields={[
                 { name: "title", label: t("f.title"), required: true, span: true },

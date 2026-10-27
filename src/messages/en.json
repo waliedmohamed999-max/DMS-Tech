@@ -2043,7 +2043,9 @@
         "upcoming": "Upcoming",
         "empty": "Nothing here.",
         "projects": "My projects",
-        "noProjects": "You are not on any project."
+        "noProjects": "You are not on any project.",
+        "noProjectForTask": "There is no project you can add a task to — tasks live inside a project.",
+        "createProject": "Create a project"
       },
       "ts": {
         "title": "Timesheets",

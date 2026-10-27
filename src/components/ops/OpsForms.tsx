@@ -246,13 +246,13 @@ export function ReceiveForm({ action, poId, lines, today }: { action: AnyAction;
  * the server validates type, extension, content signature and size, stores it outside public/ and hashes it.
  */
 export function UploadForm({
-  endpoint, fields, trigger, triggerClass, title, redirectTo, note
-}: { endpoint: string; fields: FieldSpec[]; trigger: string; triggerClass?: string; title?: string; redirectTo?: string; note?: string }) {
+  endpoint, fields, trigger, triggerClass, title, redirectTo, note, autoOpen
+}: { endpoint: string; fields: FieldSpec[]; trigger: string; triggerClass?: string; title?: string; redirectTo?: string; note?: string; autoOpen?: boolean }) {
   const t = useTranslations("os.ops");
   const tc = useTranslations("os.hr");
   const errText = useErrorText();
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(autoOpen));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
