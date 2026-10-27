@@ -116,6 +116,15 @@ export default async function ContractPage({ params }: { params: Promise<{ id: s
                 <ContractEditor
                   id={c.id}
                   currency={c.currency}
+                  value={
+                    c.quotationId
+                      ? undefined
+                      : {
+                          subtotal: c.subtotal.toFixed(2),
+                          discountTotal: c.discountTotal.gt(0) ? c.discountTotal.toFixed(2) : "",
+                          vatRate: c.subtotal.minus(c.discountTotal).gt(0) ? c.taxTotal.div(c.subtotal.minus(c.discountTotal)).times(100).toDecimalPlaces(2).toString() : "15"
+                        }
+                  }
                   initial={{
                     title: c.title,
                     startDate: ymd(c.startDate) ?? "",

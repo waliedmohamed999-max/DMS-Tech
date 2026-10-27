@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ActionResult } from "@/lib/os/action";
-import { activateContractAction, cancelContractAction, contractTransitionAction, milestoneStatusAction, terminateContractAction, updateContractAction } from "@/lib/os/sales-actions";
+import { activateContractAction, cancelContractAction, contractTransitionAction, createDirectContractAction, milestoneStatusAction, opportunityOptionsAction, terminateContractAction, updateContractAction } from "@/lib/os/sales-actions";
+import { clientOptionsAction } from "@/lib/os/crm-actions";
+import { Decimal, formatMoney } from "@/lib/commercial/calc";
 import { Field, Modal, useErrorText } from "@/components/os/client";
 import { Icon } from "@/components/ui/Icon";
 
@@ -31,19 +33,59 @@ function useRun() {
   return { pending, error, run, setError };
 }
 
-/** Editable only in DRAFT / INTERNAL_REVIEW (server enforces; DB freezes active contracts). */
-export function ContractEditor({ id, initial, currency }: { id: string; initial: ContractForm; currency: string }) {
+type Value = { subtotal: string; discountTotal: string; vatRate: string };
+type Opt = { id: string; label: string };
+type ClientOpt = Opt & { contacts: (Opt & { isPrimary: boolean })[] };
+
+/** Live preview only — the server recomputes the same figures on save. */
+function preview(v: Value) {
+  try {
+    const sub = new Decimal(v.subtotal || 0);
+    const disc = new Decimal(v.discountTotal || 0);
+    const tax = sub.minus(disc).times(v.vatRate || 0).div(100).toDecimalPlaces(2);
+    return { tax: tax.toFixed(2), total: sub.minus(disc).plus(tax).toFixed(2), bad: disc.gt(sub) };
+  } catch {
+    return null;
+  }
+}
+
+/** Contract value inputs for a direct contract (no quotation): subtotal, discount, VAT rate → VAT and total. */
+function ValueFields({ v, onChange, currency }: { v: Value; onChange: (v: Value) => void; currency: string }) {
+  const t = useTranslations("os.sales");
+  const locale = useLocale();
+  const p = preview(v);
+  const money = (x: string) => formatMoney(x, locale, currency);
+  return (
+    <div className="grid gap-3 rounded-lg border border-os-line bg-os-panel p-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
+      <Field label={`${t("q.subtotal")} (${currency})`}>
+        <input className="os-input" dir="ltr" inputMode="decimal" value={v.subtotal} onChange={(e) => onChange({ ...v, subtotal: e.target.value })} />
+      </Field>
+      <Field label={t("q.discount")}>
+        <input className="os-input" dir="ltr" inputMode="decimal" value={v.discountTotal} onChange={(e) => onChange({ ...v, discountTotal: e.target.value })} />
+      </Field>
+      <Field label={`${t("c.vat")} %`}>
+        <input className="os-input" dir="ltr" inputMode="decimal" value={v.vatRate} onChange={(e) => onChange({ ...v, vatRate: e.target.value })} />
+      </Field>
+      <div className="text-xs">
+        <span className="text-os-muted">{t("c.vat")}</span>
+        <p className="tabular mt-1 font-medium" dir="ltr">{p ? money(p.tax) : "—"}</p>
+      </div>
+      <div className="text-xs">
+        <span className="text-os-muted">{t("c.value")}</span>
+        <p className={`tabular mt-1 text-base font-semibold ${p?.bad ? "text-danger" : ""}`} dir="ltr">
+          {p ? money(p.total) : "—"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Title, dates, scope, payment terms, terms and milestones — shared by the editor and the new-contract form. */
+function TermsFields({ f, set, currency }: { f: ContractForm; set: <K extends keyof ContractForm>(key: K, v: ContractForm[K]) => void; currency: string }) {
   const t = useTranslations("os.sales.c");
-  const [f, setF] = useState(initial);
-  const { pending, error, run } = useRun();
-  const [saved, setSaved] = useState(false);
-  const set = <K extends keyof ContractForm>(key: K, v: ContractForm[K]) => {
-    setSaved(false);
-    setF((x) => ({ ...x, [key]: v }));
-  };
   const setM = (key: string, patch: Partial<Milestone>) => set("milestones", f.milestones.map((m) => (m.key === key ? { ...m, ...patch } : m)));
   return (
-    <div className="grid gap-4">
+    <>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="sm:col-span-2 lg:col-span-4">
           <Field label={t("f.title")}>
@@ -65,10 +107,10 @@ export function ContractEditor({ id, initial, currency }: { id: string; initial:
       </Field>
       <div className="grid gap-3 lg:grid-cols-2">
         <Field label={t("f.payment")}>
-          <textarea className="os-input" rows={4} value={f.paymentTerms} onChange={(e) => set("paymentTerms", e.target.value)} />
+          <textarea className="os-input" rows={5} value={f.paymentTerms} onChange={(e) => set("paymentTerms", e.target.value)} />
         </Field>
         <Field label={t("f.terms")}>
-          <textarea className="os-input" rows={4} value={f.terms} onChange={(e) => set("terms", e.target.value)} />
+          <textarea className="os-input" rows={5} value={f.terms} onChange={(e) => set("terms", e.target.value)} />
         </Field>
       </div>
       <div>
@@ -96,25 +138,168 @@ export function ContractEditor({ id, initial, currency }: { id: string; initial:
           </div>
         )}
       </div>
+    </>
+  );
+}
+
+const milestonesOut = (ms: Milestone[]) => ms.map((m) => ({ title: m.title, description: m.description, amount: m.amount, percentage: m.percentage, dueDate: m.dueDate, status: m.status }));
+
+/** Editable only in DRAFT / INTERNAL_REVIEW (server enforces; DB freezes active contracts). `value` = direct contract. */
+export function ContractEditor({ id, initial, currency, value: initialValue }: { id: string; initial: ContractForm; currency: string; value?: Value }) {
+  const t = useTranslations("os.sales.c");
+  const [f, setF] = useState(initial);
+  const [value, setValue] = useState(initialValue);
+  const { pending, error, run } = useRun();
+  const [saved, setSaved] = useState(false);
+  const set = <K extends keyof ContractForm>(key: K, v: ContractForm[K]) => {
+    setSaved(false);
+    setF((x) => ({ ...x, [key]: v }));
+  };
+  return (
+    <div className="grid gap-4">
+      {value && (
+        <ValueFields
+          v={value}
+          currency={currency}
+          onChange={(v) => {
+            setSaved(false);
+            setValue(v);
+          }}
+        />
+      )}
+      <TermsFields f={f} set={set} currency={currency} />
       {error && <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</p>}
       <div className="flex items-center justify-end gap-2">
         {saved && <span className="text-xs text-success">{t("saved")}</span>}
-        <button
-          type="button"
-          className="os-btn-primary"
-          disabled={pending}
-          onClick={() =>
-            run(
-              () =>
-                updateContractAction(id, {
-                  ...f,
-                  milestones: f.milestones.map((m) => ({ title: m.title, description: m.description, amount: m.amount, percentage: m.percentage, dueDate: m.dueDate, status: m.status }))
-                }),
-              () => setSaved(true)
-            )
-          }
-        >
+        <button type="button" className="os-btn-primary" disabled={pending} onClick={() => run(() => updateContractAction(id, { ...f, ...(value ?? {}), milestones: milestonesOut(f.milestones) }), () => setSaved(true))}>
           {t("save")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export type NewContractInitial = ContractForm & Value & { clientId: string; contactId: string; opportunityId: string; ownerId: string; language: "ar" | "en"; currency: string };
+
+/** A contract written directly (no quotation): parties, value, terms, milestones — saved as a DRAFT that then follows the normal review → signature → activation path. */
+export function ContractCreator({ initial, owners, templates }: { initial: NewContractInitial; owners: Opt[] | null; templates: Record<"ar" | "en", { payment: string; terms: string; scope: string }> }) {
+  const t = useTranslations("os.sales");
+  const ts = useTranslations("os.sales.c");
+  const errText = useErrorText();
+  const router = useRouter();
+  const [f, setF] = useState(initial);
+  const [clients, setClients] = useState<ClientOpt[] | null>(null);
+  const [opps, setOpps] = useState<Opt[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const set = <K extends keyof NewContractInitial>(key: K, v: NewContractInitial[K]) => setF((x) => ({ ...x, [key]: v }));
+
+  useEffect(() => {
+    let live = true;
+    void clientOptionsAction().then((r) => live && r.ok && r.data && setClients(r.data));
+    return () => {
+      live = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!f.clientId) return;
+    let live = true;
+    void opportunityOptionsAction(f.clientId).then((r) => live && setOpps(r.ok && r.data ? r.data : []));
+    return () => {
+      live = false;
+    };
+  }, [f.clientId]);
+  const contacts = clients?.find((c) => c.id === f.clientId)?.contacts ?? [];
+
+  // switching the language swaps the starter text only while it is still untouched
+  const setLanguage = (lang: "ar" | "en") =>
+    setF((x) => {
+      const from = templates[x.language];
+      const to = templates[lang];
+      return { ...x, language: lang, paymentTerms: x.paymentTerms === from.payment ? to.payment : x.paymentTerms, terms: x.terms === from.terms ? to.terms : x.terms, scopeOfWork: x.scopeOfWork === from.scope ? to.scope : x.scopeOfWork };
+    });
+
+  const save = () => {
+    if (!f.clientId) return setError(ts("needClient"));
+    if (!f.subtotal.trim()) return setError(ts("needValue"));
+    start(async () => {
+      setError(null);
+      const r = await createDirectContractAction({ ...f, milestones: milestonesOut(f.milestones) });
+      if (!r.ok) return setError(t.has(`errors.${r.error}`) ? t(`errors.${r.error}` as "errors.QUOTE_NEEDS_ITEMS") : errText(r.error));
+      router.push(`/app/sales/contracts/${(r.data as { id: string }).id}`);
+    });
+  };
+
+  return (
+    <div className="grid gap-5">
+      <section className="os-card grid gap-3 p-4">
+        <h2 className="text-sm font-semibold">{ts("parties")}</h2>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Field label={`${ts("client")} *`}>
+            <select className="os-input" value={f.clientId} onChange={(e) => setF((x) => ({ ...x, clientId: e.target.value, contactId: x.clientId === e.target.value ? x.contactId : (clients?.find((c) => c.id === e.target.value)?.contacts.find((c) => c.isPrimary)?.id ?? ""), opportunityId: "" }))}>
+              <option value="">{clients ? "—" : "…"}</option>
+              {clients?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={ts("contact")}>
+            <select className="os-input" value={f.contactId} onChange={(e) => set("contactId", e.target.value)} disabled={!f.clientId}>
+              <option value="">—</option>
+              {contacts.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={ts("opportunity")}>
+            <select className="os-input" value={f.opportunityId} onChange={(e) => set("opportunityId", e.target.value)} disabled={!f.clientId}>
+              <option value="">—</option>
+              {opps.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          {owners && (
+            <Field label={ts("owner")}>
+              <select className="os-input" value={f.ownerId} onChange={(e) => set("ownerId", e.target.value)}>
+                {owners.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+          <Field label={ts("language")}>
+            <select className="os-input" value={f.language} onChange={(e) => setLanguage(e.target.value as "ar" | "en")}>
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </select>
+          </Field>
+          <Field label={ts("currency")}>
+            <input className="os-input" dir="ltr" maxLength={3} value={f.currency} onChange={(e) => set("currency", e.target.value.toUpperCase())} />
+          </Field>
+        </div>
+      </section>
+      <section className="os-card grid gap-3 p-4">
+        <h2 className="text-sm font-semibold">{t("c.value")}</h2>
+        <ValueFields v={f} currency={f.currency || "SAR"} onChange={(v) => setF((x) => ({ ...x, ...v }))} />
+      </section>
+      <section className="os-card grid gap-4 p-4">
+        <h2 className="text-sm font-semibold">{ts("edit")}</h2>
+        <TermsFields f={f} set={set as <K extends keyof ContractForm>(key: K, v: ContractForm[K]) => void} currency={f.currency || "SAR"} />
+      </section>
+      <p className="rounded-lg border border-os-line bg-os-panel px-4 py-2.5 text-xs text-os-muted">{ts("newNote")}</p>
+      {error && <p className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</p>}
+      <div className="flex justify-end">
+        <button type="button" className="os-btn-primary" disabled={pending} onClick={save}>
+          {ts("createDraft")}
         </button>
       </div>
     </div>

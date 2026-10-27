@@ -55,7 +55,7 @@ export const NAV: NavGroup[] = [
       m("clients", "/app/crm/clients", "Building2", "العملاء", "Clients", "ملف العميل الشامل 360°", "360° client view", 2, true, "crm.clients.view"),
       m("contacts", "/app/crm/contacts", "Users", "جهات الاتصال", "Contacts", "الأشخاص لدى العملاء", "People at each client", 2, true, "crm.contacts.view"),
       m("quotations", "/app/sales/quotations", "FileText", "عروض الأسعار", "Quotations", "عروض الأسعار مع الضريبة والموافقات والإصدارات وملف PDF", "Quotations with VAT, approvals, versions and PDF", 3, true, "sales.quotations.view"),
-      m("contracts", "/app/sales/contracts", "Handshake", "العقود", "Contracts", "العقود المنبثقة من عروض الأسعار المقبولة ومراحلها", "Contracts from accepted quotations and their milestones", 3, true, "sales.contracts.view")
+      m("contracts", "/app/sales/contracts", "Handshake", "العقود", "Contracts", "العقود من عروض الأسعار المقبولة أو المكتوبة مباشرة، ومراحلها", "Contracts from accepted quotations or written directly, and their milestones", 3, true, "sales.contracts.view")
     ]
   },
   {
@@ -158,6 +158,7 @@ export const CREATE_ITEMS: { key: string; icon: IconName; label: { ar: string; e
   { key: "opportunity", icon: "Target", label: { ar: "فرصة", en: "Opportunity" }, href: "/app/crm/opportunities?new=1", module: "opportunities", permission: "crm.opportunities.create" },
   { key: "quotation", icon: "FileText", label: { ar: "عرض سعر", en: "Quotation" }, href: "/app/sales/quotations/new", module: "quotations", permission: "sales.quotations.create" },
   { key: "service", icon: "Package", label: { ar: "خدمة", en: "Service" }, href: "/app/sales/services?new=1", module: "catalog", permission: "services.manage" },
+  { key: "contract", icon: "Handshake", label: { ar: "عقد", en: "Contract" }, href: "/app/sales/contracts/new", module: "contracts", permission: "sales.contracts.create" },
   { key: "invoice", icon: "FileText", label: { ar: "فاتورة", en: "Invoice" }, href: "/app/finance/invoices/new", module: "invoices", permission: "finance.invoices.create" },
   { key: "payment", icon: "CreditCard", label: { ar: "دفعة", en: "Payment" }, href: "/app/finance/payments?new=1", module: "payments", permission: "finance.payments.create" },
   { key: "project", icon: "Layers", label: { ar: "مشروع", en: "Project" }, href: "/app/projects/new", module: "projects", permission: "projects.create" },

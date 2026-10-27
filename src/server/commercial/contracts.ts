@@ -12,10 +12,12 @@ import { Decimal } from "@/lib/commercial/calc";
 import { addDays, todayIn, yearIn, ymd } from "./dates";
 
 /**
- * Contracts (Phase 3) — created from an ACCEPTED quotation version only. Commercial values
+ * Contracts (Phase 3) — created from an ACCEPTED quotation version: commercial values
  * (currency, subtotal, discount, VAT, total, payment terms) are copied from that exact
- * version and never recalculated from the catalog. Commercial terms freeze when the
- * contract becomes ACTIVE (DB trigger contract_freeze).
+ * version and never recalculated from the catalog. A contract can also be written directly
+ * (no quotation): the user enters subtotal / discount / VAT rate and the server computes tax
+ * and total; those values stay editable while the contract is a draft. Commercial terms
+ * freeze when the contract becomes ACTIVE (DB trigger contract_freeze).
  *
  *   DRAFT ⇄ INTERNAL_REVIEW → AWAITING_SIGNATURE → ACTIVE → EXPIRING → EXPIRED (system)
  *   AWAITING_SIGNATURE / INTERNAL_REVIEW → DRAFT
@@ -115,10 +117,11 @@ export async function createContractFromQuotation(ctx: Ctx, quotationId: string,
 }
 
 // ---------------------------------------------------------------------------
-// Edit (DRAFT / INTERNAL_REVIEW only) + milestones
+// Shared: money, milestones, direct value
 // ---------------------------------------------------------------------------
 
 const decOpt = z.preprocess((v) => (v === "" || v == null ? null : String(v).replace(/[,\s]/g, "")), z.string().regex(/^\d{1,12}(\.\d{1,2})?$/, "MONEY_FORMAT").nullable());
+const vatRate = z.preprocess((v) => (v === "" || v == null ? undefined : v), z.coerce.number().min(0).max(100).optional());
 
 const milestoneSchema = z.object({
   id: optId,
@@ -129,6 +132,99 @@ const milestoneSchema = z.object({
   dueDate: optDate,
   status: z.enum(["PENDING", "COMPLETED", "CANCELLED"]).default("PENDING")
 });
+type MilestoneInput = z.output<typeof milestoneSchema>;
+
+function checkMilestones(milestones: MilestoneInput[], contractValue: { toString(): string }) {
+  const sumAmount = milestones.reduce((a, m) => a.plus(m.amount ?? 0), new Decimal(0));
+  const sumPct = milestones.reduce((a, m) => a.plus(m.percentage ?? 0), new Decimal(0));
+  if (sumAmount.gt(contractValue.toString())) throw invalid("MILESTONES_EXCEED_VALUE");
+  if (sumPct.gt(100)) throw invalid("MILESTONES_EXCEED_100");
+}
+const milestoneRows = (milestones: MilestoneInput[]) =>
+  milestones.map((m, i) => ({ title: m.title, description: m.description ?? null, amount: m.amount ?? null, percentage: m.percentage == null ? null : String(m.percentage), dueDate: m.dueDate ?? null, status: m.status, sortOrder: i }));
+
+/** Value of a direct contract: (subtotal − discount) + VAT, ROUND_HALF_UP to 2 decimals — never taken from the browser. */
+export function directValue(subtotal: string, discount: string | null | undefined, rate: number) {
+  const sub = new Decimal(subtotal);
+  const disc = new Decimal(discount ?? 0);
+  if (disc.gt(sub)) throw invalid("DISCOUNT_EXCEEDS_SUBTOTAL");
+  const net = sub.minus(disc);
+  const tax = net.times(rate).div(100).toDecimalPlaces(2);
+  return { subtotal: sub.toFixed(2), discountTotal: disc.toFixed(2), taxTotal: tax.toFixed(2), contractValue: net.plus(tax).toFixed(2) };
+}
+
+// ---------------------------------------------------------------------------
+// Create directly (no quotation)
+// ---------------------------------------------------------------------------
+
+const directSchema = z.object({
+  clientId: z.string().min(1).max(40),
+  contactId: optId,
+  opportunityId: optId,
+  ownerId: optId,
+  title: reqText(3, 200),
+  language: z.enum(["ar", "en"]).default("ar"),
+  startDate: optDate,
+  endDate: optDate,
+  renewalDate: optDate,
+  currency: z.preprocess((v) => (v === "" || v == null ? undefined : String(v).trim().toUpperCase()), z.string().regex(/^[A-Z]{3}$/).optional()),
+  subtotal: decOpt.refine((v) => v !== null, "VALUE_REQUIRED"),
+  discountTotal: decOpt.optional(),
+  vatRate,
+  paymentTerms: optText(4000),
+  scopeOfWork: optText(20000),
+  terms: optText(20000),
+  milestones: z.array(milestoneSchema).max(50).default([])
+});
+
+export async function createContract(ctx: Ctx, raw: unknown) {
+  requirePermission(ctx, "sales.contracts.create");
+  const input = directSchema.parse(raw);
+  return unitOfWork(ctx, async (tx, uow) => {
+    const client = await tx.client.findFirst({ where: { id: input.clientId, organizationId: ctx.organizationId, deletedAt: null, ...(await ownedWhere(ctx)) }, select: { id: true, displayName: true } });
+    if (!client) throw notFound("Client");
+    if (input.contactId && !(await tx.contact.findFirst({ where: { id: input.contactId, clientId: client.id, deletedAt: null } }))) throw invalid("CONTACT_NOT_OF_CLIENT");
+    if (input.opportunityId && !(await tx.opportunity.findFirst({ where: { id: input.opportunityId, organizationId: ctx.organizationId, clientId: client.id } }))) throw invalid("OPPORTUNITY_NOT_OF_CLIENT");
+    if (input.ownerId && !(await tx.user.findFirst({ where: { id: input.ownerId, organizationId: ctx.organizationId, status: "ACTIVE", deletedAt: null } }))) throw invalid("OWNER_INVALID");
+    if (input.startDate && input.endDate && input.endDate < input.startDate) throw invalid("END_BEFORE_START");
+    const o = await tx.organization.findUniqueOrThrow({ where: { id: ctx.organizationId } });
+    const rate = input.vatRate ?? Number(o.vatRate);
+    const value = directValue(input.subtotal!, input.discountTotal, rate);
+    checkMilestones(input.milestones, value.contractValue);
+    const number = await nextYearlyNumber(tx, ctx.organizationId, "CTR", yearIn(o.timezone));
+    const c = await tx.contract.create({
+      data: {
+        organizationId: ctx.organizationId,
+        number,
+        clientId: client.id,
+        contactId: input.contactId ?? null,
+        opportunityId: input.opportunityId ?? null,
+        title: input.title,
+        status: "DRAFT",
+        language: input.language,
+        startDate: input.startDate ?? null,
+        endDate: input.endDate ?? null,
+        renewalDate: input.renewalDate ?? null,
+        currency: input.currency ?? o.currency,
+        ...value,
+        paymentTerms: input.paymentTerms ?? null,
+        scopeOfWork: input.scopeOfWork ?? null,
+        terms: input.terms ?? null,
+        ownerId: input.ownerId ?? ctx.userId,
+        createdById: ctx.userId || null,
+        milestones: { create: milestoneRows(input.milestones) }
+      }
+    });
+    await uow.audit({ action: "contract.created", entityType: "Contract", entityId: c.id, after: { number, direct: true, client: client.displayName, ...value, vatRate: rate, currency: c.currency, milestones: input.milestones.length } });
+    uow.emit({ type: "contract.created", entityType: "Contract", entityId: c.id, payload: { number, quotationId: null, quotationNumber: null, version: null, value: value.contractValue, ownerId: c.ownerId, direct: true }, activity: activityDesc(c) });
+    await trail(tx, ctx, c, "contract.created", { direct: true });
+    return { id: c.id, number };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Edit (DRAFT / INTERNAL_REVIEW only) + milestones
+// ---------------------------------------------------------------------------
 
 const updateSchema = z.object({
   title: reqText(3, 200),
@@ -139,7 +235,11 @@ const updateSchema = z.object({
   paymentTerms: optText(4000),
   scopeOfWork: optText(20000),
   terms: optText(20000),
-  milestones: z.array(milestoneSchema).max(50).default([])
+  milestones: z.array(milestoneSchema).max(50).default([]),
+  /** direct contracts only (no quotation): the value is re-entered here and recomputed */
+  subtotal: decOpt.optional(),
+  discountTotal: decOpt.optional(),
+  vatRate
 });
 
 export async function updateContract(ctx: Ctx, id: string, raw: unknown) {
@@ -150,10 +250,15 @@ export async function updateContract(ctx: Ctx, id: string, raw: unknown) {
     if (!EDITABLE.includes(c.status)) throw conflict(`CONTRACT_NOT_EDITABLE:${c.status}`);
     if (input.startDate && input.endDate && input.endDate < input.startDate) throw invalid("END_BEFORE_START");
     if (input.contactId && !(await tx.contact.findFirst({ where: { id: input.contactId, clientId: c.clientId, deletedAt: null } }))) throw invalid("CONTACT_NOT_OF_CLIENT");
-    const sumAmount = input.milestones.reduce((a, m) => a.plus(m.amount ?? 0), new Decimal(0));
-    const sumPct = input.milestones.reduce((a, m) => a.plus(m.percentage ?? 0), new Decimal(0));
-    if (sumAmount.gt(c.contractValue.toString())) throw invalid("MILESTONES_EXCEED_VALUE");
-    if (sumPct.gt(100)) throw invalid("MILESTONES_EXCEED_100");
+    // a quotation-based contract keeps the accepted version's value; a direct one may change it while editable
+    let value: ReturnType<typeof directValue> | null = null;
+    if (input.subtotal != null) {
+      if (c.quotationId) throw conflict("CONTRACT_VALUE_FROM_QUOTATION");
+      const net = c.subtotal.minus(c.discountTotal);
+      const rate = input.vatRate ?? (net.gt(0) ? Number(c.taxTotal.div(net).times(100).toDecimalPlaces(2)) : 15);
+      value = directValue(input.subtotal, input.discountTotal, rate);
+    }
+    checkMilestones(input.milestones, value?.contractValue ?? c.contractValue);
     const before = { title: c.title, startDate: ymd(c.startDate), endDate: ymd(c.endDate), paymentTerms: c.paymentTerms, scopeOfWork: c.scopeOfWork, terms: c.terms, milestones: c.milestones.map((m) => ({ title: m.title, amount: m.amount?.toFixed(2) ?? null, percentage: m.percentage?.toFixed(2) ?? null, dueDate: ymd(m.dueDate) })) };
     await tx.contractMilestone.deleteMany({ where: { contractId: c.id } });
     const after = await tx.contract.update({
@@ -167,10 +272,11 @@ export async function updateContract(ctx: Ctx, id: string, raw: unknown) {
         paymentTerms: input.paymentTerms ?? null,
         scopeOfWork: input.scopeOfWork ?? null,
         terms: input.terms ?? null,
-        milestones: { create: input.milestones.map((m, i) => ({ title: m.title, description: m.description ?? null, amount: m.amount ?? null, percentage: m.percentage == null ? null : String(m.percentage), dueDate: m.dueDate ?? null, status: m.status, sortOrder: i })) }
+        ...(value ?? {}),
+        milestones: { create: milestoneRows(input.milestones) }
       }
     });
-    await uow.audit({ action: "contract.updated", entityType: "Contract", entityId: c.id, before, after: { title: after.title, startDate: ymd(after.startDate), endDate: ymd(after.endDate), paymentTerms: after.paymentTerms, scopeOfWork: after.scopeOfWork, terms: after.terms, milestones: input.milestones.map((m) => ({ title: m.title, amount: m.amount ?? null, percentage: m.percentage ?? null, dueDate: ymd(m.dueDate ?? null) })) } });
+    await uow.audit({ action: "contract.updated", entityType: "Contract", entityId: c.id, before, after: { title: after.title, startDate: ymd(after.startDate), endDate: ymd(after.endDate), paymentTerms: after.paymentTerms, scopeOfWork: after.scopeOfWork, terms: after.terms, milestones: input.milestones.map((m) => ({ title: m.title, amount: m.amount ?? null, percentage: m.percentage ?? null, dueDate: ymd(m.dueDate ?? null) })), ...(value ?? {}) } });
     uow.emit({ type: "contract.updated", entityType: "Contract", entityId: c.id, payload: { number: c.number } });
   });
 }

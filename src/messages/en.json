@@ -1311,7 +1311,10 @@
         "DISCOUNT_INVALID": "Invalid discount.",
         "DISCOUNT_PERCENT_OVER_100": "A percentage discount cannot exceed 100%.",
         "DISCOUNT_EXCEEDS_LINE": "The discount is larger than the line amount.",
-        "VAT_INVALID": "Invalid VAT configuration."
+        "VAT_INVALID": "Invalid VAT configuration.",
+        "DISCOUNT_EXCEEDS_SUBTOTAL": "The discount is larger than the contract value.",
+        "CONTRACT_VALUE_FROM_QUOTATION": "This contract's value comes from the accepted quotation and cannot be changed here.",
+        "OWNER_INVALID": "The selected owner is not available."
       },
       "calc": {
         "QTY_INVALID": "Quantity must be greater than 0 (max 3 decimals).",
@@ -1513,12 +1516,12 @@
       },
       "c": {
         "title": "Contracts",
-        "subtitle": "Contracts created from accepted quotations.",
+        "subtitle": "Contracts from accepted quotations or written directly.",
         "searchPh": "Search number, title or client…",
         "live": "In force",
         "expiringSoon": "Ending soon",
         "emptyTitle": "No contracts yet",
-        "emptyText": "Contracts are created from an accepted quotation.",
+        "emptyText": "Create a contract directly with “New contract”, or from an accepted quotation.",
         "emptyHere": "No contracts here yet.",
         "contract": "Contract",
         "fromQuote": "From quotation",
@@ -1568,7 +1571,21 @@
           "PENDING": "Pending",
           "COMPLETED": "Completed",
           "CANCELLED": "Cancelled"
-        }
+        },
+        "new": "New contract",
+        "newTitle": "New contract",
+        "newSubtitle": "Write the full contract: parties, value, scope of work, payment terms, terms and milestones.",
+        "newNote": "The contract is saved as a draft and then follows the usual path: internal review → sent for signature → activated once the signed copy is received. Everything stays editable while it is a draft, and you can download the PDF for signature.",
+        "parties": "Parties",
+        "client": "Client",
+        "contact": "Contact",
+        "opportunity": "Opportunity (optional)",
+        "owner": "Owner",
+        "language": "Contract language",
+        "currency": "Currency",
+        "needClient": "Choose the client first.",
+        "needValue": "Enter the contract value before VAT.",
+        "createDraft": "Create contract as draft"
       },
       "s": {
         "title": "Service catalog",

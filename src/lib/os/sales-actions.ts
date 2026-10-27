@@ -22,6 +22,7 @@ import {
 import {
   activateContract,
   cancelContract,
+  createContract,
   createContractFromQuotation,
   requestContractReview,
   returnContractToDraft,
@@ -62,6 +63,7 @@ export const opportunityOptionsAction = async (clientId: string) =>
 
 // Contracts
 export const createContractAction = async (quotationId: string) => runAction(async (ctx) => ({ id: (await createContractFromQuotation(ctx, quotationId)).id }));
+export const createDirectContractAction = async (input: Record<string, unknown>) => runAction(async (ctx) => ({ id: (await createContract(ctx, input)).id }));
 export const updateContractAction = async (id: string, input: Record<string, unknown>) => runAction(async (ctx) => void (await updateContract(ctx, id, input)));
 export const contractTransitionAction = async (id: string, to: "review" | "draft" | "signature") =>
   runAction(async (ctx) => void (await (to === "review" ? requestContractReview(ctx, id) : to === "draft" ? returnContractToDraft(ctx, id) : sendContractForSignature(ctx, id))));

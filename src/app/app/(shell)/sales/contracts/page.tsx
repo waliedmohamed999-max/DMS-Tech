@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { pageCtx } from "@/lib/os/dal";
+import { can } from "@/server/context";
 import { CONTRACT_STATUSES, listContracts } from "@/server/commercial/contracts";
 import { sweepIfDue } from "@/server/commercial/sweep";
 import { personName } from "@/lib/os/crm-page";
@@ -21,7 +22,18 @@ export default async function ContractsPage({ searchParams }: { searchParams: Pr
   const data = await listContracts(ctx, sp);
   return (
     <>
-      <PageHeader icon="Handshake" title={t("c.title")} subtitle={t("c.subtitle")} />
+      <PageHeader
+        icon="Handshake"
+        title={t("c.title")}
+        subtitle={t("c.subtitle")}
+        actions={
+          can(ctx, "sales.contracts.create") ? (
+            <Link href="/app/sales/contracts/new" className="os-btn-primary">
+              + {t("c.new")}
+            </Link>
+          ) : undefined
+        }
+      />
       <div className="os-card overflow-hidden">
         <FilterBar
           search={{ placeholder: t("c.searchPh") }}
