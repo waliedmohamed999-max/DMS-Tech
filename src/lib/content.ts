@@ -6,7 +6,7 @@ import { industries, integrations } from "@/content/industries";
 import { aiCards, capabilities, nova, phases, promises, trustCards, values } from "@/content/company";
 import { posts } from "@/content/posts";
 import { careersCopy, jobs } from "@/content/careers";
-import { activeOffers, cycleEnd, findDeal, findOffer, offerAliases, offerEndInstant, offers, offersCopy, packageGroups, questionsFor, todaysDeals, type Offer } from "@/content/offers";
+import { activeOffers, basisPrice, findDeal, findOffer, offerAliases, offerEndInstant, offers, offersCopy, questionsFor, visibleGroups, type Offer, type Tier } from "@/content/offers";
 import { formatMoney } from "@/lib/commercial/calc";
 import { clientProjects } from "@/content/projects";
 import { caseCopy, visibleCaseStudies } from "@/content/case-studies";
@@ -141,39 +141,56 @@ export async function getServiceExtrasCopy(locale: Locale) {
   return localize(serviceExtrasCopy, locale);
 }
 
-// Packages, offers and private deals (src/content/offers.ts)
+// Packages, campaigns and private deals (src/content/offers.ts)
 // marketing prices are whole riyals: "3,500 ر.س", not "3,500.00 ر.س"
 const offerMoney = (v: number | null, locale: Locale) => (v === null ? null : formatMoney(v.toFixed(2), locale, "SAR").replace(/[.٫]0{2}(?!d)/, ""));
+/** The price with 15% VAT, to the halala. */
+const vatMoney = (v: number | null, locale: Locale) => (v === null ? null : offerMoney(Math.round(v * 115) / 100, locale));
 export async function getOffersCopy(locale: Locale) {
   return localize(offersCopy, locale);
 }
+/** A tier for display: localized text, formatted prices (before / with VAT, monthly average of a term, yearly). */
+function tierView(t: Tier, locale: Locale) {
+  return {
+    ...localize(t, locale),
+    amount: t.price,
+    price: offerMoney(t.price, locale),
+    priceVat: vatMoney(t.price, locale),
+    monthlyAvg: t.price !== null && t.termMonths ? offerMoney(Math.round(t.price / t.termMonths), locale) : null,
+    annual: t.annual ? offerMoney(t.annual, locale) : null,
+    annualSave: t.annual && t.price ? offerMoney(t.price * 12 - t.annual, locale) : null
+  };
+}
 export async function getPackageGroups(locale: Locale) {
-  return packageGroups.map((g) => ({
+  return visibleGroups().map((g) => ({
     ...localize({ title: g.title, short: g.short, text: g.text, notice: g.notice, highlights: g.highlights }, locale),
     // the lowest priced tier, for the hero tiles ("from 1,999")
     startsAt: (() => {
       const t = g.tiers.filter((x) => x.price !== null).sort((a, b) => a.price! - b.price!)[0];
       return t ? { price: offerMoney(t.price, locale), period: t.period ? localize(t.period, locale) : null } : null;
     })(),
-    id: g.id, segment: g.segment, service: g.service, icon: g.icon, tiers: g.tiers.map((t) => ({ ...localize(t, locale), price: offerMoney(t.price, locale), annual: t.annual ? offerMoney(t.annual, locale) : null, annualSave: t.annual && t.price ? offerMoney(t.price * 12 - t.annual, locale) : null })), ...(g.journey ? { journey: localize(g.journey, locale) } : {}) }));
+    id: g.id, segment: g.segment, service: g.service, icon: g.icon, draft: Boolean(g.draft), tiers: g.tiers.map((t) => tierView(t, locale)), compare: g.compare ? localize(g.compare, locale) : null, ...(g.journey ? { journey: localize(g.journey, locale) } : {}) }));
 }
-/** An offer with its localized details and the end of its current cycle (end of today / of this week). */
+/** A campaign with its localized details; its struck price is the current price of its packages. */
 function offerView(o: Offer, locale: Locale) {
-  return { ...localize(o, locale), endsAtInstant: cycleEnd(o.cycle).toISOString(), price: offerMoney(o.price, locale), oldPrice: offerMoney(o.oldPrice, locale), saving: offerMoney(o.oldPrice - o.price, locale), percent: Math.round((1 - o.price / o.oldPrice) * 100) };
+  const base = basisPrice(o) ?? o.price;
+  return { ...localize(o, locale), endsAtInstant: offerEndInstant(o.endsAt), price: offerMoney(o.price, locale), priceVat: vatMoney(o.price, locale), oldPrice: offerMoney(base, locale), saving: offerMoney(base - o.price, locale), percent: Math.round((1 - o.price / base) * 100) };
 }
+/** Campaigns running now (approved, within their dates). */
 export async function getActiveOffers(locale: Locale) {
-  return { weekly: activeOffers().filter((o) => o.cycle === "weekly").map((o) => offerView(o, locale)), today: todaysDeals().map((o) => offerView(o, locale)), weekEndsAt: cycleEnd("weekly").toISOString() };
+  return activeOffers().map((o) => offerView(o, locale));
 }
-/** A shareable item: a package tier, a running offer or "today" (null = unknown, ended, or a daily deal on another day). */
 /** The offer page's extra form questions, localized. */
 const questionsView = (service: string, locale: Locale) =>
   questionsFor(service).map((q) => ({ key: q.key, label: localize(q.label, locale), ...(q.options ? { options: q.options.map((o) => localize(o, locale)) } : {}), ...(q.placeholder ? { placeholder: localize(q.placeholder, locale) } : {}) }));
 
+/** A shareable item: a package tier or a running campaign (null = unknown, draft in production, or not running). */
 export async function getOfferItem(rawSlug: string, locale: Locale) {
   const slug = offerAliases[rawSlug] ?? rawSlug;
-  for (const g of packageGroups) {
+  for (const g of visibleGroups()) {
     const t = g.tiers.find((x) => x.key === slug);
-    if (t)
+    if (t) {
+      const v = tierView(t, locale);
       return {
         kind: "package" as const,
         key: `pkg:${t.key}`,
@@ -181,29 +198,35 @@ export async function getOfferItem(rawSlug: string, locale: Locale) {
         group: localize(g.title, locale),
         ...localize({ name: t.name, tagline: t.tagline, features: t.features, period: t.period, delivery: t.delivery, idealFor: t.idealFor, excludes: t.excludes, notice: g.notice }, locale),
         from: t.from,
+        indicative: Boolean(t.indicative),
+        billing: t.billing,
+        draft: Boolean(g.draft),
         icon: t.icon,
-        price: offerMoney(t.price, locale),
-        annual: t.annual ? offerMoney(t.annual, locale) : null,
-        annualSave: t.annual && t.price ? offerMoney(t.price * 12 - t.annual, locale) : null,
+        amount: t.price,
+        price: v.price,
+        priceVat: v.priceVat,
+        monthlyAvg: v.monthlyAvg,
+        annual: v.annual,
+        annualSave: v.annualSave,
         oldPrice: null,
         saving: null,
         percent: null,
         endsAtInstant: null,
         details: null,
         questions: questionsView(g.service, locale),
-        compare: g.tiers.map((x) => ({ key: x.key, current: x.key === t.key, featured: Boolean(x.featured), from: x.from, price: offerMoney(x.price, locale), ...localize({ name: x.name, tagline: x.tagline, period: x.period, delivery: x.delivery, features: x.features.slice(0, 5) }, locale) }))
+        compare: g.tiers.map((x) => ({ key: x.key, current: x.key === t.key, featured: Boolean(x.featured), from: x.from, indicative: Boolean(x.indicative), price: offerMoney(x.price, locale), ...localize({ name: x.name, tagline: x.tagline, period: x.period, delivery: x.delivery, features: x.features.slice(0, 5) }, locale) }))
       };
+    }
   }
   const o = findOffer(slug);
   if (!o) return null;
   const v = offerView(o, locale);
-  return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: v.badge, name: v.title, tagline: v.text, features: v.features, period: null, delivery: v.delivery, icon: o.icon, price: v.price, oldPrice: v.oldPrice, saving: v.saving, percent: v.percent, endsAtInstant: v.endsAtInstant, cycle: o.cycle, details: { forWho: v.forWho, deliverables: v.deliverables, terms: v.terms, excludes: v.excludes }, questions: questionsView(o.service, locale), compare: null };
+  return { kind: "offer" as const, key: `offer:${o.slug}`, service: o.service, group: v.badge, name: v.title, tagline: v.text, features: v.features, period: null, delivery: v.delivery, from: false, indicative: false, billing: "one-time" as const, draft: false, icon: o.icon, amount: o.price, price: v.price, priceVat: v.priceVat, monthlyAvg: null, annual: null, annualSave: null, oldPrice: v.oldPrice, saving: v.saving, percent: v.percent, endsAtInstant: v.endsAtInstant, details: { forWho: v.forWho, deliverables: v.deliverables, terms: v.terms, excludes: v.excludes }, questions: questionsView(o.service, locale), compare: null };
 }
-/** "ended" for a past weekly offer, "notToday" for a daily deal on another day, null when the slug never existed. */
+/** "ended" for a campaign that is not running (past, not yet started or not approved); null when the slug never existed. */
 export const offerUnavailable = (rawSlug: string) => {
   const slug = offerAliases[rawSlug] ?? rawSlug;
-  const o = offers.find((x) => x.slug === slug);
-  return o ? (o.cycle === "daily" ? ("notToday" as const) : ("ended" as const)) : null;
+  return offers.some((x) => x.slug === slug) ? ("ended" as const) : null;
 };
 export async function getDeal(token: string, locale: Locale) {
   const r = findDeal(token);
@@ -212,5 +235,5 @@ export async function getDeal(token: string, locale: Locale) {
 }
 export async function getOfferSlugs() {
   // real pages only, once each — the ad aliases (/offers/store-marketing…) are copies with a canonical to the real page
-  return [...new Set([...packageGroups.flatMap((g) => g.tiers.map((t) => t.key)), ...offers.filter((o) => o.cycle === "weekly").map((o) => o.slug), "today"])];
+  return [...new Set([...visibleGroups().flatMap((g) => g.tiers.map((t) => t.key)), ...activeOffers().map((o) => o.slug)])];
 }

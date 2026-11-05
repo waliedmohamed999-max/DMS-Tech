@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
-import { Link, redirect } from "@/i18n/navigation";
-import { groupAliases, offerAliases } from "@/content/offers";
+import { getPathname, Link, redirect } from "@/i18n/navigation";
+import { groupAliases, offerAliases, retiredOffers } from "@/content/offers";
 import { site } from "@/content/site";
 import {
   getOfferItem,
@@ -20,6 +20,7 @@ import TechBackdrop from "@/components/ui/TechBackdrop";
 import { LeadForm } from "@/components/forms/LeadForm";
 import {
   Countdown,
+  PriceBlock,
   ShareLink,
   WhatsAppOrder,
 } from "@/components/offers/OfferWidgets";
@@ -27,10 +28,10 @@ import { ServiceVisual } from "@/components/offers/ServiceVisual";
 import { alternatesFor } from "@/lib/seo";
 import { TrackView } from "@/components/offers/TrackView";
 
-type Props = { params: Promise<{ locale: string; slug: string }> };
+type Props = { params: Promise<{ locale: string; slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
-// rendered per request: offers renew by day / week, and the public CSP gives fresh renders a nonce (a cached
-// re-render would no longer match the build-time script hashes)
+// rendered per request: a campaign starts and ends on its own dates, and the public CSP gives fresh renders a nonce
+// (a cached re-render would no longer match the build-time script hashes)
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -43,12 +44,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     item.kind === "offer"
       ? `${item.name} — ${item.price}`
       : `${item.name} — ${item.group}`;
+  // drafts awaiting approval stay out of search engines even in development previews
+  const robots = item.draft ? { robots: { index: false, follow: false } } : {};
   // the preview card WhatsApp / social apps show for the shared link
   // ad links (/offers/store-marketing…) show the same page as the real key: tell search engines which one counts
   const real = offerAliases[slug] ?? slug;
   return {
     title,
     description: item.tagline,
+    ...robots,
     ...alternatesFor(locale, `/offers/${real}`),
     openGraph: {
       title,
@@ -86,15 +90,24 @@ function Block({
 }
 
 /**
- * One package or offer (also /offers/today): a hero with the price card and both ways to order (form / WhatsApp to the
- * company number), what's delivered step by step, conditions and exclusions side by side, how we start, then the form.
+ * One package or campaign: a hero with the price card and both ways to order (form / WhatsApp to the company number),
+ * what's delivered step by step, conditions and exclusions side by side, how we start, then the form.
  */
-export default async function OfferItemPage({ params }: Props) {
+export default async function OfferItemPage({ params, searchParams }: Props) {
   const { locale: raw, slug } = await params;
   const locale = raw as Locale;
   setRequestLocale(locale);
+  // redirects keep the ad's query string (utm_*, click ids) so the lead is still attributed to its campaign
+  const sp = await searchParams;
+  const query = new URLSearchParams(Object.entries(sp).flatMap(([k, v]) => (Array.isArray(v) ? v.map((x) => [k, x]) : v === undefined ? [] : [[k, v]]))).toString();
+  const qs = query ? `?${query}` : "";
   // section links (/offers/marketing, /offers/whatsapp…) open their packages tab
-  if (groupAliases[slug]) redirect({ href: `/offers#pkg-${groupAliases[slug]}`, locale });
+  if (groupAliases[slug]) redirect({ href: `/offers${qs}#pkg-${groupAliases[slug]}`, locale });
+  // the stopped daily deals / weekly offers open the package they were built on, at its current price
+  if (slug in retiredOffers) {
+    const to = retiredOffers[slug];
+    permanentRedirect(getPathname({ href: to ? `/offers/${to}` : "/offers", locale }) + qs);
+  }
   const [c, item, services, nav, projects] = await Promise.all([
     getOffersCopy(locale),
     getOfferItem(slug, locale),
@@ -105,27 +118,19 @@ export default async function OfferItemPage({ params }: Props) {
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
 
   if (!item) {
-    // a past weekly offer or a daily deal on another day gets a friendly page instead of a 404
-    const why = offerUnavailable(slug);
-    if (!why) notFound();
+    // a campaign outside its dates gets a friendly page instead of a 404
+    if (!offerUnavailable(slug)) notFound();
     return (
       <section className="section">
         <div className="container-site grid max-w-xl justify-items-center gap-4 text-center">
           <span className="grid size-14 place-items-center rounded-2xl bg-lilac text-iris">
             <Icon name="Timer" size={26} />
           </span>
-          <h1 className="text-2xl font-bold">
-            {why === "notToday" ? c.notToday : c.ended}
-          </h1>
-          <p className="text-iron">
-            {why === "notToday" ? c.notTodayText : c.endedText}
-          </p>
+          <h1 className="text-2xl font-bold">{c.ended}</h1>
+          <p className="text-iron">{c.endedText}</p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              href={why === "notToday" ? "/offers/today" : "/offers"}
-              className="btn btn-primary"
-            >
-              {why === "notToday" ? c.seeToday : c.allOffers}
+            <Link href="/offers" className="btn btn-primary">
+              {c.allOffers}
             </Link>
             <Link href="/quote" className="btn btn-outline">
               {c.customCta}
@@ -148,12 +153,15 @@ export default async function OfferItemPage({ params }: Props) {
     item.kind === "offer"
       ? `${item.group}: ${item.name}`
       : `${item.group} — ${item.name}`;
-  const daily = item.kind === "offer" && item.cycle === "daily";
   const d = item.details;
+  const lead = item.from ? (item.indicative ? c.indicative : c.from) : null;
+  // a starting price (or none) asks for a written quote; a fixed price can be ordered as it is
+  const quoteLed = item.from || !item.price;
   const priceText = item.price
-    ? `${item.kind === "package" && item.from ? `${c.from} ` : ""}${item.price}${item.period ? ` / ${item.period}` : ""}`
+    ? `${lead ? `${lead} ` : ""}${item.price}${item.period ? ` / ${item.period}` : ""} (${c.billing[item.billing]} · ${c.exVat})`
     : c.onRequest;
   const waLines = [c.waHello, label, `${c.waPrice}: ${priceText}`];
+  const priceLabels = { from: c.from, indicative: c.indicative, onRequest: c.onRequest, inclVat: c.inclVat, monthlyAvg: c.monthlyAvg, billing: c.billing, yearly: c.yearly, save: c.save };
   // packages have no deliverables list: their features become the "what you get" cards
   const deliverables = d
     ? d.deliverables
@@ -161,60 +169,37 @@ export default async function OfferItemPage({ params }: Props) {
 
   const priceCard = (
     <div className="grid gap-4 rounded-card bg-white p-6 text-ink shadow-lg">
-      {item.price ? (
+      {item.kind === "offer" && item.oldPrice ? (
         <div className="grid gap-1">
-          {item.kind === "package" && item.from && (
-            <span className="text-xs text-graphite">{c.from}</span>
-          )}
-          {item.oldPrice && (
-            <span className="flex flex-wrap items-center gap-2">
-              <span
-                className="text-xl font-semibold text-graphite line-through decoration-2"
-                dir="ltr"
-              >
-                {item.oldPrice}
-              </span>
-              {item.percent && (
-                <span className="rounded-lg bg-[#ef4444] px-2.5 py-0.5 text-base font-extrabold text-white">
-                  {c.off.replace("{n}", String(item.percent))}
-                </span>
-              )}
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="text-xl font-semibold text-graphite line-through decoration-2" dir="ltr">
+              {item.oldPrice}
             </span>
-          )}
-          <span className="flex flex-wrap items-baseline gap-1.5">
-            <span className="text-4xl font-bold" dir="ltr">
-              {item.price}
-            </span>
-            {item.period && (
-              <span className="text-base font-medium text-iron">
-                / {item.period}
+            {item.percent && (
+              <span className="rounded-lg bg-[#ef4444] px-2.5 py-0.5 text-base font-extrabold text-white">
+                {c.off.replace("{n}", String(item.percent))}
               </span>
             )}
+          </span>
+          <span className="text-4xl font-bold" dir="ltr">
+            {item.price}
+          </span>
+          <span className="text-xs text-graphite">
+            <span dir="ltr">{item.priceVat}</span> {c.inclVat}
           </span>
           {item.saving && (
             <span className="mt-1 w-fit rounded-full bg-mint px-2.5 py-0.5 text-xs font-bold text-fern">
               {c.save} {item.saving}
             </span>
           )}
-          {item.kind === "package" && item.annual && (
-            <span className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-iron">
-              {c.yearly}{" "}
-              <b className="text-ink" dir="ltr">
-                {item.annual}
-              </b>
-              <span className="rounded-full bg-mint px-2 py-0.5 text-xs font-bold text-fern">
-                {c.save} {item.annualSave}
-              </span>
-            </span>
-          )}
         </div>
       ) : (
-        <span className="text-2xl font-bold text-iris">{c.onRequest}</span>
+        <PriceBlock t={item} labels={priceLabels} size="lg" />
       )}
       <span className="text-xs text-graphite">{c.vatNote}</span>
       <div className="grid gap-2">
         <a href="#order" className="btn btn-primary w-full justify-center">
-          {c.orderNow} <Icon name={arrow} size={16} />
+          {quoteLed ? c.customQuote : c.orderNow} <Icon name={arrow} size={16} />
         </a>
         <WhatsAppOrder
           phone={site.whatsapp}
@@ -250,13 +235,14 @@ export default async function OfferItemPage({ params }: Props) {
                 name={locale === "ar" ? "ChevronLeft" : "ChevronRight"}
                 size={14}
               />
-              <span className="text-white">
-                {daily ? c.dayTitle : item.group}
-              </span>
+              <span className="text-white">{item.group}</span>
             </nav>
             <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold text-iris-light">
               <Icon name={item.icon} size={15} /> {item.group}
             </span>
+            {item.draft && (
+              <span className="w-fit rounded-xl bg-[#fffbeb] px-3 py-2 text-sm font-semibold text-[#92400e]">{c.draft}</span>
+            )}
             <h1 className="h-display">{item.name}</h1>
             <p className="lead">{item.tagline}</p>
             {item.endsAtInstant && (
@@ -267,10 +253,8 @@ export default async function OfferItemPage({ params }: Props) {
                   days: c.days,
                   hours: c.hours,
                   minutes: c.minutes,
-                  ...(daily ? { seconds: c.seconds } : {}),
                 }}
                 dark
-                big={daily}
               />
             )}
           </div>
@@ -316,7 +300,7 @@ export default async function OfferItemPage({ params }: Props) {
               }
               source="offer"
               questions={item.questions}
-              offer={{ key: item.key, label, caption: c.chosen }}
+              offer={{ key: item.key, label: `${label} — ${priceText}`, caption: c.chosen }}
             />
           </div>
         </div>
@@ -399,7 +383,7 @@ export default async function OfferItemPage({ params }: Props) {
                     <span className="text-sm text-iron">{x.tagline}</span>
                   </div>
                   <span className="grid border-y border-mist py-3">
-                    {x.from && <span className="text-xs text-graphite">{c.from}</span>}
+                    {x.from && <span className="text-xs text-graphite">{x.indicative ? c.indicative : c.from}</span>}
                     <span className="flex flex-wrap items-baseline gap-1.5">
                       <b className="text-2xl" dir="ltr">
                         {x.price ?? c.onRequest}
@@ -578,6 +562,7 @@ export default async function OfferItemPage({ params }: Props) {
               {item.oldPrice}
             </span>
           )}
+          {lead && <span className="text-[11px] text-graphite">{lead}</span>}
           <b className="truncate text-lg" dir="ltr">
             {item.price ?? c.onRequest}
           </b>
@@ -589,7 +574,7 @@ export default async function OfferItemPage({ params }: Props) {
           className="!px-3 text-sm"
         />
         <a href="#order" className="btn btn-primary !px-3 text-sm">
-          {c.orderNow}
+          {quoteLed ? c.quote : c.orderNow}
         </a>
       </div>
     </>

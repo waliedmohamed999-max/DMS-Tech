@@ -9,13 +9,14 @@ import { Highlight, SectionHeading } from "@/components/ui/Section";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import TechBackdrop from "@/components/ui/TechBackdrop";
-import { Countdown, DealsCarousel, PackagesBrowser } from "@/components/offers/OfferWidgets";
+import { Countdown, PackagesBrowser } from "@/components/offers/OfferWidgets";
 import { ServiceVisual } from "@/components/offers/ServiceVisual";
 import { CardSlider } from "@/components/offers/CardSlider";
 import { alternatesFor } from "@/lib/seo";
+import { offerCatalog } from "@/lib/offers-schema";
 
-// rendered per request: the deals of the day change at midnight and weekly offers renew every Sunday; fresh renders
-// also get the public CSP nonce (a cached re-render would no longer match the build-time script hashes)
+// rendered per request: a campaign appears and ends on its own dates; fresh renders also get the public CSP nonce
+// (a cached re-render would no longer match the build-time script hashes)
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -25,9 +26,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 /**
- * Packages & offers, in three groups: DEALS (today's 24-hour deals + this week's offers), PACKAGES (everyday services
- * with fixed prices) and BUSINESS SOLUTIONS (AI, systems, tech team — quote-led). Then real projects, why us, FAQ with
- * the general terms, and a closing call to action. Every package / offer has its own page (/offers/<key>) to link ads to.
+ * Packages & offers: approved LIMITED-TIME CAMPAIGNS (only while their dates run), PACKAGES (everyday services, each
+ * with its billing, VAT and a comparison table) and BUSINESS SOLUTIONS (AI, systems, tech team — quote-led). Then real
+ * projects, why us, FAQ with the general terms, and a closing call to action. Every package / campaign has its own page
+ * (/offers/<key>) to link ads to.
  */
 export default async function OffersPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: raw } = await params;
@@ -36,32 +38,10 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
   const [c, groups, offers, projects] = await Promise.all([getOffersCopy(locale), getPackageGroups(locale), getActiveOffers(locale), getProjects(locale)]);
   const smb = groups.filter((g) => g.segment === "smb");
   const business = groups.filter((g) => g.segment === "business");
-  const browserLabels = { mostPopular: c.mostPopular, from: c.from, onRequest: c.onRequest, choose: c.choose, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded, journeyTitle: c.journeyTitle, journeySub: c.journeySub, journeyStep: c.journeyStep, aboutService: c.aboutService, prev: c.prev, next: c.next, quote: c.quote, yearly: c.yearly, save: c.save };
-  // structured data: the published packages as an offer catalogue (prices before VAT, in SAR)
-  const base = site.url.replace(/\/$/, "");
-  const prefix = locale === "ar" ? "" : `/${locale}`;
-  const catalog = {
-    "@context": "https://schema.org",
-    "@type": "OfferCatalog",
-    name: c.eyebrow,
-    url: `${base}${prefix}/offers`,
-    itemListElement: groups.map((g) => ({
-      "@type": "OfferCatalog",
-      name: g.title,
-      itemListElement: g.tiers
-        .filter((t) => t.price)
-        .map((t) => ({
-          "@type": "Offer",
-          name: `${g.title} — ${t.name}`,
-          url: `${base}${prefix}/offers/${t.key}`,
-          priceSpecification: { "@type": "PriceSpecification", price: Number(String(t.price).replace(/[^0-9.]/g, "")), priceCurrency: "SAR", valueAddedTaxIncluded: false },
-          seller: { "@type": "Organization", name: site.name }
-        }))
-    }))
-  };
+  const browserLabels = { mostPopular: c.mostPopular, from: c.from, indicative: c.indicative, onRequest: c.onRequest, choose: c.choose, customQuote: c.customQuote, delivery: c.delivery, idealFor: c.idealFor, notIncluded: c.notIncluded, journeyTitle: c.journeyTitle, journeySub: c.journeySub, journeyStep: c.journeyStep, aboutService: c.aboutService, prev: c.prev, next: c.next, quote: c.quote, yearly: c.yearly, save: c.save, inclVat: c.inclVat, monthlyAvg: c.monthlyAvg, billing: c.billing, tableTitle: c.tableTitle, tableItem: c.tableItem, tablePrice: c.tablePrice, tableBilling: c.tableBilling, draft: c.draft };
+  const catalog = offerCatalog(groups, locale, c.eyebrow);
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
   const cd = { endsIn: c.endsIn, days: c.days, hours: c.hours, minutes: c.minutes };
-  const today = offers.today;
 
   return (
     <>
@@ -86,8 +66,8 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
               ))}
             </ul>
             <div className="flex flex-wrap items-center gap-3">
-              <a href="#deals" className="btn btn-primary">
-                {c.seeOffers} <Icon name={arrow} size={17} />
+              <a href="#packages" className="btn btn-primary">
+                {c.seePackages} <Icon name={arrow} size={17} />
               </a>
               <Link href="/quote" className="btn btn-outline">
                 {c.consult}
@@ -124,36 +104,18 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
                   )}
                 </a>
               ))}
-              {today.length > 0 && (
-                <a href="#deals" className="hero-tile grid content-start gap-2 rounded-2xl bg-gradient-to-br from-[#f59e0b] to-[#ef4444] p-4 text-white transition hover:-translate-y-1" style={{ animationDelay: `${groups.length * 0.08}s` }}>
-                  <span className="grid size-10 place-items-center rounded-xl bg-white/20">
-                    <Icon name="Zap" size={19} />
-                  </span>
-                  <b className="text-[15px]">{c.todayTile}</b>
-                  <span className="text-xs text-white/85">{c.todayTileText}</span>
-                </a>
-              )}
             </div>
           </div>
         </div>
       </section>
 
-      {today.length > 0 && (
-        <section id="deals" className="scroll-mt-24 pt-12 md:pt-16">
+      {/* approved campaigns only, each with its own end date — nothing renews by itself */}
+      {offers.length > 0 && (
+        <section id="deals" className="section scroll-mt-24">
           <div className="container-site">
-            <DealsCarousel deals={today} labels={{ ...cd, seconds: c.seconds, dayTitle: c.dayTitle, dayNote: c.dayNote, seeDeal: c.seeDeal, save: c.save, off: c.off, prev: c.prev, next: c.next }} locale={locale} />
-          </div>
-        </section>
-      )}
-
-      {offers.weekly.length > 0 && (
-        <section className="section">
-          <div className="container-site">
-            <SectionHeading title={c.offersTitle} sub={c.weeklyNote}>
-              <Countdown endsAt={offers.weekEndsAt} labels={cd} />
-            </SectionHeading>
+            <SectionHeading title={c.offersTitle} sub={c.offersNote} />
             <CardSlider className="grid gap-6 md:grid-cols-2 xl:grid-cols-3" labels={{ prev: c.prev, next: c.next }} rtl={locale === "ar"}>
-              {offers.weekly.map((o) => (
+              {offers.map((o) => (
                 <article key={o.slug} className="card grid content-start overflow-hidden transition hover:-translate-y-1 hover:shadow-lg">
                   <ServiceVisual service={o.service} locale={locale} className="h-52 rounded-none border-b border-mist" />
                   <div className="grid content-start gap-4 p-6">
@@ -175,11 +137,9 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
                         </li>
                       ))}
                     </ul>
-                    <p className="flex items-start gap-1.5 text-sm text-iron">
-                      <Icon name="Clock" size={14} className="mt-0.5 shrink-0 text-iris" />
-                      <span>
-                        {c.delivery}: <b className="font-semibold text-ink">{o.delivery}</b>
-                      </span>
+                    <Countdown endsAt={o.endsAtInstant} labels={cd} />
+                    <p className="text-xs text-graphite">
+                      {c.endsOn} <span dir="ltr">{o.endsAt}</span>
                     </p>
                   </div>
                   <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-mist px-6 py-5">
@@ -190,8 +150,8 @@ export default async function OffersPage({ params }: { params: Promise<{ locale:
                       <span className="text-3xl font-bold" dir="ltr">
                         {o.price}
                       </span>
-                      <span className="mt-1 w-fit rounded-full bg-mint px-2.5 py-0.5 text-xs font-bold text-fern">
-                        {c.save} {o.saving}
+                      <span className="text-xs text-graphite">
+                        <span dir="ltr">{o.priceVat}</span> {c.inclVat}
                       </span>
                     </span>
                     <Link href={`/offers/${o.slug}`} className="btn btn-primary">

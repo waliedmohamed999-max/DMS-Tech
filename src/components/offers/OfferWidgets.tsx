@@ -45,120 +45,105 @@ export function Countdown({ endsAt, labels, dark = false, big = false }: { endsA
   );
 }
 
-export type DealSlide = { slug: string; icon: IconName; badge: string; title: string; text: string; features: string[]; price: string | null; oldPrice: string | null; saving: string | null; percent: number; endsAtInstant: string };
-const SLIDE_BG = ["from-iris via-[#5a3fd8] to-iris-soft", "from-[#0f766e] via-[#0d9488] to-[#14b8a6]", "from-[#c2410c] via-[#ea580c] to-[#f59e0b]", "from-[#1e3a8a] via-[#2563eb] to-[#38bdf8]", "from-[#9d174d] via-[#db2777] to-[#f472b6]"];
+export type Billing = "one-time" | "monthly" | "term";
+export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; price: string | null; priceVat: string | null; monthlyAvg: string | null; from: boolean; indicative?: boolean; period: string | null; billing: Billing; delivery: string; featured?: boolean; features: string[]; excludes: string[]; annual?: string | null; annualSave?: string | null };
+export type JourneyView = { icon: IconName; title: string; text: string; tier: string };
+export type GroupView = { id: string; segment: "smb" | "business"; service: string; icon: IconName; title: string; short: string; text: string; highlights: string[]; notice: string; startsAt: { price: string | null; period: string | null } | null; tiers: TierView[]; compare: { label: string; values: string[] }[] | null; journey?: JourneyView[]; draft: boolean };
+export type BrowserLabels = { mostPopular: string; from: string; indicative: string; onRequest: string; choose: string; customQuote: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string; prev: string; next: string; quote: string; yearly: string; save: string; inclVat: string; monthlyAvg: string; billing: Record<Billing, string>; tableTitle: string; tableItem: string; tablePrice: string; tableBilling: string; draft: string };
 
-/**
- * Today's 24-hour deals as a sliding banner: one service per slide, auto-advancing every 6 s (paused on hover / focus
- * and for reduced-motion users), with arrows, dots and swipe.
- */
-export function DealsCarousel({ deals, labels, locale }: { deals: DealSlide[]; labels: { dayTitle: string; dayNote: string; seeDeal: string; save: string; off: string; endsIn: string; days: string; hours: string; minutes: string; seconds: string; prev: string; next: string }; locale: string }) {
-  const [i, setI] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [touchX, setTouchX] = useState<number | null>(null);
-  const n = deals.length;
-  const rtl = locale === "ar";
-  const go = (k: number) => setI(((k % n) + n) % n);
-  useEffect(() => {
-    if (paused || n < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const id = setInterval(() => setI((x) => (x + 1) % n), 6000);
-    return () => clearInterval(id);
-  }, [paused, n]);
-  if (!n) return null;
-  const arrow = rtl ? "ArrowLeft" : "ArrowRight";
+/** "From" / "Initial indication from" before a starting price. */
+const fromLabel = (t: { from: boolean; indicative?: boolean }, labels: { from: string; indicative: string }) => (t.from ? (t.indicative ? labels.indicative : labels.from) : null);
+
+/** A price as the client should read it: how it is paid, the amount before VAT, with VAT, and a term's monthly average. */
+export function PriceBlock({ t, labels, size = "md" }: { t: Pick<TierView, "price" | "priceVat" | "monthlyAvg" | "from" | "indicative" | "period" | "billing" | "annual" | "annualSave">; labels: Pick<BrowserLabels, "from" | "indicative" | "onRequest" | "inclVat" | "monthlyAvg" | "billing" | "yearly" | "save">; size?: "md" | "lg" }) {
+  if (!t.price) return <span className="text-base font-semibold text-iris">{labels.onRequest}</span>;
+  const lead = fromLabel(t, labels);
   return (
-    <div
-      className="relative overflow-hidden rounded-card shadow-lg"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
-      onTouchStart={(e) => setTouchX(e.touches[0].clientX)}
-      onTouchEnd={(e) => {
-        if (touchX === null) return;
-        const dx = e.changedTouches[0].clientX - touchX;
-        if (Math.abs(dx) > 40) go(i + ((dx < 0) !== rtl ? 1 : -1));
-        setTouchX(null);
-      }}
-      role="region"
-      aria-roledescription="carousel"
-      aria-label={labels.dayTitle}
-    >
-      <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(${(rtl ? 1 : -1) * i * 100}%)` }}>
-        {deals.map((d, k) => (
-          <article key={d.slug} aria-hidden={k !== i} className={`relative grid w-full shrink-0 gap-8 overflow-hidden bg-gradient-to-br p-7 pb-16 text-white md:grid-cols-[1.3fr_1fr] md:p-10 md:pb-16 ${SLIDE_BG[k % SLIDE_BG.length]}`}>
-            <span aria-hidden className="absolute -end-20 -top-20 size-72 rounded-full bg-white/10 blur-2xl" />
-            <div className="relative grid content-start gap-4">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex w-fit items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-ink">
-                  <Icon name="Zap" size={13} /> {labels.dayTitle}
-                </span>
-                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">{d.badge}</span>
-              </span>
-              <h2 className="flex items-start gap-3 text-2xl font-bold leading-snug md:text-3xl">
-                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-white/15">
-                  <Icon name={d.icon} size={22} />
-                </span>
-                {d.title}
-              </h2>
-              <p className="text-[15px] leading-relaxed text-white/85">{d.text}</p>
-              <ul className="flex flex-wrap gap-2">
-                {d.features.map((f) => (
-                  <li key={f} className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm">
-                    <Icon name="Check" size={14} /> {f}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-xs text-white/70">{labels.dayNote}</p>
-            </div>
-            <div className="relative grid content-center justify-items-start gap-4 rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
-              <Countdown endsAt={d.endsAtInstant} labels={labels} dark big />
-              <div className="grid w-full gap-2">
-                <span className="flex flex-wrap items-center gap-3">
-                  <span className="text-2xl font-semibold text-white/75 line-through decoration-2" dir="ltr">
-                    {d.oldPrice}
-                  </span>
-                  <span className="rounded-lg bg-white px-3 py-1 text-lg font-extrabold text-ink shadow">
-                    {labels.off.replace("{n}", String(d.percent))}
-                  </span>
-                </span>
-                <span className="text-5xl font-bold" dir="ltr">
-                  {d.price}
-                </span>
-                <span className="w-fit rounded-full bg-white/20 px-2.5 py-0.5 text-sm font-semibold">
-                  {labels.save} {d.saving}
-                </span>
-              </div>
-              <Link href={`/offers/${d.slug}`} tabIndex={k === i ? 0 : -1} className="btn w-full justify-center bg-white text-ink hover:bg-cloud">
-                {labels.seeDeal} <Icon name={arrow} size={16} />
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
-      {n > 1 && (
-        <div className="absolute inset-x-0 bottom-4 flex items-center justify-center gap-3">
-          <button type="button" onClick={() => go(i - 1)} aria-label={labels.prev} className="grid size-8 place-items-center rounded-full bg-white/20 text-white hover:bg-white/35">
-            <Icon name={rtl ? "ChevronRight" : "ChevronLeft"} size={16} />
-          </button>
-          <span className="flex gap-1.5">
-            {deals.map((d, k) => (
-              <button key={d.slug} type="button" onClick={() => go(k)} aria-label={d.badge} aria-current={k === i} className={`h-2 rounded-full transition-all ${k === i ? "w-7 bg-white" : "w-2 bg-white/45 hover:bg-white/70"}`} />
-            ))}
-          </span>
-          <button type="button" onClick={() => go(i + 1)} aria-label={labels.next} className="grid size-8 place-items-center rounded-full bg-white/20 text-white hover:bg-white/35">
-            <Icon name={rtl ? "ChevronLeft" : "ChevronRight"} size={16} />
-          </button>
-        </div>
+    <span className="grid gap-1">
+      <span className="flex flex-wrap items-center gap-2">
+        {labels.billing[t.billing] !== t.period && <span className="w-fit rounded-full bg-lilac px-2.5 py-0.5 text-[11px] font-bold text-iris">{labels.billing[t.billing]}</span>}
+        {lead && <span className="text-xs text-graphite">{lead}</span>}
+      </span>
+      <span className="flex flex-wrap items-baseline gap-1.5">
+        <span className={`${size === "lg" ? "text-4xl" : "text-2xl"} font-bold tabular`} dir="ltr">
+          {t.price}
+        </span>
+        {t.period && <span className="text-sm font-medium text-iron">/ {t.period}</span>}
+      </span>
+      {t.monthlyAvg && (
+        <span className="text-xs text-iron">
+          {labels.monthlyAvg}:{" "}
+          <b className="text-ink" dir="ltr">
+            {t.monthlyAvg}
+          </b>
+        </span>
       )}
-    </div>
+      {t.priceVat && (
+        <span className="text-xs text-graphite">
+          {lead ? `${lead} ` : ""}
+          <span dir="ltr">{t.priceVat}</span> {labels.inclVat}
+        </span>
+      )}
+      {t.annual && (
+        <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-iron">
+          {labels.yearly}{" "}
+          <b className="text-ink" dir="ltr">
+            {t.annual}
+          </b>
+          <span className="rounded-full bg-mint px-2 py-0.5 font-bold text-fern">
+            {labels.save} {t.annualSave}
+          </span>
+        </span>
+      )}
+    </span>
   );
 }
 
-export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; price: string | null; from: boolean; period: string | null; delivery: string; featured?: boolean; features: string[]; excludes: string[]; annual?: string | null; annualSave?: string | null };
-export type JourneyView = { icon: IconName; title: string; text: string; tier: string };
-export type GroupView = { id: string; segment: "smb" | "business"; service: string; icon: IconName; title: string; short: string; text: string; highlights: string[]; notice: string; startsAt: { price: string | null; period: string | null } | null; tiers: TierView[]; journey?: JourneyView[] };
-type BrowserLabels = { mostPopular: string; from: string; onRequest: string; choose: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string; prev: string; next: string; quote: string; yearly: string; save: string };
+/** The group's tiers side by side: price, billing, delivery, then the group's own rows. Scrolls inside its card on phones. */
+function CompareTable({ g, labels }: { g: GroupView; labels: BrowserLabels }) {
+  if (!g.compare?.length) return null;
+  const rows: { label: string; values: string[] }[] = [
+    { label: labels.tablePrice, values: g.tiers.map((t) => (t.price ? `${fromLabel(t, labels) ? `${fromLabel(t, labels)} ` : ""}${t.price}` : labels.onRequest)) },
+    { label: labels.tableBilling, values: g.tiers.map((t) => (t.period && t.period !== labels.billing[t.billing] ? `${labels.billing[t.billing]} · ${t.period}` : labels.billing[t.billing])) },
+    { label: labels.delivery, values: g.tiers.map((t) => t.delivery) },
+    ...g.compare
+  ];
+  return (
+    <div className="grid gap-3 rounded-card border border-mist bg-white p-4 shadow-card md:p-6">
+      <h3 className="text-lg font-bold">{labels.tableTitle}</h3>
+      <div className="overflow-x-auto overscroll-x-contain">
+        <table className="w-full min-w-[560px] border-collapse text-start text-[13.5px]">
+          <thead>
+            <tr>
+              <th scope="col" className="sticky start-0 z-10 bg-white p-2.5 text-start text-xs font-semibold text-graphite">
+                {labels.tableItem}
+              </th>
+              {g.tiers.map((t) => (
+                <th key={t.key} scope="col" className={`p-2.5 text-start align-bottom ${t.featured ? "rounded-t-xl bg-lilac/70 text-iris" : ""}`}>
+                  <b className="text-[14.5px]">{t.name}</b>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.label} className="border-t border-mist">
+                <th scope="row" className="sticky start-0 z-10 bg-white p-2.5 text-start text-xs font-semibold text-iron">
+                  {r.label}
+                </th>
+                {r.values.map((v, i) => (
+                  <td key={g.tiers[i]?.key ?? i} className={`p-2.5 align-top ${g.tiers[i]?.featured ? "bg-lilac/40" : ""}`}>
+                    {v}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
 
 /** Packages by service (tabs), three tiers each; every tier links to its own shareable page. */
 export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }: { groups: GroupView[]; labels: BrowserLabels; locale: string; anchor?: string }) {
@@ -193,6 +178,11 @@ export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }:
           </button>
         ))}
       </div>
+      {g.draft && (
+        <p className="flex items-center gap-2 rounded-xl border border-[#f59e0b]/40 bg-[#fffbeb] px-4 py-3 text-sm font-semibold text-[#92400e]">
+          <Icon name="Pencil" size={17} className="shrink-0" /> {labels.draft}
+        </p>
+      )}
       {/* the service at a glance: what it delivers, beside a scene that shows it */}
       <div key={g.id} className="sv-enter grid items-center gap-6 rounded-card border border-mist bg-white p-5 shadow-card md:grid-cols-[1.1fr_1fr] md:p-8">
         <div className="grid content-start gap-4">
@@ -235,32 +225,9 @@ export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }:
             <p className="rounded-lg bg-cloud px-3 py-2 text-[13px] text-iron">
               <b className="font-semibold text-ink">{labels.idealFor}:</b> {t.idealFor}
             </p>
-            <p className="border-y border-mist py-3">
-              {t.price ? (
-                <span className="grid">
-                  {t.from && <span className="text-xs text-graphite">{labels.from}</span>}
-                  <span className="flex flex-wrap items-baseline gap-1.5">
-                    <span className="text-2xl font-bold tabular" dir="ltr">
-                      {t.price}
-                    </span>
-                    {t.period && <span className="text-sm font-medium text-iron">/ {t.period}</span>}
-                  </span>
-                  {t.annual && (
-                    <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-iron">
-                      {labels.yearly}{" "}
-                      <b className="text-ink" dir="ltr">
-                        {t.annual}
-                      </b>
-                      <span className="rounded-full bg-mint px-2 py-0.5 font-bold text-fern">
-                        {labels.save} {t.annualSave}
-                      </span>
-                    </span>
-                  )}
-                </span>
-              ) : (
-                <span className="text-base font-semibold text-iris">{labels.onRequest}</span>
-              )}
-            </p>
+            <div className="border-y border-mist py-3">
+              <PriceBlock t={t} labels={labels} />
+            </div>
             <p className="flex items-start gap-1.5 text-sm text-iron">
               <Icon name="Clock" size={14} className="mt-0.5 shrink-0 text-iris" />
               <span>
@@ -287,11 +254,12 @@ export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }:
               </div>
             )}
             <Link href={`/offers/${t.key}`} className={`btn mt-auto w-full justify-center ${t.featured ? "btn-primary" : "btn-outline"}`}>
-              {g.segment === "business" ? labels.quote : labels.choose} <Icon name={arrow} size={16} />
+              {t.from || !t.price ? labels.customQuote : g.segment === "business" ? labels.quote : labels.choose} <Icon name={arrow} size={16} />
             </Link>
           </div>
         ))}
       </CardSlider>
+      <CompareTable g={g} labels={labels} />
       {g.journey && <Journey steps={g.journey} groups={groups} labels={labels} arrow={arrow} />}
     </div>
   );

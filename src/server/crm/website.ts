@@ -7,7 +7,7 @@ import { SERVICE_KEYS, WEBSITE_BUDGET_KEYS, WEBSITE_BUDGETS } from "@/lib/crm/se
 import { normEmail, normPhone } from "./normalize";
 import { systemActivity } from "./activities";
 import { createLeadTx } from "./leads";
-import { LEAD_DETAIL_LABELS, offerLabel, type LeadDetailKey } from "@/content/offers";
+import { LEAD_DETAIL_LABELS, offerLabel, offerReference, type LeadDetailKey } from "@/content/offers";
 
 /**
  * Public website → CRM lead capture.
@@ -96,13 +96,14 @@ export async function captureWebsiteLead(raw: unknown, meta: { ip?: string | nul
   const budget = WEBSITE_BUDGET_KEYS.includes(d.budget) ? WEBSITE_BUDGETS[d.budget] : null;
   // only keys that exist on the site are kept (the label comes from src/content/offers.ts, never from the visitor)
   const offer = d.offer ? offerLabel(d.offer) : null;
-  if (offer) d.message = `[${offer}]${d.message ? `
-${d.message}` : ""}`;
+  // its reference price at the moment of the request (amount, billing, before VAT) — also resolved here, not sent
+  const reference = offer && d.offer ? offerReference(d.offer) : null;
+  if (offer) d.message = [`[${offer}]`, reference ? `• السعر المرجعي: ${reference.text}` : "", d.message].filter(Boolean).join("\n");
   // the extra answers are kept as data and also shown at the end of the message for whoever reads the lead
   const details = Object.fromEntries(Object.entries(d.details ?? {}).filter(([, v]) => v)) as Partial<Record<LeadDetailKey, string>>;
   const detailLines = Object.entries(details).map(([k, v]) => `• ${LEAD_DETAIL_LABELS[k as LeadDetailKey]}: ${v}`);
   if (detailLines.length) d.message = [d.message, ...detailLines].filter(Boolean).join("\n");
-  const captureMeta = { form: d.source, offer: offer ? { key: d.offer, label: offer } : null, utm: d.utm ?? {}, referrer: d.referrer || null, page: d.page || null, ip: meta.ip ?? null, userAgent: meta.userAgent?.slice(0, 200) ?? null, budgetOption: d.budget || null, rawService: d.service || null, details };
+  const captureMeta = { form: d.source, offer: offer ? { key: d.offer, label: offer, ...(reference ? { price: reference.price, from: reference.from, billing: reference.billing, termMonths: reference.termMonths, reference: reference.text } : {}) } : null, utm: d.utm ?? {}, referrer: d.referrer || null, page: d.page || null, ip: meta.ip ?? null, userAgent: meta.userAgent?.slice(0, 200) ?? null, budgetOption: d.budget || null, rawService: d.service || null, details };
 
   const matchOr = [
     ...(email ? [{ emailNormalized: email }] : []),

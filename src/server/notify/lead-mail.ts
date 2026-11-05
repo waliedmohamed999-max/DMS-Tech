@@ -3,7 +3,7 @@ import type { websiteLeadSchema } from "@/server/crm/website";
 import { serviceLabel, SERVICE_KEYS } from "@/lib/crm/services";
 import { services } from "@/content/services";
 import { chatbot } from "@/content/chatbot";
-import { LEAD_DETAIL_LABELS, offerLabel, type LeadDetailKey } from "@/content/offers";
+import { LEAD_DETAIL_LABELS, offerLabel, offerReference, type LeadDetailKey } from "@/content/offers";
 import { site } from "@/content/site";
 import { buildMessage, isEmail, oneLine, sendMail, type MailResult } from "./mailer";
 
@@ -50,6 +50,7 @@ export function buildLeadMail(d: Lead, meta: { ip?: string | null; leadNumber?: 
     ["البريد", d.email],
     ["الخدمة", d.service ? service : ""],
     ["الباقة / العرض", d.offer ? (offerLabel(d.offer) ?? "") : ""],
+    ["السعر المرجعي", d.offer && offerLabel(d.offer) ? (offerReference(d.offer)?.text ?? "") : ""],
     ["الميزانية", d.budget ? (BUDGETS[d.budget] ?? d.budget) : ""],
     ["النموذج", FORMS[d.source] ?? d.source],
     ["لغة الزائر", d.locale === "ar" ? "العربية" : "الإنجليزية"],

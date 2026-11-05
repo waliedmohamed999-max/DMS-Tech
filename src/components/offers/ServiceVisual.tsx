@@ -64,7 +64,7 @@ function Web({ l }: { l: Lc }) {
       </Float>
       <Float className="start-[2%] bottom-[14%]" delay={1.2}>
         <Chip>
-          <Icon name="Search" size={12} className="text-iris" /> {pick(l, "الأول في جوجل", "#1 on Google")}
+          <Icon name="Search" size={12} className="text-iris" /> {pick(l, "جاهز لمحركات البحث", "Search-ready")}
         </Chip>
       </Float>
       <Float className="end-[4%] bottom-[4%]" delay={0.6}>
