@@ -1,8 +1,8 @@
 # Pricing & profitability — /offers (2026-11-05)
 
-The package prices were raised by about 10% on 2026-11-05 and rounded to …99. These packages are unchanged pending review: WhatsApp, the tech team and Ready-to-advertise. Ready-to-advertise was narrowed to one campaign and two creatives so it stays smaller than the monthly Starter plan.
+The package prices were raised by about 10% on 2026-11-05 and rounded to …99. These packages are unchanged pending review: WhatsApp, the tech team and Ads trial. Ads trial was narrowed to one campaign and two creatives so it stays smaller than the monthly Essential plan.
 
-Four campaigns run 1–14 Dec 2026, after the raised prices are live, priced 13–18% below the current packages. Their struck price is computed, never typed. Tests check that a campaign is never dearer than a permanent plan for the same thing.
+Four offers run 1–14 Dec 2026, after the raised prices are live, priced 13–18% below the current packages. Each offer's contents, exclusions and struck price come from its packages; the struck price is computed, never typed. Approved offers that haven't started yet show as a preview in development only. Tests check that an offer is never dearer than a permanent plan for the same thing.
 
 Prices live in `src/content/offers.ts` (SAR, before 15% VAT). The profitability model is `src/lib/commercial/profitability.ts`; it is a design, not an admin screen. A screen can be added once finance approves the cost inputs.
 
@@ -67,9 +67,9 @@ The comparison below uses the nearest separate packages; the scopes differ sligh
 
 | Plan | Monthly average | Nearest separate packages per month | Difference |
 |---|---|---|---|
-| Essential 10,500 | 3,500 | Presence 1,999 + Ads Starter 2,199 = 4,198 | −17% |
-| Growth 21,000 | 7,000 | Engagement 3,899 + Ads Growth 4,399 = 8,298 | −16% |
-| Complete 37,500 | 12,500 | Brand 6,599 + Ads Business 8,299 = 14,898 | −16% |
+| Essential 10,500 | 3,500 | Social Essential 1,999 + Ads Essential 2,199 = 4,198 | −17% |
+| Professional 21,000 | 7,000 | Social Professional 3,899 + Ads Professional 4,399 = 8,298 | −16% |
+| Complete 37,500 | 12,500 | Social Advanced 6,599 + Ads Advanced 8,299 = 14,898 | −16% |
 
 The bundles therefore work as a commitment discount, and the discount grows with the plan. They stay `draft` until their delivery cost is approved.
 

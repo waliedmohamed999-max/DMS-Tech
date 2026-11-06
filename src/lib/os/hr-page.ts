@@ -17,7 +17,8 @@ export async function hrOptions(ctx: Ctx, locale: string) {
   const [depts, emps, users] = await Promise.all([
     prisma.department.findMany({ where: { organizationId: ctx.organizationId, deletedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true, nameAr: true } }),
     employeeOptions(ctx),
-    prisma.user.findMany({ where: { organizationId: ctx.organizationId, status: "ACTIVE", deletedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true, nameAr: true, email: true } })
+    // only accounts not linked to an employee yet (one account per employee)
+    prisma.user.findMany({ where: { organizationId: ctx.organizationId, status: "ACTIVE", deletedAt: null, employee: { is: null } }, orderBy: { name: "asc" }, select: { id: true, name: true, nameAr: true, email: true } })
   ]);
   return {
     departments: depts.map((d) => ({ value: d.id, label: (locale === "ar" && d.nameAr) || d.name })),

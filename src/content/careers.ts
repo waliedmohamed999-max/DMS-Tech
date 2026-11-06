@@ -1,12 +1,17 @@
 import type { IconName } from "@/components/ui/Icon";
 import type { Job, L } from "./types";
+import { openJobs } from "./careers-open";
 
 /**
- * Careers: open roles (/careers, /careers/[slug]) and the page copy. Applications go by e-mail to site.careersEmail with
- * the CV attached (the subject names the role). Benefits list only what the company offers by how it works
+ * Careers: open roles (/careers, /careers/[slug]) and the page copy. Applications are sent with the form on each page
+ * (components/careers/JobApplyForm → /api/careers/apply): saved in the dashboard (recruitment) and e-mailed to
+ * the company inbox (CAREERS_NOTIFY_EMAIL, default the main site e-mail) with the CV attached. Benefits list only what the company offers by how it works
  * (remote-friendly, real projects, learning) — no salary or insurance claims.
  */
-export const jobs: Job[] = [
+/** Applications for the first set of roles closed on 6 Nov 2026; their pages stay for old links. */
+const CLOSED = { status: "closed" as const, closedAt: "2026-11-06" };
+
+const closedJobs: Job[] = [
   {
     slug: "full-stack-developer",
     service: "web-development",
@@ -42,7 +47,8 @@ export const jobs: Job[] = [
       { ar: "معرفة بـ Docker والنشر على السحابة", en: "Docker and cloud deployment" },
       { ar: "خبرة في تطبيقات الجوال (React Native أو Flutter)", en: "Mobile apps (React Native or Flutter)" }
     ],
-    skills: ["Next.js", "React", "TypeScript", "Node.js", "PostgreSQL", "Prisma", "Tailwind CSS", "Git"]
+    skills: ["Next.js", "React", "TypeScript", "Node.js", "PostgreSQL", "Prisma", "Tailwind CSS", "Git"],
+    ...CLOSED
   },
   {
     slug: "ai-automation-engineer",
@@ -78,7 +84,8 @@ export const jobs: Job[] = [
       { ar: "خبرة في WhatsApp Business Platform", en: "WhatsApp Business Platform experience" },
       { ar: "معالجة النصوص العربية", en: "Arabic text processing" }
     ],
-    skills: ["Python", "Node.js", "LLM APIs", "RAG", "n8n", "Make", "Webhooks", "WhatsApp API"]
+    skills: ["Python", "Node.js", "LLM APIs", "RAG", "n8n", "Make", "Webhooks", "WhatsApp API"],
+    ...CLOSED
   },
   {
     slug: "ux-ui-designer",
@@ -114,7 +121,8 @@ export const jobs: Job[] = [
       { ar: "تصميم الحركة والتفاعلات الدقيقة", en: "Motion and micro-interaction design" },
       { ar: "خبرة في تصميم لوحات التحكم وأنظمة الإدارة", en: "Dashboard and admin system design" }
     ],
-    skills: ["Figma", "UX Research", "Prototyping", "Design Systems", "RTL", "Accessibility"]
+    skills: ["Figma", "UX Research", "Prototyping", "Design Systems", "RTL", "Accessibility"],
+    ...CLOSED
   },
   {
     slug: "digital-marketing-specialist",
@@ -149,7 +157,8 @@ export const jobs: Job[] = [
       { ar: "خبرة في تسويق المتاجر الإلكترونية (زد / سلة)", en: "E-commerce marketing (Zid / Salla)" },
       { ar: "خبرة في تحسين محركات البحث (SEO)", en: "SEO experience" }
     ],
-    skills: ["Meta Ads", "Google Ads", "TikTok Ads", "Snapchat Ads", "GA4", "Tag Manager", "SEO"]
+    skills: ["Meta Ads", "Google Ads", "TikTok Ads", "Snapchat Ads", "GA4", "Tag Manager", "SEO"],
+    ...CLOSED
   },
   {
     slug: "frontend-developer",
@@ -184,7 +193,8 @@ export const jobs: Job[] = [
       { ar: "خبرة في الحركة والتفاعلات (Framer Motion)", en: "Animation and interactions (Framer Motion)" },
       { ar: "معرفة بتحسين محركات البحث التقني", en: "Technical SEO knowledge" }
     ],
-    skills: ["React", "Next.js", "TypeScript", "Tailwind CSS", "Figma", "Web Performance", "RTL"]
+    skills: ["React", "Next.js", "TypeScript", "Tailwind CSS", "Figma", "Web Performance", "RTL"],
+    ...CLOSED
   },
   {
     slug: "mobile-app-developer",
@@ -219,7 +229,8 @@ export const jobs: Job[] = [
       { ar: "خبرة في Firebase", en: "Firebase experience" },
       { ar: "ربط بوابات الدفع المحلية (Apple Pay، مدى)", en: "Local payment gateways (Apple Pay, mada)" }
     ],
-    skills: ["Flutter", "Dart", "React Native", "Firebase", "REST APIs", "App Store", "Google Play"]
+    skills: ["Flutter", "Dart", "React Native", "Firebase", "REST APIs", "App Store", "Google Play"],
+    ...CLOSED
   },
   {
     slug: "automation-specialist",
@@ -252,7 +263,8 @@ export const jobs: Job[] = [
       { ar: "خبرة في دمج نماذج الذكاء الاصطناعي داخل المسارات", en: "Adding AI models inside flows" },
       { ar: "خبرة في أنظمة ERP أو المحاسبة", en: "ERP or accounting systems" }
     ],
-    skills: ["n8n", "Make", "Zapier", "Webhooks", "JSON", "Google Workspace", "JavaScript"]
+    skills: ["n8n", "Make", "Zapier", "Webhooks", "JSON", "Google Workspace", "JavaScript"],
+    ...CLOSED
   },
   {
     slug: "data-bi-analyst",
@@ -284,7 +296,8 @@ export const jobs: Job[] = [
       { ar: "معرفة بـ Python لتحليل البيانات", en: "Python for data analysis" },
       { ar: "خبرة في بيانات المتاجر الإلكترونية والتسويق", en: "E-commerce and marketing data" }
     ],
-    skills: ["SQL", "Power BI", "Looker Studio", "Excel", "Python", "GA4"]
+    skills: ["SQL", "Power BI", "Looker Studio", "Excel", "Python", "GA4"],
+    ...CLOSED
   },
   {
     slug: "whatsapp-solutions-specialist",
@@ -317,7 +330,8 @@ export const jobs: Job[] = [
       { ar: "خبرة في WhatsApp Cloud API", en: "WhatsApp Cloud API experience" },
       { ar: "ربط واتساب بمتاجر زد وسلة", en: "Connecting WhatsApp to Zid and Salla stores" }
     ],
-    skills: ["WhatsApp Business Platform", "Cloud API", "Chatbot Flows", "Meta Business Manager", "CRM"]
+    skills: ["WhatsApp Business Platform", "Cloud API", "Chatbot Flows", "Meta Business Manager", "CRM"],
+    ...CLOSED
   },
   {
     slug: "customer-success-specialist",
@@ -349,7 +363,8 @@ export const jobs: Job[] = [
       { ar: "خبرة سابقة في شركة تقنية أو SaaS", en: "Previous tech or SaaS company experience" },
       { ar: "خبرة في أنظمة CRM", en: "CRM experience" }
     ],
-    skills: ["Onboarding", "CRM", "WhatsApp", "Support Tickets", "Communication"]
+    skills: ["Onboarding", "CRM", "WhatsApp", "Support Tickets", "Communication"],
+    ...CLOSED
   },
   {
     slug: "ecommerce-specialist",
@@ -382,7 +397,8 @@ export const jobs: Job[] = [
       { ar: "معرفة بـ HTML و CSS لتخصيص الثيمات", en: "HTML and CSS for theme tweaks" },
       { ar: "خبرة في الإعلانات الممولة للمتاجر", en: "Paid ads for online stores" }
     ],
-    skills: ["Zid", "Salla", "Shopify", "Payment Gateways", "Shipping", "Pixel"]
+    skills: ["Zid", "Salla", "Shopify", "Payment Gateways", "Shipping", "Pixel"],
+    ...CLOSED
   },
   {
     slug: "store-theme-developer",
@@ -414,7 +430,8 @@ export const jobs: Job[] = [
       { ar: "خبرة في Node.js", en: "Node.js experience" },
       { ar: "بناء تطبيقات على متجر تطبيقات سلة أو شوبيفاي", en: "Building apps for the Salla or Shopify app stores" }
     ],
-    skills: ["Shopify Liquid", "Salla", "Zid", "JavaScript", "REST APIs", "Webhooks"]
+    skills: ["Shopify Liquid", "Salla", "Zid", "JavaScript", "REST APIs", "Webhooks"],
+    ...CLOSED
   },
   {
     slug: "graphic-designer",
@@ -446,7 +463,8 @@ export const jobs: Job[] = [
       { ar: "مهارات أساسية في الموشن جرافيك", en: "Basic motion graphics" },
       { ar: "استخدام أدوات التصميم بالذكاء الاصطناعي", en: "AI design tools" }
     ],
-    skills: ["Photoshop", "Illustrator", "Figma", "Canva", "Social Media Design", "Arabic Typography"]
+    skills: ["Photoshop", "Illustrator", "Figma", "Canva", "Social Media Design", "Arabic Typography"],
+    ...CLOSED
   },
   {
     slug: "content-writer",
@@ -478,7 +496,8 @@ export const jobs: Job[] = [
       { ar: "الكتابة بالإنجليزية", en: "Writing in English" },
       { ar: "خبرة في تحسين محركات البحث (SEO)", en: "SEO experience" }
     ],
-    skills: ["Copywriting", "Content Plans", "SEO Writing", "Ad Copy", "Arabic"]
+    skills: ["Copywriting", "Content Plans", "SEO Writing", "Ad Copy", "Arabic"],
+    ...CLOSED
   },
   {
     slug: "video-motion-designer",
@@ -510,7 +529,8 @@ export const jobs: Job[] = [
       { ar: "تصوير بالجوال أو الكاميرا", en: "Phone or camera shooting" },
       { ar: "أدوات الفيديو بالذكاء الاصطناعي", en: "AI video tools" }
     ],
-    skills: ["Premiere Pro", "After Effects", "CapCut", "Motion Graphics", "Reels", "TikTok"]
+    skills: ["Premiere Pro", "After Effects", "CapCut", "Motion Graphics", "Reels", "TikTok"],
+    ...CLOSED
   },
   {
     slug: "systems-integration-engineer",
@@ -542,7 +562,8 @@ export const jobs: Job[] = [
       { ar: "خبرة في Odoo أو Zoho أو SAP", en: "Odoo, Zoho or SAP experience" },
       { ar: "معرفة بمتطلبات الفوترة الإلكترونية (فاتورة / ZATCA)", en: "E-invoicing knowledge (Fatoora / ZATCA)" }
     ],
-    skills: ["Node.js", "Python", "SQL", "REST", "OAuth", "Odoo", "Zoho", "ZATCA"]
+    skills: ["Node.js", "Python", "SQL", "REST", "OAuth", "Odoo", "Zoho", "ZATCA"],
+    ...CLOSED
   },
   {
     slug: "business-analyst",
@@ -574,7 +595,8 @@ export const jobs: Job[] = [
       { ar: "شهادة CBAP أو PMI-PBA", en: "CBAP or PMI-PBA certification" },
       { ar: "خبرة في القطاع الحكومي أو الشركات الكبيرة", en: "Government or enterprise experience" }
     ],
-    skills: ["Requirements", "User Stories", "BPMN", "Jira", "Workshops", "Documentation"]
+    skills: ["Requirements", "User Stories", "BPMN", "Jira", "Workshops", "Documentation"],
+    ...CLOSED
   },
   {
     slug: "technical-project-manager",
@@ -607,7 +629,8 @@ export const jobs: Job[] = [
       { ar: "شهادة PMP أو Scrum Master", en: "PMP or Scrum Master certification" },
       { ar: "خلفية برمجية سابقة", en: "A previous programming background" }
     ],
-    skills: ["Agile", "Scrum", "Jira", "Planning", "Risk Management", "Client Communication"]
+    skills: ["Agile", "Scrum", "Jira", "Planning", "Risk Management", "Client Communication"],
+    ...CLOSED
   },
   {
     slug: "devops-engineer",
@@ -639,7 +662,8 @@ export const jobs: Job[] = [
       { ar: "خبرة في Kubernetes و Terraform", en: "Kubernetes and Terraform" },
       { ar: "خبرة في استضافة cPanel وخوادم Nginx", en: "cPanel hosting and Nginx" }
     ],
-    skills: ["Linux", "Docker", "GitHub Actions", "AWS", "Nginx", "PostgreSQL", "Monitoring"]
+    skills: ["Linux", "Docker", "GitHub Actions", "AWS", "Nginx", "PostgreSQL", "Monitoring"],
+    ...CLOSED
   },
   {
     slug: "qa-engineer",
@@ -671,7 +695,8 @@ export const jobs: Job[] = [
       { ar: "اختبار الأداء والأمان", en: "Performance and security testing" },
       { ar: "شهادة ISTQB", en: "ISTQB certification" }
     ],
-    skills: ["Playwright", "Cypress", "Postman", "Test Plans", "Jira", "Accessibility"]
+    skills: ["Playwright", "Cypress", "Postman", "Test Plans", "Jira", "Accessibility"],
+    ...CLOSED
   },
   {
     slug: "brand-identity-designer",
@@ -703,9 +728,14 @@ export const jobs: Job[] = [
       { ar: "تصميم الخطوط والحروف", en: "Type and lettering design" },
       { ar: "تصميم التغليف والمطبوعات", en: "Packaging and print design" }
     ],
-    skills: ["Illustrator", "Photoshop", "Brand Guidelines", "Logo Design", "Arabic Lettering"]
+    skills: ["Illustrator", "Photoshop", "Brand Guidelines", "Logo Design", "Arabic Lettering"],
+    ...CLOSED
   }
 ];
+
+/** Open roles first (careers-open.ts), then the closed ones (pages kept for old links). */
+export const jobs: Job[] = [...openJobs, ...closedJobs];
+export const isOpenJob = (j: Pick<Job, "status">) => j.status !== "closed";
 
 export const careersCopy = {
   rolesCount: { ar: "وظيفة متاحة", en: "open roles" } as L,
@@ -721,16 +751,15 @@ export const careersCopy = {
   summary: { ar: "ملخص الوظيفة", en: "Job summary" } as L,
   applyTitle: { ar: "كيف تتقدم؟", en: "How to apply" } as L,
   applyText: {
-    ar: "أرسل سيرتك الذاتية ورابط أعمالك إلى بريد التوظيف، واكتب اسم الوظيفة في عنوان الرسالة. نراجع كل طلب ونرد عليك.",
-    en: "Send your CV and a link to your work to our careers e-mail, with the job title in the subject. We review every application and get back to you."
+    ar: "املأ نموذج التقديم أسفل الصفحة وأرفق سيرتك الذاتية ورابط أعمالك. يصل طلبك مباشرة لفريق التوظيف، ونراجع كل طلب ونرد عليك.",
+    en: "Fill in the application form below and attach your CV and a link to your work. It goes straight to our hiring team; we review every application and get back to you."
   } as L,
-  mailSubject: { ar: "طلب توظيف", en: "Job application" } as L,
   browse: { ar: "تصفح الوظائف", en: "Browse jobs" } as L,
-  mailBody: {
-    ar: "مرحباً فريق DMS Tech،\n\nأرغب في التقدم لوظيفة: {job}\n\nالاسم:\nرقم الجوال:\nرابط الأعمال / LinkedIn:\n\nالسيرة الذاتية مرفقة.\n",
-    en: "Hello DMS Tech team,\n\nI'd like to apply for: {job}\n\nName:\nPhone:\nPortfolio / LinkedIn:\n\nMy CV is attached.\n"
-  } as L,
-  other: { ar: "وظائف أخرى", en: "Other openings" } as L,
+  other: { ar: "وظائف متاحة الآن", en: "Open roles now" } as L,
+  closedTitle: { ar: "انتهى التقديم على هذه الوظيفة", en: "Applications for this role have closed" } as L,
+  closedText: { ar: "أُغلق التقديم في {date}. اطّلع على الوظائف المتاحة الآن، أو أرسل سيرتك الذاتية في التقديم العام.", en: "Applications closed on {date}. See the roles open now, or send your CV as an open application." } as L,
+  closedBadge: { ar: "منتهية", en: "Closed" } as L,
+  openings: { ar: "{n} شواغر", en: "{n} openings" } as L,
   perksTitle: { ar: "لماذا تعمل *معنا*؟", en: "Why work *with us*?" } as L,
   perks: [
     { icon: "Rocket", title: { ar: "مشاريع حقيقية", en: "Real projects" }, text: { ar: "تعمل على أنظمة ومنتجات يستخدمها عملاء حقيقيون كل يوم.", en: "Work on systems and products real customers use every day." } },
@@ -742,7 +771,7 @@ export const careersCopy = {
   ] as { icon: IconName; title: L; text: L }[],
   processTitle: { ar: "مراحل *التوظيف*", en: "Our hiring *process*" } as L,
   process: [
-    { icon: "Send", title: { ar: "أرسل طلبك", en: "Apply" }, text: { ar: "سيرتك الذاتية ورابط أعمالك على بريد التوظيف.", en: "Your CV and a link to your work, by e-mail." } },
+    { icon: "Send", title: { ar: "أرسل طلبك", en: "Apply" }, text: { ar: "سيرتك الذاتية ورابط أعمالك عبر نموذج التقديم.", en: "Your CV and a link to your work, through the application form." } },
     { icon: "FileSearch", title: { ar: "مراجعة الطلب", en: "Review" }, text: { ar: "نراجع خبرتك وأعمالك بعناية.", en: "We review your experience and work carefully." } },
     { icon: "PhoneCall", title: { ar: "مقابلة تعارف", en: "Intro call" }, text: { ar: "مكالمة قصيرة للتعارف وفهم توقعاتك.", en: "A short call to get to know you and your expectations." } },
     { icon: "ClipboardList", title: { ar: "مقابلة فنية", en: "Technical interview" }, text: { ar: "نقاش عملي حول مهاراتك ومشاريعك.", en: "A practical discussion about your skills and projects." } },

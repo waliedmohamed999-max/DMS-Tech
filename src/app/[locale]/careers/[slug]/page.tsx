@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { routing, type Locale } from "@/i18n/routing";
 import { Link } from "@/i18n/navigation";
-import { site } from "@/content/site";
 import { getCareersCopy, getJob, getJobSlugs, getJobs } from "@/lib/content";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { alternatesFor } from "@/lib/seo";
+import JobApplyForm from "@/components/careers/JobApplyForm";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -20,7 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const j = await getJob(slug, locale as Locale);
   if (!j) return {};
-  return { ...alternatesFor(locale, `/careers/${slug}`), title: `${j.title} — ${j.team}`, description: j.about };
+  // a closed role keeps its page for old links but leaves search results
+  return { ...alternatesFor(locale, `/careers/${slug}`), title: `${j.title} — ${j.team}`, description: j.about, ...(j.status === "closed" ? { robots: { index: false, follow: true } } : {}) };
 }
 
 /** A titled section of the job page with a bullet list. */
@@ -51,7 +52,7 @@ function SectionTitle({ icon, children }: { icon: IconName; children: string }) 
   );
 }
 
-/** One opening: about the role, responsibilities, requirements, nice-to-have, skills, and an apply card by e-mail. */
+/** One role: about it, responsibilities, requirements, nice-to-have, skills and the application form; a closed role shows a notice instead of the form. */
 export default async function JobPage({ params }: Props) {
   const { locale: raw, slug } = await params;
   const locale = raw as Locale;
@@ -67,13 +68,17 @@ export default async function JobPage({ params }: Props) {
     .sort((a, b) => Number(b.service === job.service) - Number(a.service === job.service))
     .slice(0, 6);
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
-  const apply = `mailto:${site.careersEmail}?subject=${encodeURIComponent(`${c.mailSubject} — ${job.title}`)}&body=${encodeURIComponent(c.mailBody.replace("{job}", job.title))}`;
+  // the application form below (saved in the dashboard + e-mailed to the company inbox with the CV)
+  const apply = "#apply";
+  const closed = job.status === "closed";
+  const closedOn = job.closedAt ? new Intl.DateTimeFormat(locale === "ar" ? "ar-SA-u-nu-latn-ca-gregory" : "en-GB", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${job.closedAt}T00:00:00Z`)) : "";
 
   const facts: [IconName, string, string][] = [
     ["Layers", job.team, ""],
     ["Clock", job.type, ""],
     ["MapPin", job.location, ""],
-    ["Award", job.experience, c.experience]
+    ["Award", job.experience, c.experience],
+    ...(job.openings && job.openings > 1 ? ([["Users", c.openings.replace("{n}", String(job.openings)), ""]] as [IconName, string, string][]) : [])
   ];
 
   return (
@@ -104,10 +109,17 @@ export default async function JobPage({ params }: Props) {
               </span>
             ))}
           </div>
+          {closed && (
+            <p className="flex w-fit items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white">
+              <Icon name="CircleX" size={16} /> {c.closedTitle}
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-3">
-            <a href={apply} className="btn btn-primary">
-              {t("careersApply")} <Icon name={arrow} size={17} />
-            </a>
+            {!closed && (
+              <a href={apply} className="btn btn-primary">
+                {t("careersApply")} <Icon name={arrow} size={17} />
+              </a>
+            )}
             <Link href="/careers" className="btn btn-outline">
               {c.back}
             </Link>
@@ -151,21 +163,43 @@ export default async function JobPage({ params }: Props) {
               ))}
             </ul>
             <div className="grid gap-2 border-t border-mist pt-5">
-              <h3 className="font-bold">{c.applyTitle}</h3>
-              <p className="text-sm leading-relaxed text-iron">{c.applyText}</p>
-              <a href={`mailto:${site.careersEmail}`} className="text-sm font-semibold text-iris" dir="ltr">
-                {site.careersEmail}
-              </a>
+              <h3 className="font-bold">{closed ? c.closedTitle : c.applyTitle}</h3>
+              <p className="text-sm leading-relaxed text-iron">{closed ? c.closedText.replace("{date}", closedOn) : c.applyText}</p>
             </div>
-            <a href={apply} className="btn btn-primary w-full justify-center">
-              <Icon name="Send" size={17} /> {t("careersApply")}
-            </a>
+            {closed ? (
+              <Link href="/careers" className="btn btn-primary w-full justify-center">
+                {c.other} <Icon name={arrow} size={17} />
+              </Link>
+            ) : (
+              <a href={apply} className="btn btn-primary w-full justify-center">
+                <Icon name="Send" size={17} /> {t("careersApply")}
+              </a>
+            )}
           </aside>
         </div>
       </section>
 
+      <section className="section bg-cloud">
+        <div className="container-site max-w-4xl">
+          {closed ? (
+            <div className="card grid justify-items-center gap-4 border border-mist p-10 text-center">
+              <span className="grid size-14 place-items-center rounded-2xl bg-cloud text-iron">
+                <Icon name="CircleX" size={26} />
+              </span>
+              <h2 className="text-xl font-bold">{c.closedTitle}</h2>
+              <p className="max-w-lg text-[15px] leading-relaxed text-iron">{c.closedText.replace("{date}", closedOn)}</p>
+              <Link href="/careers" className="btn btn-primary">
+                {c.other} <Icon name={arrow} size={17} />
+              </Link>
+            </div>
+          ) : (
+            <JobApplyForm locale={locale === "en" ? "en" : "ar"} job={{ slug: job.slug, title: job.title }} />
+          )}
+        </div>
+      </section>
+
       {others.length > 0 && (
-        <section className="section bg-cloud">
+        <section className="section">
           <div className="container-site grid gap-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <h2 className="h-display">{c.other}</h2>

@@ -236,6 +236,33 @@ export function registerSubscribers() {
     });
   }
 
+  // Subscriptions (Phase 11): renewal notice ahead of the term end, renewal and end — to the account manager, or
+  // everyone who manages subscriptions when there is none. Keyed per term so a reminder is never repeated.
+  const subscriptionManagers = (orgId: string) => usersWithAll(orgId, ["subscriptions.manage"]);
+  const SUBS: Record<string, { ar: (p: Record<string, string>) => string; en: (p: Record<string, string>) => string; priority: "MEDIUM" | "HIGH"; key: (p: Record<string, string>, id: string) => string }> = {
+    "subscription.renewal_due": {
+      ar: (p) => (p.autoRenew === "true" ? `يتجدد الاشتراك ${p.number} (${p.clientName}) تلقائياً بعد ${p.termEndDate}` : `تنتهي مدة الاشتراك ${p.number} (${p.clientName}) في ${p.termEndDate} بدون تجديد تلقائي`),
+      en: (p) => (p.autoRenew === "true" ? `Subscription ${p.number} (${p.clientName}) renews automatically after ${p.termEndDate}` : `Subscription ${p.number} (${p.clientName}) ends on ${p.termEndDate} — no automatic renewal`),
+      priority: "HIGH",
+      key: (p, id) => `subscription.renewal_due:${id}:${p.termEndDate}`
+    },
+    "subscription.renewed": { ar: (p) => `تجدد الاشتراك ${p.number} حتى ${p.termEndDate}`, en: (p) => `Subscription ${p.number} renewed until ${p.termEndDate}`, priority: "MEDIUM", key: (p, id) => `subscription.renewed:${id}:${p.termEndDate}` },
+    "subscription.ended": { ar: (p) => `انتهى الاشتراك ${p.number}`, en: (p) => `Subscription ${p.number} has ended`, priority: "MEDIUM", key: (_p, id) => `subscription.ended:${id}` }
+  };
+  for (const [type, f] of Object.entries(SUBS)) {
+    subscribe(type, async (e) => {
+      const p = (e.payload ?? {}) as Record<string, string>;
+      const ids = [...new Set((p.ownerId ? [p.ownerId] : await subscriptionManagers(e.organizationId)).filter((x) => x && x !== e.actorId))];
+      if (!ids.length) return;
+      const users = await prisma.user.findMany({ where: { id: { in: ids }, status: "ACTIVE" }, select: { id: true, locale: true } });
+      const id = e.entityId ?? "";
+      await prisma.notification.createMany({
+        data: users.map((u) => ({ organizationId: e.organizationId, userId: u.id, category: "SALES" as const, priority: f.priority, title: u.locale === "en" ? f.en(p) : f.ar(p), href: `/app/subscriptions/${id}`, entityType: "Subscription", entityId: id || null, dedupeKey: f.key(p, id) })),
+        skipDuplicates: true
+      });
+    });
+  }
+
   // People (Phase 6): private, so titles never contain salary figures; dedupe keys as in Phases 4–5.
   type H = { to: (p: Record<string, string>) => (string | null | undefined)[]; ar: (p: Record<string, string>) => string; en: (p: Record<string, string>) => string; href: (p: Record<string, string>, id: string) => string; priority: "MEDIUM" | "HIGH"; key?: (p: Record<string, string>, id: string) => string };
   const PEOPLE: Record<string, H> = {
@@ -264,6 +291,28 @@ export function registerSubscribers() {
       });
     });
   }
+  // website job application → the opening's owner, else everyone who manages recruitment (one per application event)
+  subscribe("candidate.applied_website", async (e) => {
+    const p = (e.payload ?? {}) as Record<string, string>;
+    const ids = p.ownerId ? [p.ownerId] : await usersWithAll(e.organizationId, ["hr.recruitment.manage"]);
+    if (!ids.length) return;
+    const users = await prisma.user.findMany({ where: { id: { in: ids }, organizationId: e.organizationId, status: "ACTIVE" }, select: { id: true, locale: true } });
+    const again = p.repeat === "true";
+    await prisma.notification.createMany({
+      data: users.map((u) => ({
+        organizationId: e.organizationId,
+        userId: u.id,
+        category: "HR" as const,
+        priority: "HIGH" as const,
+        title: u.locale === "en" ? `${again ? "Repeat" : "New"} website application: ${p.name} — ${p.job}` : `${again ? "تقديم متكرر" : "طلب توظيف جديد"} من الموقع: ${p.name} — ${p.job}`,
+        href: `/app/hr/recruitment/candidates/${p.candidateId}`,
+        entityType: "Candidate",
+        entityId: p.candidateId || null,
+        dedupeKey: `candidate.applied_website:${e.id}`
+      })),
+      skipDuplicates: true
+    });
+  });
   // iqama / visa / passport / contract expiry → HR with full scope (sweep, one per stage and date; no document numbers)
   // f = feminine noun in Arabic (verb agreement)
   const EXPIRY_KIND: Record<string, { ar: string; en: string; f: boolean }> = { IQAMA: { ar: "الإقامة", en: "Iqama", f: true }, VISA: { ar: "تأشيرة العمل", en: "Work visa", f: true }, PASSPORT: { ar: "جواز السفر", en: "Passport", f: false }, CONTRACT: { ar: "عقد العمل", en: "Employment contract", f: false } };

@@ -7,6 +7,7 @@ import { recomputeInvoiceTx } from "./invoices";
 import { billingCandidates } from "./eligibility";
 import { sendAutoReminders } from "./invoice-email";
 import { runDueSchedules } from "./recurring";
+import { sweepSubscriptions } from "../subscriptions/subscriptions";
 import { reportError } from "../obs/errors";
 
 /**
@@ -15,7 +16,7 @@ import { reportError } from "../obs/errors";
  *   · invoices due within org.invoiceDueSoonDays → invoice.due_soon (claimed once: dueSoonNotifiedAt)
  *   · eligible contract milestones / completed projects not yet invoiced → *.billing_ready (once per source)
  *   · APPROVED expenses unpaid for 3+ days → expense.payment_due (claimed once: payReminderAt)
- *   · recurring invoice schedules due today (recurring.ts) and automatic client payment reminders by e-mail when
+ *   · subscriptions (renewals, scheduled cancellations, renewal notices), then recurring invoice schedules due today (recurring.ts) and automatic client payment reminders by e-mail when
  *     enabled (invoice-email.ts) — both under their own lease
  * Multi-instance safe: JobLease (one runner per org) + conditional claims + notification dedupeKeys.
  * It never mutates projects, contracts or quotations, and never creates invoices.
@@ -28,7 +29,11 @@ export async function sweepFinance(organizationId: string, now = new Date()) {
 
 /** Recurring invoices, then client e-mail reminders — their own lease (issuing and sending take seconds). */
 function billingAutomation(organizationId: string, now: Date) {
-  return withLease(`billing:automation:${organizationId}`, 15 * 60_000, async () => ({ recurring: await runDueSchedules(organizationId, now), reminders: await sendAutoReminders(organizationId, now) }));
+  return withLease(`billing:automation:${organizationId}`, 15 * 60_000, async () => {
+    // subscriptions first: ended / renewed terms move their schedules' end dates before the schedules run
+    const subscriptions = await sweepSubscriptions(organizationId, now);
+    return { subscriptions, recurring: await runDueSchedules(organizationId, now), reminders: await sendAutoReminders(organizationId, now) };
+  });
 }
 
 async function runSweep(organizationId: string, now: Date) {

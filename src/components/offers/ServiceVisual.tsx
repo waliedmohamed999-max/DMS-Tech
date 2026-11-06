@@ -131,9 +131,9 @@ function Marketing({ l }: { l: Lc }) {
         </div>
         <div className="grid grid-cols-3 gap-1.5 text-center">
           {[
-            [pick(l, "الطلبات", "Orders"), "+128"],
-            [pick(l, "العائد", "ROAS"), "4.2x"],
-            [pick(l, "تكلفة الطلب", "Cost/order"), pick(l, "18 ر.س", "SAR 18")]
+            [pick(l, "الحملات", "Campaigns"), "3"],
+            [pick(l, "المنصات", "Platforms"), "2"],
+            [pick(l, "التقرير", "Report"), pick(l, "شهري", "Monthly")]
           ].map(([k, v]) => (
             <span key={k} className="rounded-md bg-cloud px-1 py-1.5">
               <b className="block text-[12px] text-iris">{v}</b>

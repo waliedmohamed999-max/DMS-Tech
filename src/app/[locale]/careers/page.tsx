@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Locale } from "@/i18n/routing";
-import { site } from "@/content/site";
 import { getCareersCopy, getJobs, getServices } from "@/lib/content";
 import { Highlight, PageHero, SectionHeading } from "@/components/ui/Section";
 import { Icon, type IconName } from "@/components/ui/Icon";
@@ -9,6 +8,7 @@ import JobsBrowser from "@/components/careers/JobsBrowser";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { DarkSteps } from "@/components/ui/ProductBlocks";
 import { alternatesFor } from "@/lib/seo";
+import JobApplyForm from "@/components/careers/JobApplyForm";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -29,7 +29,6 @@ export default async function CareersPage({ params }: { params: Promise<{ locale
     .map((s) => ({ slug: s.slug, title: s.eyebrow, icon: s.icon as IconName, count: jobs.filter((j) => j.service === s.slug).length }))
     .filter((g) => g.count > 0);
   const arrow = locale === "ar" ? "ArrowLeft" : "ArrowRight";
-  const generalMail = `mailto:${site.careersEmail}?subject=${encodeURIComponent(`${c.mailSubject} — ${t("careersGeneralCta")}`)}`;
 
   return (
     <>
@@ -91,9 +90,12 @@ export default async function CareersPage({ params }: { params: Promise<{ locale
               </span>
               <p className="max-w-xl text-lg font-semibold">{t("careersGeneral")}</p>
             </div>
-            <a href={generalMail} className="btn btn-dark">
+            <a href="#apply" className="btn btn-dark">
               <Icon name="Send" size={18} /> {t("careersGeneralCta")}
             </a>
+          </div>
+          <div className="mx-auto mt-10 max-w-4xl">
+            <JobApplyForm locale={locale === "en" ? "en" : "ar"} roles={jobs.map((j) => ({ slug: j.slug, title: j.title }))} />
           </div>
         </div>
       </section>

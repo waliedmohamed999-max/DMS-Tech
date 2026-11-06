@@ -1,10 +1,13 @@
 import type { MetadataRoute } from "next";
 import { routing } from "@/i18n/routing";
 import { site } from "@/content/site";
-import { getJobSlugs, getOfferSlugs, getPostSlugs, getProjectSlugs, getServiceSlugs } from "@/lib/content";
+import { getOpenJobSlugs, getOfferSlugs, getPostSlugs, getProjectSlugs, getServiceSlugs } from "@/lib/content";
+
+// refreshed hourly: packages and offers are published from the dashboard, and offers start / end on their own dates
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [services, posts, projects, jobs, offerSlugs] = await Promise.all([getServiceSlugs(), getPostSlugs(), getProjectSlugs(), getJobSlugs(), getOfferSlugs()]);
+  const [services, posts, projects, jobs, offerSlugs] = await Promise.all([getServiceSlugs(), getPostSlugs(), getProjectSlugs(), getOpenJobSlugs(), getOfferSlugs()]);
   const paths = [
     "",
     "/services",

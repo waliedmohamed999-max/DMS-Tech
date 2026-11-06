@@ -49,10 +49,14 @@ const baseSchema = {
   country: z.string().trim().length(2).toUpperCase().default("SA"),
   city: optText(80),
   nationality: optText(60),
+  gender: z.preprocess((v) => (v === "" || v == null ? null : v), z.enum(["MALE", "FEMALE"]).nullable().optional()),
+  birthDate: optDate,
+  nationalId: z.preprocess((v) => (typeof v === "string" ? v.replace(/\s/g, "") || null : v ?? null), z.string().regex(/^[A-Za-z0-9]{5,20}$/, "NATIONAL_ID_INVALID").nullable().optional()),
   emergencyContactName: optText(120),
   emergencyContactPhone: optText(30)
 };
 const createSchema = z.object({ ...baseSchema, userId: optId });
+const PERSONAL_FIELDS = ["personalEmail", "personalPhone", "emergencyContactName", "emergencyContactPhone", "nationality", "birthDate", "nationalId"] as const;
 const updateSchema = z.object(baseSchema).partial().extend({ joinDate: z.coerce.date().optional() });
 
 async function checkRefs(tx: Tx, ctx: Ctx, input: { departmentId?: string | null; userId?: string | null }) {
@@ -83,11 +87,18 @@ async function assertNoCycle(tx: Tx, ctx: Ctx, employeeId: string | null, manage
   }
 }
 
+/** Birth date not in the future; one employee per national ID / iqama number (also a partial unique index). */
+async function checkIdentity(tx: Tx, ctx: Ctx, employeeId: string | null, input: { birthDate?: Date | null; nationalId?: string | null }) {
+  if (input.birthDate && input.birthDate > new Date()) throw invalid("BIRTH_DATE_FUTURE");
+  if (input.nationalId && (await tx.employee.findFirst({ where: { organizationId: ctx.organizationId, nationalId: input.nationalId, ...(employeeId ? { id: { not: employeeId } } : {}) }, select: { id: true } }))) throw conflict("NATIONAL_ID_TAKEN");
+}
+
 const nameOf = (i: { firstName: string; lastName: string }) => `${i.firstName.trim()} ${i.lastName.trim()}`;
 
 export async function createEmployee(ctx: Ctx, raw: unknown) {
   requirePermission(ctx, "hr.employees.create");
   const input = createSchema.parse(raw);
+  if (PERSONAL_FIELDS.some((k) => input[k] != null) && !can(ctx, "hr.employees.sensitive")) throw forbidden("hr.employees.sensitive");
   return unitOfWork(ctx, (tx, uow) => createEmployeeTx(tx, uow, ctx, input));
 }
 
@@ -96,6 +107,7 @@ export async function createEmployeeTx(tx: Tx, uow: Parameters<Parameters<typeof
   await checkRefs(tx, ctx, input);
   await assertNoCycle(tx, ctx, null, input.managerId);
   if (input.probationEndDate && input.probationEndDate < input.joinDate) throw invalid("PROBATION_BEFORE_JOIN");
+  await checkIdentity(tx, ctx, null, input);
   const number = await nextNumber(tx, ctx.organizationId, "EMP");
   const e = await tx.employee.create({
     data: {
@@ -121,6 +133,9 @@ export async function createEmployeeTx(tx: Tx, uow: Parameters<Parameters<typeof
       country: input.country,
       city: input.city ?? null,
       nationality: input.nationality ?? null,
+      gender: input.gender ?? null,
+      birthDate: input.birthDate ?? null,
+      nationalId: input.nationalId ?? null,
       emergencyContactName: input.emergencyContactName ?? null,
       emergencyContactPhone: input.emergencyContactPhone ?? null,
       createdById: ctx.userId || null
@@ -138,17 +153,19 @@ export async function updateEmployee(ctx: Ctx, id: string, raw: unknown) {
   return unitOfWork(ctx, async (tx, uow) => {
     const { rel } = await employeeAccess(tx, ctx, id, { lock: true });
     if (!rel.hr) throw forbidden("hr.employees.edit (HR scope)");
+    // personal data is written only by someone allowed to read it (never a masked value sent back)
+    if (PERSONAL_FIELDS.some((k) => (input as Record<string, unknown>)[k] !== undefined) && !may.personal(ctx, rel)) throw forbidden("hr.employees.sensitive");
     const before = await tx.employee.findUniqueOrThrow({ where: { id } });
     if (input.departmentId !== undefined) await checkRefs(tx, ctx, { departmentId: input.departmentId });
     if (input.managerId !== undefined && input.managerId !== before.managerId) await assertNoCycle(tx, ctx, id, input.managerId);
     const joinDate = input.joinDate ?? before.joinDate;
     if (input.probationEndDate && input.probationEndDate < joinDate) throw invalid("PROBATION_BEFORE_JOIN");
+    await checkIdentity(tx, ctx, id, input);
     const data: Prisma.EmployeeUncheckedUpdateInput = { ...input };
     if (input.firstName || input.lastName) data.displayName = nameOf({ firstName: input.firstName ?? before.firstName, lastName: input.lastName ?? before.lastName });
     const after = await tx.employee.update({ where: { id }, data });
     const changed = Object.keys(input).filter((k) => String((before as Record<string, unknown>)[k] ?? "") !== String((after as Record<string, unknown>)[k] ?? ""));
-    const personal = ["personalEmail", "personalPhone", "emergencyContactName", "emergencyContactPhone", "nationality"];
-    await uow.audit({ action: "employee.updated", entityType: "Employee", entityId: id, after: { changed: changed.map((k) => (personal.includes(k) ? `${k} (personal)` : k)) } });
+    await uow.audit({ action: "employee.updated", entityType: "Employee", entityId: id, after: { changed: changed.map((k) => ((PERSONAL_FIELDS as readonly string[]).includes(k) ? `${k} (personal)` : k)) } });
     if (input.managerId !== undefined && input.managerId !== before.managerId) {
       await uow.audit({ action: "employee.manager_changed", entityType: "Employee", entityId: id, before: { managerId: before.managerId }, after: { managerId: after.managerId } });
       uow.emit({ type: "employee.manager_changed", entityType: "Employee", entityId: id, payload: { employeeId: id, from: before.managerId, to: after.managerId } });
@@ -291,6 +308,8 @@ export async function getEmployee(ctx: Ctx, id: string) {
       emergencyContactName: personal ? e.emergencyContactName : e.emergencyContactName ? "••••" : null,
       emergencyContactPhone: personal ? e.emergencyContactPhone : maskPhone(e.emergencyContactPhone),
       nationality: personal ? e.nationality : e.nationality ? "••" : null,
+      birthDate: personal ? e.birthDate : null,
+      nationalId: personal ? e.nationalId : e.nationalId ? `••••••${e.nationalId.slice(-2)}` : null,
       terminationReason: rel.hr ? e.terminationReason : null
     },
     can: {

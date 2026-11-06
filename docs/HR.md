@@ -2,7 +2,7 @@
 
 Internal people operations for DMS Tech. It holds employee records, attendance, leave, payroll runs, hiring and lightweight reviews.
 
-It is **not** a statutory payroll engine. No Saudi labour-law, GOSI or tax rule is hard-coded. Every rule that varies by company is an explicit setting under `/app/hr/settings`. It is also **not** a document store: no files are uploaded, and the Documents tab is a placeholder.
+It is **not** a statutory payroll engine. No Saudi labour-law, GOSI or tax rule is hard-coded. Every rule that varies by company is an explicit setting under `/app/hr/settings`. Employee documents are stored through the Operations document store (Documents tab, Phase 7).
 
 ## Routes
 
@@ -10,7 +10,7 @@ It is **not** a statutory payroll engine. No Saudi labour-law, GOSI or tax rule 
 |---|---|
 | `/app/hr` | People dashboard. Shows active employees, on leave today, present today, pending leave, open jobs, candidates in interviews, new hires this month and probation ending in ≤ 14 days. Also shows today's attendance, pending leave and the latest payroll status. All counts are limited to the viewer's HR scope. |
 | `/app/hr/employees` | Directory with search and status / department / type filters, plus create (`?new=1`). The list query never selects personal contact details, salary or bank data. |
-| `/app/hr/employees/[id]` | Profile with tabs: Overview, Employment, Attendance, Leave, Compensation 🔒, Payroll 🔒, Performance, Documents (placeholder) and Activity. Each tab is decided on the server from the viewer's relation to the employee (self / manager / HR) and their permissions. |
+| `/app/hr/employees/[id]` | Profile with tabs: Overview, Employment, Expiries, Attendance, Leave, Compensation 🔒, Payroll 🔒, Performance, Assets, Documents and Activity. The header holds Edit, Change status (only the transitions allowed from the current status) and the system account: create one (its temporary password is shown once), link an existing unlinked account, or unlink. Each tab is decided on the server from the viewer's relation to the employee (self / manager / HR) and their permissions. |
 | `/app/hr/attendance` | Daily board (any date, department filter) and a manual record / correction form. |
 | `/app/hr/leave` | Requests in scope (all / my team / mine). Includes cancellation, a request on behalf of an employee, and links into Approvals. |
 | `/app/hr/payroll`, `/[id]` | Periods with totals. The period page holds calculate / recalculate, bonuses & deductions, submit / withdraw, mark paid, close, and the employee lines. |
@@ -109,7 +109,9 @@ exceptions:
 - `hr.records.department` → the viewer's department.
 - Otherwise: self and direct reports only.
 
-**Personal contact data** (personal email / phone, emergency contact, nationality) is masked **on the server** (`maskEmail`, `maskPhone`). It is shown in clear only to self or to HR with `hr.employees.sensitive` covering the employee. The audit trail never stores it.
+**Identity** (migration `20261105160000_employee_identity`): gender, date of birth and national ID / iqama number. The national ID is unique per organization (partial unique index plus `NATIONAL_ID_TAKEN`), 5–20 letters or digits, and spaces are removed. A date of birth in the future is refused (`BIRTH_DATE_FUTURE`). Date of birth and national ID are personal data.
+
+**Personal contact data** (personal email / phone, emergency contact, nationality, date of birth, national ID) is masked **on the server** (`maskEmail`, `maskPhone`). It is shown in clear only to self or to HR with `hr.employees.sensitive` covering the employee. The audit trail never stores it. Personal fields can be written only by someone allowed to read them in clear (`hr.employees.sensitive` covering the employee, or self through HR), so a masked value can never be saved back.
 
 ## Compensation & bank details
 
@@ -242,6 +244,33 @@ Recalculating replaces the entries; the snapshot keeps payslips stable afterward
 - Marks the application HIRED and withdraws the candidate's other active applications.
 - Emits `employee.hired`.
 - Creates **no** user account.
+
+## Website applications
+
+The careers pages (`/careers` and `/careers/[slug]`) have an application form (`components/careers/JobApplyForm.tsx`). It posts multipart data to `POST /api/careers/apply`. Code: `src/server/hr/careers-intake.ts`, `src/server/notify/careers-mail.ts`. Migration: `20261105170000_website_applications`.
+
+**Fields**
+
+| Required | Optional |
+|---|---|
+| Name, e-mail, mobile, CV (PDF or DOCX, at most 5 MB), consent | City, years of experience, LinkedIn, portfolio link, notice period, expected salary, message |
+
+**What a submission does**
+
+- **Opening.** Each website role is mirrored by one dashboard `JobOpening` (`websiteSlug`, unique per organization). The opening is created OPEN on the role's first application. An unknown role, or the general form, goes to the "general" opening.
+- **Candidate.** Matched by e-mail, so there is one candidate per person. A new candidate gets `source = WEBSITE`. Applying again to the same opening appends the message to the existing application and never fails.
+- **CV.** Stored as a **CONFIDENTIAL** document on the candidate (`DocumentEntityType.CANDIDATE`). It goes through the same validation, storage and malware-scan boundary as every document. Recruitment staff see it under "CV & files" on the candidate page.
+- **Notification.** `candidate.applied_website` notifies the opening's owner, or else every holder of `hr.recruitment.manage`.
+- **E-mail.** The company inbox gets an e-mail with the CV attached: `CAREERS_NOTIFY_EMAIL`, else `LEAD_NOTIFY_EMAIL`, else `info@dmstech.sa` (the same inbox as quote requests). The careers address is not shown anywhere on the site. Reply-To is the applicant. The e-mail is sent even when saving to the database fails, and it then says so.
+
+**Protection**
+- Rate limit: 3 per 10 min per IP, and 15 per hour per network.
+- Whitelist schema; links must be http(s).
+- Honeypot and timing checks: spam is dropped silently and audited.
+- The audit trail never stores the applicant's contact data.
+- The visitor sees success when either the database save or the e-mail worked.
+
+**Event bus registry.** The event bus's subscriber registry now lives on `globalThis`, together with its "registered" flag. Before this change, a route handler bundled apart from the pages, such as `/api/leads` or `/api/careers/apply`, could get an empty registry, so no notification or activity was written.
 
 ## Performance (lightweight)
 

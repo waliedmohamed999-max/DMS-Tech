@@ -582,6 +582,7 @@ model Client {
   invoices Invoice[]
   payments Payment[]
   recurringInvoices RecurringInvoice[]
+  subscriptions     Subscription[]
 
   supportTickets SupportTicket[]
 
@@ -971,6 +972,7 @@ model Service {
   templates      ProjectTemplate[]
 
   invoiceItems InvoiceItem[]
+  subscriptions Subscription[]
 
   supportTickets SupportTicket[]
 
@@ -2043,11 +2045,108 @@ model RecurringInvoice {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
-  client   Client    @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  invoices Invoice[]
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  invoices     Invoice[]
+  subscription Subscription?
 
   @@unique([organizationId, number])
   @@index([organizationId, status, nextRunDate])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  /// cancellation scheduled: service and billing run until cancelAt
+  ENDING
+  ENDED
+}
+
+enum SubscriptionChangeKind {
+  CREATED
+  PLAN_CHANGED
+  PAUSED
+  RESUMED
+  CANCEL_SCHEDULED
+  CANCEL_REVOKED
+  RENEWED
+  ENDED
+  BILLING_STARTED
+  NOTE
+}
+
+/// A client's subscription to a recurring package (ads / social management, WhatsApp, the tech team, retainers) —
+/// docs/SUBSCRIPTIONS.md. The commercial record: plan, price per period, minimum term, renewal, pause and
+/// cancellation. Billing is delegated to a linked RecurringInvoice schedule kept in step by the service layer.
+model Subscription {
+  id                 String             @id @default(cuid())
+  organizationId     String
+  /// SUB-000001
+  number             String
+  clientId           String
+  contactId          String?
+  /// account manager (User id)
+  ownerId            String?
+  contractId         String?
+  serviceId          String?
+  /// website package key the plan came from (e.g. "wa-pro"), informational
+  planKey            String?
+  name               String
+  description        String?
+  interval           RecurringInterval
+  /// price per billing period, before VAT
+  price              Decimal            @db.Decimal(14, 2)
+  currency           String             @default("SAR")
+  taxBehavior        TaxBehavior        @default(STANDARD)
+  startDate          DateTime           @db.Date
+  /// minimum commitment in months (0 = none); the first term ends at start + commitmentMonths
+  commitmentMonths   Int                @default(0)
+  /// end of the current term (commitment, then each renewal term); null = open-ended
+  termEndDate        DateTime?          @db.Date
+  autoRenew          Boolean            @default(true)
+  /// months added at each renewal (defaults to the billing interval)
+  renewalMonths      Int                @default(1)
+  status             SubscriptionStatus @default(ACTIVE)
+  pausedAt           DateTime?          @db.Date
+  pauseReason        String?
+  /// last day of service when a cancellation is scheduled or done
+  cancelAt           DateTime?          @db.Date
+  cancelReason       String?
+  endedAt            DateTime?
+  /// renewal reminder claim: the term end it was sent for
+  renewalNoticeFor   DateTime?          @db.Date
+  recurringInvoiceId String?            @unique
+  notes              String?
+  createdById        String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  client    Client                @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  service   Service?              @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  recurring RecurringInvoice?     @relation(fields: [recurringInvoiceId], references: [id], onDelete: SetNull)
+  changes   SubscriptionChange[]
+
+  @@unique([organizationId, number])
+  @@index([organizationId, status])
+  @@index([organizationId, clientId])
+  @@index([organizationId, termEndDate])
+}
+
+/// Timeline of a subscription: plan / price changes, pause, resume, cancellation, renewal, end.
+model SubscriptionChange {
+  id             String                 @id @default(cuid())
+  organizationId String
+  subscriptionId String
+  kind           SubscriptionChangeKind
+  effectiveDate  DateTime               @db.Date
+  before         Json?
+  after          Json?
+  note           String?
+  actorId        String?
+  createdAt      DateTime               @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId, createdAt])
 }
 
 /// Money received from a client. Must be fully allocated to open invoices of that client
@@ -2273,6 +2372,11 @@ model Employee {
   country               String           @default("SA")
   city                  String?
   nationality           String?
+  gender                EmployeeGender?
+  /// personal (masked like contact data)
+  birthDate             DateTime?        @db.Date
+  /// national ID (citizens) or iqama number (residents) — personal, masked; unique per organization when set
+  nationalId            String?
   emergencyContactName  String?
   emergencyContactPhone String?
   createdById           String?
@@ -2304,6 +2408,11 @@ model Employee {
   @@index([organizationId, status])
   @@index([organizationId, departmentId])
   @@index([managerId])
+}
+
+enum EmployeeGender {
+  MALE
+  FEMALE
 }
 
 enum EmployeeExpiryKind {
@@ -2697,6 +2806,8 @@ model JobOpening {
   ownerId        String?
   openedAt       DateTime?
   closedAt       DateTime?
+  /// the website careers page this opening receives applications from ("general" = open applications); unique per organization
+  websiteSlug    String?
   createdById    String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -2728,6 +2839,9 @@ model Candidate {
   emailNormalized String?
   phone           String?
   linkedinUrl     String?
+  portfolioUrl    String?
+  city            String?
+  experienceYears Int?
   source          CandidateSource @default(OTHER)
   notes           String?
   createdById     String?
@@ -3069,6 +3183,7 @@ enum DocumentEntityType {
   PURCHASE_ORDER
   ASSET
   TICKET
+  CANDIDATE
 }
 
 enum TicketStatus {
@@ -4498,4 +4613,37 @@ model ZatcaSubmission {
   document ZatcaDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
 
   @@index([documentId])
+}
+
+// ---------------------------------------------------------------------------
+// Website: the /offers catalog (sections, packages, offers, page texts) edited in the dashboard
+// ---------------------------------------------------------------------------
+
+enum SiteCatalogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// One full copy of the /offers catalog as JSON (src/content/offers.ts `Catalog`). At most one DRAFT (the working copy)
+/// and one PUBLISHED (what visitors see) per organization and key (partial unique indexes); publishing archives the
+/// previous one, so every published version stays in the history and can be restored into the draft.
+model SiteCatalog {
+  id             String            @id @default(cuid())
+  organizationId String
+  /// "offers"
+  key            String
+  status         SiteCatalogStatus
+  /// published sequence number (1, 2, …); 0 while a draft
+  version        Int               @default(0)
+  data           Json
+  note           String?
+  createdById    String
+  updatedById    String
+  publishedById  String?
+  publishedAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([organizationId, key, status])
 }

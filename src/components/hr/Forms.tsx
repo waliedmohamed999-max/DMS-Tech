@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { ActionResult } from "@/lib/os/action";
 import { Field, Modal, useErrorText } from "@/components/os/client";
 
@@ -26,6 +26,12 @@ export type FieldSpec = {
 
 type AnyAction = (...args: never[]) => Promise<ActionResult<unknown>>;
 
+/** codes added after the shared message files were frozen — kept inline */
+const EXTRA: Record<"ar" | "en", Record<string, string>> = {
+  ar: { NATIONAL_ID_INVALID: "رقم الهوية / الإقامة غير صحيح (أرقام وحروف إنجليزية فقط، من 5 إلى 20).", NATIONAL_ID_TAKEN: "رقم الهوية / الإقامة مسجل لموظف آخر.", BIRTH_DATE_FUTURE: "تاريخ الميلاد في المستقبل." },
+  en: { NATIONAL_ID_INVALID: "Invalid national ID / iqama number (5–20 letters or digits).", NATIONAL_ID_TAKEN: "This national ID / iqama number belongs to another employee.", BIRTH_DATE_FUTURE: "The date of birth is in the future." }
+};
+
 export function useHrRun() {
   const t = useTranslations("os.hr");
   const to = useTranslations("os.ops");
@@ -36,7 +42,8 @@ export function useHrRun() {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   // HR, operations and integrations / marketing codes share one generic form layer (reused by Phases 7–8)
-  const known = (c: string) => (t.has(`errors.${c}`) ? t(`errors.${c}` as "errors.MANAGER_CYCLE") : to.has(`errors.${c}`) ? to(`errors.${c}` as "errors.OVER_RECEIPT") : ti.has(`errors.${c}`) ? ti(`errors.${c}` as "errors.WHATSAPP_NOT_CONNECTED") : tsys.has(`errors.${c}`) ? tsys(`errors.${c}` as "errors.RULE_CONFLICT") : null);
+  const extra = EXTRA[useLocale() === "en" ? "en" : "ar"];
+  const known = (c: string) => extra[c] ?? (t.has(`errors.${c}`) ? t(`errors.${c}` as "errors.MANAGER_CYCLE") : to.has(`errors.${c}`) ? to(`errors.${c}` as "errors.OVER_RECEIPT") : ti.has(`errors.${c}`) ? ti(`errors.${c}` as "errors.WHATSAPP_NOT_CONNECTED") : tsys.has(`errors.${c}`) ? tsys(`errors.${c}` as "errors.RULE_CONFLICT") : null);
   const text = (r: { error: string; field?: Record<string, string>; ref?: string | null }) => {
     // Phase 9: unexpected errors carry a support reference (request id) — never internals
     const base = (known(r.error) ?? errText(r.error)) + (r.ref ? ` · ref ${r.ref.slice(0, 8)}` : "");

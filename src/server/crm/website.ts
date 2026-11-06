@@ -8,6 +8,7 @@ import { normEmail, normPhone } from "./normalize";
 import { systemActivity } from "./activities";
 import { createLeadTx } from "./leads";
 import { LEAD_DETAIL_LABELS, offerLabel, offerReference, type LeadDetailKey } from "@/content/offers";
+import { publishedCatalog } from "../website/catalog";
 
 /**
  * Public website → CRM lead capture.
@@ -95,9 +96,10 @@ export async function captureWebsiteLead(raw: unknown, meta: { ip?: string | nul
   const service = (SERVICE_KEYS as readonly string[]).includes(d.service) ? d.service : d.service ? "other" : null;
   const budget = WEBSITE_BUDGET_KEYS.includes(d.budget) ? WEBSITE_BUDGETS[d.budget] : null;
   // only keys that exist on the site are kept (the label comes from src/content/offers.ts, never from the visitor)
-  const offer = d.offer ? offerLabel(d.offer) : null;
+  const catalog = d.offer ? await publishedCatalog() : undefined;
+  const offer = d.offer ? offerLabel(d.offer, catalog) : null;
   // its reference price at the moment of the request (amount, billing, before VAT) — also resolved here, not sent
-  const reference = offer && d.offer ? offerReference(d.offer) : null;
+  const reference = offer && d.offer ? offerReference(d.offer, catalog) : null;
   if (offer) d.message = [`[${offer}]`, reference ? `• السعر المرجعي: ${reference.text}` : "", d.message].filter(Boolean).join("\n");
   // the extra answers are kept as data and also shown at the end of the message for whoever reads the lead
   const details = Object.fromEntries(Object.entries(d.details ?? {}).filter(([, v]) => v)) as Partial<Record<LeadDetailKey, string>>;

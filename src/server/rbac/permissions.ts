@@ -56,6 +56,9 @@ export const PERMISSIONS = {
   // Sales (Phase 3) — record scope reuses crm.records.team / crm.records.all
   "services.view": { group: "sales", phase: 3 },
   "services.manage": { group: "sales", phase: 3 },
+  /** Client subscriptions to recurring packages: plan, price, term, renewal, pause and cancellation (billing needs finance.invoices.create) */
+  "subscriptions.view": { group: "sales", phase: 11 },
+  "subscriptions.manage": { group: "sales", phase: 11 },
   "sales.quotations.view": { group: "sales", phase: 3 },
   "sales.quotations.create": { group: "sales", phase: 3 },
   "sales.quotations.edit": { group: "sales", phase: 3 },
@@ -179,6 +182,10 @@ export const PERMISSIONS = {
   "marketing.view": { group: "marketing", phase: 8 },
   "marketing.manage": { group: "marketing", phase: 8 },
   "marketing.reports.view": { group: "marketing", phase: 8 },
+  /** The website's /offers page: sections, packages, offers and texts (edit = working copy; publish = what visitors see) */
+  "website.offers.view": { group: "marketing", phase: 11 },
+  "website.offers.edit": { group: "marketing", phase: 11 },
+  "website.offers.publish": { group: "marketing", phase: 11 },
 
   // Operations (Phase 7) — procurement is not accounting: no permission here creates a payment
   "operations.dashboard.view": { group: "operations", phase: 7 },
@@ -307,23 +314,23 @@ export const SYSTEM_ROLES: RoleDef[] = [
       ...FIN_OPS, "finance.payments.reverse", "finance.expenses.approve_executive", "finance.profitability.view", "finance.cost_rates.view", "finance.cost_rates.manage",
       // payroll: approves and pays from period totals; employee-level lines need hr.payroll.view (not granted)
       "hr.payroll.approve", "hr.payroll.pay",
-      "services.view", "sales.quotations.view", "sales.quotations.approve", "sales.contracts.view", "crm.clients.view", "crm.contacts.view", "crm.records.all", ...PROJECT_READ, "projects.records.all", "projects.time.view",
+      "services.view", "subscriptions.view", "subscriptions.manage", "sales.quotations.view", "sales.quotations.approve", "sales.contracts.view", "crm.clients.view", "crm.contacts.view", "crm.records.all", ...PROJECT_READ, "projects.records.all", "projects.time.view",
       // procurement: financial oversight + executive tier; orders approval
       "operations.dashboard.view", "procurement.requests.view", "procurement.requests.approve", "procurement.requests.approve_executive",
       "procurement.orders.view", "procurement.orders.approve", "assets.view", "documents.create", "documents.version"
     ]
   },
-  { key: "accountant", name: { ar: "محاسب", en: "Accountant" }, permissions: [...everyone, "approvals.decide", ...FIN_OPS, "crm.clients.view", "crm.contacts.view", "crm.records.all", "services.view", "sales.quotations.view", "sales.contracts.view", ...PROJECT_READ, "projects.records.all", "projects.time.view", "procurement.requests.view", "procurement.orders.view", "documents.create", "documents.version"] },
+  { key: "accountant", name: { ar: "محاسب", en: "Accountant" }, permissions: [...everyone, "approvals.decide", ...FIN_OPS, "crm.clients.view", "crm.contacts.view", "crm.records.all", "services.view", "subscriptions.view", "subscriptions.manage", "sales.quotations.view", "sales.contracts.view", ...PROJECT_READ, "projects.records.all", "projects.time.view", "procurement.requests.view", "procurement.orders.view", "documents.create", "documents.version"] },
   {
     key: "sales_manager",
     name: { ar: "مدير المبيعات", en: "Sales Manager" },
     permissions: [
       ...everyone, "approvals.decide",
       ...CRM_FULL.filter((p) => p !== "crm.clients.archive"),
-      ...QUOTES_OWN, "services.manage", "sales.quotations.approve", ...CONTRACTS_FULL,
+      ...QUOTES_OWN, "services.manage", "sales.quotations.approve", ...CONTRACTS_FULL, "subscriptions.view", "subscriptions.manage",
       "finance.invoices.view", ...PROJECT_READ,
       // Phase 8: WhatsApp inbox, campaign approval (not creation), marketing reports
-      "whatsapp.view", "whatsapp.send", "whatsapp.campaigns.approve", "marketing.view", "marketing.reports.view"
+      "whatsapp.view", "whatsapp.send", "whatsapp.campaigns.approve", "marketing.view", "marketing.reports.view", "website.offers.view"
     ]
   },
   {
@@ -333,7 +340,7 @@ export const SYSTEM_ROLES: RoleDef[] = [
     permissions: [
       ...everyone, ...CRM_FULL.filter((p) => !["crm.clients.archive", "crm.leads.assign", "crm.leads.archive", "crm.opportunities.assign", "crm.records.all", "crm.records.team"].includes(p)),
       // own quotations end-to-end, no approvals; contracts: draft from own accepted quotes, no activation/termination
-      ...QUOTES_OWN, "sales.contracts.view", "sales.contracts.create", "sales.contracts.edit", "projects.view"
+      ...QUOTES_OWN, "sales.contracts.view", "sales.contracts.create", "sales.contracts.edit", "projects.view", "subscriptions.view"
     ]
   },
   {
@@ -344,7 +351,7 @@ export const SYSTEM_ROLES: RoleDef[] = [
   },
   { key: "developer", name: { ar: "مطوّر", en: "Developer" }, permissions: [...everyone, ...PROJECT_CONTRIBUTOR, ...view("support.tickets.view"), "documents.create"] },
   { key: "designer", name: { ar: "مصمم", en: "Designer" }, permissions: [...everyone, ...PROJECT_CONTRIBUTOR] },
-  { key: "marketing", name: { ar: "تسويق", en: "Marketing" }, permissions: [...everyone, "marketing.view", "marketing.manage", "marketing.reports.view", "whatsapp.view", "whatsapp.send", "whatsapp.campaigns.create", "crm.leads.view", "crm.leads.create", "crm.activities.view", "crm.activities.create", "services.view", ...PROJECT_CONTRIBUTOR] },
+  { key: "marketing", name: { ar: "تسويق", en: "Marketing" }, permissions: [...everyone, "marketing.view", "marketing.manage", "marketing.reports.view", "website.offers.view", "website.offers.edit", "whatsapp.view", "whatsapp.send", "whatsapp.campaigns.create", "crm.leads.view", "crm.leads.create", "crm.activities.view", "crm.activities.create", "services.view", ...PROJECT_CONTRIBUTOR] },
   {
     key: "hr_manager",
     name: { ar: "مدير الموارد البشرية", en: "HR Manager" },

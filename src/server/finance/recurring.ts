@@ -1,9 +1,9 @@
 import { z } from "zod";
 import type { Prisma, RecurringInterval } from "@/generated/prisma/client";
-import { prisma } from "../db";
+import { prisma, type Tx } from "../db";
 import { requirePermission, type Ctx } from "../context";
 import { conflict, invalid, notFound } from "../errors";
-import { unitOfWork } from "../events/bus";
+import { unitOfWork, type Uow } from "../events/bus";
 import { optId, optText, reqText } from "../crm/normalize";
 import { nextNumber } from "../crm/sequence";
 import { addDays, todayIn, ymd } from "../commercial/dates";
@@ -34,7 +34,17 @@ export function periodStart(start: Date, interval: RecurringInterval, k: number)
   const last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
   return new Date(Date.UTC(y, m, Math.min(start.getUTCDate(), last)));
 }
-const periodIndex = (start: Date, interval: RecurringInterval, d: Date) =>
+/** start + n months, the day clamped to the month's length (31 Jan + 1 → 28/29 Feb). */
+export const addMonths = (d: Date, n: number) => periodStart(d, "MONTHLY", n);
+export const intervalMonths = (i: RecurringInterval) => MONTHS[i];
+/** The first period start on or after `day` (used when billing resumes after a pause, or starts late). */
+export function nextPeriodOnOrAfter(start: Date, interval: RecurringInterval, day: Date): Date {
+  if (start >= day) return start;
+  let k = Math.max(0, periodIndex(start, interval, day) - 1);
+  while (periodStart(start, interval, k) < day) k++;
+  return periodStart(start, interval, k);
+}
+export const periodIndex = (start: Date, interval: RecurringInterval, d: Date) =>
   Math.round(((d.getUTCFullYear() - start.getUTCFullYear()) * 12 + d.getUTCMonth() - start.getUTCMonth()) / MONTHS[interval]);
 
 export function periodLabel(from: Date, interval: RecurringInterval, start: Date, lang: "ar" | "en") {
@@ -85,7 +95,18 @@ async function ownerCtx(organizationId: string, userId: string | null): Promise<
 export async function createRecurring(ctx: Ctx, raw: unknown) {
   requirePermission(ctx, "finance.invoices.create");
   const input = scheduleSchema.parse(raw);
-  const rec = await unitOfWork(ctx, async (tx, uow) => {
+  const rec = await unitOfWork(ctx, (tx, uow) => insertScheduleTx(tx, uow, ctx, input));
+  await runSchedule(rec.id, new Date()); // a start date of today (or earlier) bills right away
+  return { id: rec.id };
+}
+
+export type ScheduleInput = z.output<typeof scheduleSchema>;
+export const parseSchedule = (raw: unknown) => scheduleSchema.parse(raw);
+
+/** Creates a schedule inside the caller's transaction (also used by subscriptions); the caller runs runSchedule after commit. */
+export async function insertScheduleTx(tx: Tx, uow: Uow, ctx: Ctx, input: ScheduleInput) {
+  requirePermission(ctx, "finance.invoices.create");
+  {
     const client = await tx.client.findFirst({ where: { id: input.clientId, organizationId: ctx.organizationId, deletedAt: null } });
     if (!client) throw invalid("UNKNOWN_CLIENT");
     if (input.contactId && !(await tx.contact.findFirst({ where: { id: input.contactId, clientId: client.id } }))) throw invalid("CONTACT_NOT_OF_CLIENT");
@@ -117,9 +138,7 @@ export async function createRecurring(ctx: Ctx, raw: unknown) {
     });
     await uow.audit({ action: "recurring_invoice.created", entityType: "RecurringInvoice", entityId: r.id, after: { number: r.number, clientId: client.id, interval: r.interval, startDate: ymd(r.startDate), autoIssue: r.autoIssue, autoSend: r.autoSend } });
     return r;
-  });
-  await runSchedule(rec.id, new Date()); // a start date of today (or earlier) bills right away
-  return { id: rec.id };
+  }
 }
 
 export async function setRecurringStatus(ctx: Ctx, id: string, status: "ACTIVE" | "PAUSED" | "ENDED") {
@@ -128,6 +147,8 @@ export async function setRecurringStatus(ctx: Ctx, id: string, status: "ACTIVE" 
     const r = await tx.recurringInvoice.findFirst({ where: { id, organizationId: ctx.organizationId } });
     if (!r) throw notFound("RecurringInvoice");
     if (r.status === "ENDED") throw conflict("RECURRING_ENDED");
+    // a subscription's schedule follows the subscription (pause / resume / cancel there), never on its own
+    if (await tx.subscription.findFirst({ where: { recurringInvoiceId: id }, select: { id: true } })) throw conflict("MANAGED_BY_SUBSCRIPTION");
     await tx.recurringInvoice.update({ where: { id }, data: { status, pauseReason: null } });
     await uow.audit({ action: "recurring_invoice.status", entityType: "RecurringInvoice", entityId: id, before: { status: r.status }, after: { status } });
     return status;

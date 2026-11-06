@@ -6,6 +6,7 @@ import { runWithObs } from "@/server/obs/context";
 import { reportError } from "@/server/obs/errors";
 import { spamReason } from "@/server/crm/website";
 import { emailWebsiteLead } from "@/server/notify/lead-mail";
+import { cappedBody } from "@/lib/capped-body";
 
 const MAX_BODY = 16_000;
 
@@ -47,9 +48,9 @@ async function handle(request: NextRequest) {
 
   let body: unknown;
   try {
-    const text = await request.text();
-    if (text.length > MAX_BODY) return NextResponse.json({ ok: false, error: "too_large" }, { status: 413 });
-    body = JSON.parse(text);
+    const raw = await cappedBody(request, MAX_BODY);
+    if (!raw) return NextResponse.json({ ok: false, error: "too_large" }, { status: 413 });
+    body = JSON.parse(new TextDecoder().decode(raw));
   } catch {
     return NextResponse.json({ ok: false, error: "bad_json" }, { status: 400 });
   }

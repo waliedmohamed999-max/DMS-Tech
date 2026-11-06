@@ -21,6 +21,8 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
   const t = await getTranslations("os.hr");
   const [data, opts] = await Promise.all([listEmployees(ctx, sp), hrOptions(ctx, locale)]);
   const canCreate = can(ctx, "hr.employees.create");
+  const sensitive = can(ctx, "hr.employees.sensitive");
+  const it = locale === "en" ? { gender: "Gender", MALE: "Male", FEMALE: "Female", nationalId: "National ID / iqama no.", birthDate: "Date of birth" } : { gender: "الجنس", MALE: "ذكر", FEMALE: "أنثى", nationalId: "رقم الهوية / الإقامة", birthDate: "تاريخ الميلاد" };
   return (
     <div className="grid gap-5">
       <PageHeader
@@ -50,6 +52,20 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
                 { name: "workEmail", label: t("f.workEmail"), type: "email" },
                 { name: "workPhone", label: t("f.workPhone"), dir: "ltr" },
                 { name: "city", label: t("f.city") },
+                { name: "workLocation", label: t("f.workLocation") },
+                { name: "gender", label: it.gender, type: "select", options: [{ value: "MALE", label: it.MALE }, { value: "FEMALE", label: it.FEMALE }] },
+                // personal data only for those allowed to see it (hr.employees.sensitive)
+                ...(sensitive
+                  ? [
+                      { name: "nationality", label: t("f.nationality") },
+                      { name: "nationalId", label: it.nationalId, dir: "ltr" as const },
+                      { name: "birthDate", label: it.birthDate, type: "date" as const },
+                      { name: "personalPhone", label: t("f.personalPhone"), dir: "ltr" as const },
+                      { name: "personalEmail", label: t("f.personalEmail"), type: "email" as const },
+                      { name: "emergencyContactName", label: t("f.emergencyName") },
+                      { name: "emergencyContactPhone", label: t("f.emergencyPhone"), dir: "ltr" as const }
+                    ]
+                  : []),
                 { name: "userId", label: t("f.linkUser"), type: "select", options: opts.users, hint: t("linkUserHint") }
               ]}
             />

@@ -8,7 +8,7 @@ import { prisma } from "@/server/db";
 import { can } from "@/server/context";
 import { isAppError } from "@/server/errors";
 import { todayIn } from "@/server/commercial/dates";
-import { employeeActivity, getEmployee } from "@/server/hr/employees";
+import { EMPLOYEE_TRANSITIONS, employeeActivity, getEmployee } from "@/server/hr/employees";
 import { bankAccounts, compensationHistory } from "@/server/hr/compensation";
 import { attendanceMonth } from "@/server/hr/attendance";
 import { balances } from "@/server/hr/leave";
@@ -22,9 +22,15 @@ import {
 } from "@/lib/os/hr-actions";
 import { Badge, EmptyState, fmtDate, fmtDateTime, PermissionDenied, SectionCard } from "@/components/os/ui";
 import { ActionForm, RevealIban } from "@/components/hr/Forms";
+import { EmployeeAccount } from "@/components/hr/EmployeeAccount";
 
 export const metadata = { title: "Employee" };
 const TYPES = ["FULL_TIME", "PART_TIME", "CONTRACTOR", "INTERN", "TEMPORARY"];
+/** labels for the identity fields (kept inline; the shared message files stay untouched) */
+const ID_T = {
+  ar: { gender: "الجنس", MALE: "ذكر", FEMALE: "أنثى", birthDate: "تاريخ الميلاد", age: (n: number) => `${n} سنة`, nationalId: "رقم الهوية / الإقامة" },
+  en: { gender: "Gender", MALE: "Male", FEMALE: "Female", birthDate: "Date of birth", age: (n: number) => `${n} years`, nationalId: "National ID / iqama no." }
+};
 
 export default async function EmployeePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; month?: string }> }) {
   const { id } = await params;
@@ -61,6 +67,11 @@ export default async function EmployeePage({ params, searchParams }: { params: P
   const org = await prisma.organization.findUniqueOrThrow({ where: { id: ctx.organizationId }, select: { timezone: true, currency: true } });
   const today = todayIn(org.timezone);
   const opts = c.edit ? await hrOptions(ctx, locale) : null;
+  const it = ID_T[locale === "en" ? "en" : "ar"];
+  const ageOf = (b: Date) => {
+    const n = today.getUTCFullYear() - b.getUTCFullYear() - (today.getUTCMonth() < b.getUTCMonth() || (today.getUTCMonth() === b.getUTCMonth() && today.getUTCDate() < b.getUTCDate()) ? 1 : 0);
+    return n;
+  };
   const comp = tab === "compensation" && c.compensation ? await compensationHistory(ctx, id) : [];
   const m = (v: { toFixed(n: number): string } | string, cur = org.currency) => formatMoney(typeof v === "string" ? v : v.toFixed(2), locale, cur);
   const row = (k: string, v: React.ReactNode) => (
@@ -118,8 +129,11 @@ export default async function EmployeePage({ params, searchParams }: { params: P
                 { name: "workPhone", label: t("f.workPhone"), value: e.workPhone ?? "", dir: "ltr" },
                 { name: "city", label: t("f.city"), value: e.city ?? "" },
                 { name: "workLocation", label: t("f.workLocation"), value: e.workLocation ?? "" },
+                { name: "gender", label: it.gender, type: "select", value: e.gender ?? "", options: [{ value: "MALE", label: it.MALE }, { value: "FEMALE", label: it.FEMALE }] },
                 ...(d.personalVisible
                   ? [
+                      { name: "birthDate", label: it.birthDate, type: "date" as const, value: e.birthDate?.toISOString().slice(0, 10) ?? "" },
+                      { name: "nationalId", label: it.nationalId, value: e.nationalId ?? "", dir: "ltr" as const },
                       { name: "personalEmail", label: t("f.personalEmail"), type: "email" as const, value: e.personalEmail ?? "" },
                       { name: "personalPhone", label: t("f.personalPhone"), value: e.personalPhone ?? "", dir: "ltr" as const },
                       { name: "nationality", label: t("f.nationality"), value: e.nationality ?? "" },
@@ -130,7 +144,7 @@ export default async function EmployeePage({ params, searchParams }: { params: P
               ]}
             />
           )}
-          {c.edit && !d.rel.self && (
+          {c.edit && !d.rel.self && EMPLOYEE_TRANSITIONS[e.status].length > 0 && (
             <ActionForm
               action={employeeStatusAction}
               args={[id]}
@@ -139,22 +153,21 @@ export default async function EmployeePage({ params, searchParams }: { params: P
               submitLabel={t("save")}
               note={t("statusNote")}
               fields={[
-                { name: "to", label: t("f.status"), type: "select", required: true, options: ["ACTIVE", "ON_LEAVE", "SUSPENDED", "TERMINATED", "ARCHIVED"].filter((s) => s !== e.status).map((s) => ({ value: s, label: t(`status.${s}` as "status.ACTIVE") })) },
+                { name: "to", label: t("f.status"), type: "select", required: true, options: EMPLOYEE_TRANSITIONS[e.status].filter((s) => s !== "ARCHIVED" || c.archive).map((s) => ({ value: s, label: t(`status.${s}` as "status.ACTIVE") })) },
                 { name: "terminationDate", label: t("f.terminationDate"), type: "date" },
                 { name: "reason", label: t("f.reason"), type: "textarea" }
               ]}
             />
           )}
-          {c.edit && !e.userId && can(ctx, "admin.users.manage") && (
-            <ActionForm
-              action={createAccountAction}
-              args={[id]}
-              positional
-              trigger={t("a.createAccount")}
-              triggerClass="os-btn-secondary"
-              submitLabel={t("create")}
-              note={t("createAccountNote")}
-              fields={[{ name: "roleIds", label: t("f.roles"), type: "multiselect", required: true, options: (await prisma.role.findMany({ where: { organizationId: ctx.organizationId }, orderBy: { name: "asc" }, select: { id: true, name: true, nameAr: true } })).map((r) => ({ value: r.id, label: (locale === "ar" && r.nameAr) || r.name })) }]}
+          {c.edit && (can(ctx, "admin.users.manage") || can(ctx, "admin.users.view")) && (
+            <EmployeeAccount
+              locale={locale === "en" ? "en" : "ar"}
+              employeeId={id}
+              linked={Boolean(e.userId)}
+              canCreate={can(ctx, "admin.users.manage")}
+              canLink={can(ctx, "admin.users.view")}
+              roles={can(ctx, "admin.users.manage") ? (await prisma.role.findMany({ where: { organizationId: ctx.organizationId }, orderBy: { name: "asc" }, select: { id: true, name: true, nameAr: true } })).map((r) => ({ value: r.id, label: (locale === "ar" && r.nameAr) || r.name })) : []}
+              users={opts?.users ?? []}
             />
           )}
         </div>
@@ -212,6 +225,9 @@ export default async function EmployeePage({ params, searchParams }: { params: P
             {row(t("f.workLocation"), e.workLocation)}
             {row(t("f.city"), [e.city, e.country].filter(Boolean).join(", "))}
             {row(t("f.nationality"), e.nationality)}
+            {row(it.gender, e.gender ? it[e.gender] : null)}
+            {row(it.birthDate, e.birthDate ? `${fmtDate(e.birthDate, locale)} · ${it.age(ageOf(e.birthDate))}` : null)}
+            {row(it.nationalId, e.nationalId && <span dir="ltr">{e.nationalId}</span>)}
           </dl>
         </SectionCard>
       )}

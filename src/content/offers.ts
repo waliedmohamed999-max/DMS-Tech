@@ -2,21 +2,25 @@ import type { IconName } from "@/components/ui/Icon";
 import type { L } from "./types";
 
 /**
- * Packages, limited-time campaigns and private deals (/offers, /offers/[slug], /offers/deal/[token]).
+ * Packages, limited-time offers and private deals (/offers, /offers/[slug], /offers/deal/[token]).
  *
- * PRICES (SAR, before 15% VAT): restructured on 2026-11-05 from the owner's pricing brief, then raised ~10% the same day
- * (rounded to …99; WhatsApp, the tech team, Ready-to-advertise and the 90-day drafts unchanged) — every tier states who it
- * suits, exact quantities, limits and what is NOT included (platform subscriptions, ad spend, Meta and AI usage are
- * never included). `price: null` shows "priced to your needs"; `from: true` is a starting price for a stated base
- * scope only, never an open promise. Never change a price without the company's approval, and see
- * docs/PRICING-PROFITABILITY.md: no package has an approved cost sheet yet, so every price still needs financial
- * sign-off before it is published.
- * `draft: true` groups (new, not yet approved) render in development only.
- * CAMPAIGNS no longer renew by themselves: one shows only between its approved start and end dates, and its struck
- * price is always the current price of the packages it is made of (see `Offer`). PRIVATE DEALS run until expiresAt;
- * entries with `preview: true` are design examples rendered in development only.
- * Every package, campaign and deal has a stable `key`; the website form sends it and the server resolves it here (see
+ * Terms used on the page, and kept apart in the code:
+ * - PACKAGE (`Tier`): a service with a written scope and a published price — fixed, or "from" for a stated base scope.
+ * - OFFER (`Offer`): a special price on one or more packages for real dates. It holds no scope text of its own: its
+ *   contents, exclusions and struck price all come from the packages in `basis`, so it can never contradict them.
+ * - CUSTOM QUOTE: anything whose price depends on requirements (business solutions, "from" prices).
+ *
+ * PRICES (SAR, before 15% VAT) — approved by the owner on 2026-11-05 (brief, then +~10%). Platform subscriptions, ad
+ * spend, Meta and AI usage are never included. Never change a price without the company's approval; no package has an
+ * approved cost sheet yet (docs/PRICING-PROFITABILITY.md). `draft: true` groups render in development only.
+ * Every package, offer and deal has a stable `key`; the website form sends it and the server resolves it here (see
  * offerLabel / offerReference), so the CRM lead and the e-mail show exactly what the client asked for, at which price.
+ * Naming: tiers inside a section climb Essential → Professional → Advanced (الأساسية → الاحترافية → المتقدمة) unless the
+ * tiers are different products (websites, AI, systems).
+ *
+ * EDITING: the sections, packages, offers and page texts are edited in the dashboard (/app/website/offers) and published
+ * from there (src/server/website/catalog.ts). This file is the built-in starting catalog: the site uses it until the first
+ * publish, and whenever the database can't be read. Every helper below takes the catalog it works on (default: this file).
  */
 
 /** How a price is paid: once, every month, or one total for a fixed term of `termMonths`. */
@@ -28,6 +32,14 @@ export type Tier = {
   tagline: L;
   /** who the package suits */
   idealFor: L;
+  /** what kind of service it is: a project or system the client owns, a subscription, or a fixed term */
+  model: L;
+  /** plain explanation of what we do and what the client ends up with */
+  about: L;
+  /** what we need from the client to start */
+  youProvide: L[];
+  /** what happens after delivery: support, renewals, running costs */
+  after: L;
   price: number | null;
   /** true = "from" price (for the stated base scope); false = a fixed price */
   from: boolean;
@@ -38,6 +50,8 @@ export type Tier = {
   /** term plans: the months the total price covers (the page also shows the monthly average) */
   termMonths?: number;
   delivery: L;
+  /** revision rounds, where the package has them */
+  revisions?: L;
   featured?: boolean;
   features: L[];
   /** stated plainly so nobody is surprised later */
@@ -47,35 +61,31 @@ export type Tier = {
 };
 /** One step of a client journey shown under a group's tiers; `tier` is the package that covers it. */
 export type JourneyStep = { icon: IconName; title: L; text: L; tier: string };
-/** One row of a group's comparison table: a label and one value per tier, in tier order. */
-export type CompareRow = { label: L; values: L[] };
-/** `notice`: one sentence shown above the tiers (e.g. the store platform subscription is not included). */
-/** `short`: the tab / hero tile name · `highlights`: three things the service delivers, shown beside its visual. */
-/** `id`: the tab / link key (#pkg-<id>) · `service`: the service page it belongs to · `segment`: smb = everyday packages,
- * business = company solutions (quote-led) · `draft`: awaiting the company's approval, development only. */
-export type PackageGroup = { id: string; segment: "smb" | "business"; service: string; icon: IconName; title: L; short: L; text: L; highlights: L[]; notice: L; tiers: Tier[]; compare?: CompareRow[]; journey?: JourneyStep[]; draft?: boolean };
+/** `notice`: the section's key conditions, shown above the tiers · `short`: the tab / hero tile name ·
+ * `highlights`: three things the service delivers, shown beside its visual · `id`: the tab / link key (#pkg-<id>) ·
+ * `service`: the service page it belongs to · `segment`: smb = packages, business = company solutions (quote-led) ·
+ * `draft`: awaiting the company's approval, development only. */
+export type PackageGroup = { id: string; segment: "smb" | "business"; service: string; icon: IconName; title: L; short: L; text: L; highlights: L[]; notice: L; tiers: Tier[]; journey?: JourneyStep[]; draft?: boolean };
 /**
- * A limited-time campaign. It shows only once `approved` (who approved it and when) and only between `startsAt` and
- * `endsAt` (Riyadh dates, both days included) — nothing renews by itself. Its struck price is never typed: it is the
- * current price of the packages in `basis`, so it always matches the package pages, and a campaign priced at or above
- * them (or built on a package without a fixed price) is never shown.
+ * A limited-time offer on current packages. It shows only once `approved` (who approved it and when) and only between
+ * `startsAt` and `endsAt` (Riyadh dates, both days included) — nothing renews by itself. What it includes, excludes and
+ * its struck price come from the packages in `basis` (`months` of a monthly plan); a bundle lists each one. An offer
+ * priced at or above its packages, or built on a "from" price or a draft, is never shown.
  */
 export type Offer = {
   slug: string;
   service: string;
   icon: IconName;
-  badge: L;
-  title: L;
-  text: L;
+  /** the campaign it belongs to (shown on the banner with its dates) */
+  campaign: L;
+  name: L;
+  /** one sentence: what the client gets */
+  pitch: L;
   forWho: L;
-  features: L[];
-  deliverables: { title: L; text: L }[];
-  delivery: L;
-  terms: L[];
-  excludes: L[];
   price: number;
-  /** the packages it is made of: `months` of a monthly plan, or its yearly price */
-  basis: { key: string; months?: number; annual?: boolean }[];
+  basis: { key: string; months?: number }[];
+  /** conditions of the offer itself (payment, how long the price holds) — the packages' own scope still applies */
+  terms: L[];
   startsAt: string;
   endsAt: string;
   approved: string | null;
@@ -86,8 +96,20 @@ type Pay = Pick<Tier, "period" | "billing" | "termMonths">;
 const perMonth: Pay = { period: { ar: "شهرياً", en: "per month" }, billing: "monthly" };
 const oneTime: Pay = { period: { ar: "دفعة واحدة", en: "one-time" }, billing: "one-time" };
 const threeMonths: Pay = { period: { ar: "إجمالي 3 أشهر", en: "total for 3 months" }, billing: "term", termMonths: 3 };
-const row = (ar: string, en: string, values: [string, string][]): CompareRow => ({ label: { ar, en }, values: values.map(([a, e]) => ({ ar: a, en: e })) });
-const none: [string, string] = ["—", "—"];
+const t = (ar: string, en: string): L => ({ ar, en });
+const byScope = t("حسب وثيقة النطاق", "Per the scope document");
+// what kind of service each package is (shown on every card)
+const PROJECT = t("مشروع يُنفَّذ لك وتملكه بالكامل بعد السداد — دفعة واحدة، دون اشتراك", "A project built for you that you fully own once paid — one payment, no subscription");
+const STORE = t("متجر باسمك تملك حسابه ومنتجاته وبياناته — دفعة واحدة، واشتراك المنصة يُدفع لها", "A store in your name — you own the account, products and data; one payment, platform subscription paid to the platform");
+const SYSTEM = t("نظام خاص بشركتك نبنيه لك وتملكه — دفعة واحدة، وليس اشتراكاً في منصة", "A system built for your company that you own — one payment, not a platform subscription");
+const DESIGN = t("تصميم تملك ملفاته بالكامل بعد السداد — دفعة واحدة", "A design whose files you fully own once paid — one payment");
+const MONTHLY = t("خدمة شهرية يديرها فريقنا، تتجدد حتى تلغيها بإشعار قبل 30 يوماً", "A monthly service run by our team, renewing until you cancel with 30 days' notice");
+const TERM = t("عقد واحد لمدة 3 أشهر بسعر إجمالي، ينتهي بانتهاء مدته", "One 3-month contract at a total price, ending with its term");
+const TRIAL = t("خدمة لمرة واحدة لمدة 14 يوماً، دون أي التزام بعدها", "A one-off 14-day service with no commitment afterwards");
+const WA = t("اشتراك شهري في الإعداد والتشغيل، والرقم وحساب ميتا باسمك ويبقيان لك", "A monthly set-up and running subscription; the number and Meta account are in your name and stay yours");
+const TEAM_M = t("فريق مخصص لشركتك بعقد شهري، يتجدد حتى تلغيه بإشعار قبل 30 يوماً", "A dedicated team on a monthly contract, renewing until you cancel with 30 days' notice");
+const TEAM_6 = t("فريق مخصص لشركتك بعقد 6 أشهر يُدفع شهرياً", "A dedicated team on a 6-month contract, paid monthly");
+const TEAM_12 = t("فريق مخصص لشركتك بعقد 12 شهراً يُدفع شهرياً", "A dedicated team on a 12-month contract, paid monthly");
 
 export const packageGroups: PackageGroup[] = [
   {
@@ -95,119 +117,112 @@ export const packageGroups: PackageGroup[] = [
     segment: "smb",
     service: "web-development",
     icon: "CodeXml",
-    title: { ar: "باقات المواقع الإلكترونية", en: "Website packages" },
-    short: { ar: "المواقع الإلكترونية", en: "Websites" },
-    text: { ar: "من صفحة هبوط لحملتك إلى موقع مؤسسي بتكاملات وصلاحيات — بعدد صفحات ولغات وجولات تعديل مكتوبة لكل باقة.", en: "From a landing page for your campaign to a corporate site with integrations and permissions — with pages, languages and revision rounds written for every package." },
-    highlights: [{ ar: "تصميم بهويتك يعمل على الجوال", en: "A design in your brand that works on mobile" }, { ar: "سرعة وتهيئة لمحركات البحث من اليوم الأول", en: "Speed and SEO from day one" }, { ar: "ملكية كاملة للموقع والكود بعد السداد", en: "Full ownership of the site and code once paid" }],
-    notice: { ar: "الأسعار تشمل التصميم والبرمجة والإطلاق ضمن النطاق المكتوب لكل باقة. المحتوى (النصوص والصور) يقدمه العميل، والاستضافة والنطاق باسم العميل ما لم تذكر الباقة غير ذلك. أي صفحة أو لغة أو ميزة خارج النطاق تُسعَّر قبل تنفيذها.", en: "Prices cover design, development and launch within each package's written scope. Content (text and images) comes from the client; hosting and domain are in the client's name unless the package says otherwise. Any page, language or feature outside the scope is priced before it is built." },
+    title: t("باقات المواقع الإلكترونية", "Website packages"),
+    short: t("المواقع الإلكترونية", "Websites"),
+    text: t("من صفحة هبوط لحملة إعلانية إلى موقع مؤسسي متكامل، ولكل باقة عدد صفحات ولغات وجولات تعديل محدد.", "From a landing page for an ad campaign to a full corporate website, each package has a set number of pages, languages and revision rounds."),
+    highlights: [t("تصميم متجاوب مع الجوال بهوية علامتك", "A mobile-ready design in your brand"), t("إعداد التحليلات والتهيئة لمحركات البحث", "Analytics and search engine set-up"), t("ملكية الموقع والكود لك بعد السداد", "You own the site and its code once paid")],
+    notice: t("تشمل الأسعار التصميم والبرمجة والإطلاق ضمن النطاق المكتوب. يوفّر العميل المحتوى (النصوص والصور)، وتكون الاستضافة والنطاق باسمه ما لم تنص الباقة على غير ذلك. أي صفحة أو لغة أو ميزة إضافية تُسعَّر قبل تنفيذها.", "Prices cover design, development and launch within the written scope. The client provides the content (text and images); hosting and domain are in the client's name unless the package says otherwise. Any extra page, language or feature is priced before it is built."),
     tiers: [
       {
         key: "landing-page",
         icon: "MousePointerClick",
-        name: { ar: "صفحة هبوط احترافية", en: "Professional landing page" },
-        tagline: { ar: "صفحة واحدة تحوّل زوار إعلانك إلى طلبات", en: "One page that turns ad visitors into orders" },
-        idealFor: { ar: "من يطلق حملة لمنتج أو خدمة أو عرض محدد", en: "Anyone running a campaign for one product, service or offer" },
+        name: t("صفحة هبوط", "Landing page"),
+        tagline: t("صفحة واحدة مخصصة لحملة إعلانية أو منتج محدد", "One page dedicated to an ad campaign or a single product"),
+        idealFor: t("الشركات والمتاجر التي تطلق حملة لمنتج أو خدمة أو عرض", "Companies and stores launching a campaign for a product, service or offer"),
+        model: PROJECT,
+        about: t("نصمم صفحة واحدة تركّز على منتج أو عرض واحد: المزايا والسعر وطريقة الطلب، ونربطها بنموذج طلب وواتساب وأداة تتبع، لتعرف كم زائراً جاء من الإعلان وكم طلباً وصلك.", "We design one page focused on a single product or offer — benefits, price and how to order — connected to an order form, WhatsApp and tracking, so you know how many visitors came from the ad and how many orders you got."),
+        youProvide: [t("نص العرض وصور المنتج أو الخدمة", "The offer text and product or service photos"), t("نطاق واستضافة باسمك، أو نساعدك في شرائهما", "A domain and hosting in your name, or we help you buy them"), t("حساب المنصة الإعلانية لربط البكسل", "Your ad platform account to connect the pixel")],
+        after: t("تستلم الصفحة منشورة وجاهزة للإعلان. أي تعديل بعد جولتي التعديل يُسعَّر حسب حجمه.", "You receive the page live and ready for ads. Changes after the two revision rounds are priced by size."),
         price: 2799,
         from: false,
         ...oneTime,
-        delivery: { ar: "5 أيام عمل", en: "5 business days" },
+        delivery: t("5 أيام عمل", "5 business days"),
+        revisions: t("جولتا تعديل", "Two rounds"),
         features: [
-          { ar: "صفحة واحدة بتصميم متجاوب مع الجوال", en: "One responsive, mobile-first page" },
-          { ar: "نموذج تواصل يصل لبريدك وزر واتساب", en: "A contact form to your inbox and a WhatsApp button" },
-          { ar: "إعداد تتبع أساسي: تحليلات جوجل وبكسل منصة إعلانية واحدة", en: "Basic tracking: Google Analytics and one ad platform pixel" },
-          { ar: "نشرها على نطاقك مع شهادة الأمان", en: "Published on your domain with SSL" },
-          { ar: "جولتا تعديل كحد أقصى", en: "Up to two revision rounds" }
+          t("صفحة واحدة متجاوبة مع الجوال", "One mobile-ready page"),
+          t("نموذج طلب يصل إلى بريدك وزر واتساب", "An order form to your inbox and a WhatsApp button"),
+          t("إعداد تحليلات جوجل وبكسل منصة إعلانية واحدة", "Google Analytics and one ad platform pixel set up"),
+          t("النشر على نطاقك مع شهادة الأمان (SSL)", "Published on your domain with SSL")
         ],
-        excludes: [
-          { ar: "الاستضافة والنطاق إن لم تكن لديك", en: "Hosting and domain if you don't have them" },
-          { ar: "كتابة المحتوى والتصوير", en: "Copywriting and photography" },
-          { ar: "إدارة الحملة وميزانية الإعلانات", en: "Campaign management and ad spend" }
-        ]
+        excludes: [t("الاستضافة والنطاق", "Hosting and domain"), t("كتابة المحتوى والتصوير", "Copywriting and photography"), t("إدارة الحملة والميزانية الإعلانية", "Campaign management and ad spend")]
       },
       {
         key: "web-starter",
         icon: "Monitor",
-        name: { ar: "موقع الانطلاق", en: "Launch website" },
-        tagline: { ar: "حضور رقمي احترافي لشركتك", en: "A professional online presence" },
-        idealFor: { ar: "المكاتب والعيادات والمقاولين والشركات الصغيرة", en: "Offices, clinics, contractors and small businesses" },
+        name: t("الموقع التعريفي", "Company website"),
+        tagline: t("حضور احترافي لشركتك في 5 صفحات", "A professional presence for your company in 5 pages"),
+        idealFor: t("المكاتب والعيادات والمقاولون والشركات الصغيرة", "Offices, clinics, contractors and small businesses"),
+        model: PROJECT,
+        about: t("موقع تعريفي من 5 صفحات يعرّف بشركتك وخدماتك وأعمالك، مبني من مكونات تصميم جاهزة نخصصها بألوانك وشعارك، ومتجاوب مع الجوال.", "A 5-page company website presenting your business, services and work, built from ready design components styled in your colours and logo, and mobile-ready."),
+        youProvide: [t("النصوص والصور والشعار", "Text, images and logo"), t("نطاق واستضافة باسمك", "A domain and hosting in your name"), t("بيانات التواصل وروابط الحسابات", "Contact details and social links")],
+        after: t("شهر لإصلاح أي عطل برمجي. الباقة لا تتضمن لوحة تحكم، فتعديل المحتوى بعد التسليم يتم عن طريقنا ويُسعَّر حسب حجمه.", "One month of bug fixing. There is no content panel, so content changes after delivery are done by us and priced by size."),
         price: 3899,
         from: false,
         ...oneTime,
-        delivery: { ar: "7 أيام عمل", en: "7 business days" },
+        delivery: t("7 أيام عمل", "7 business days"),
+        revisions: t("جولة تعديل واحدة", "One round"),
         features: [
-          { ar: "حتى 5 صفحات: الرئيسية، من نحن، الخدمات، أعمالنا، تواصل معنا", en: "Up to 5 pages: home, about, services, our work, contact" },
-          { ar: "لغة واحدة (العربية أو الإنجليزية)", en: "One language (Arabic or English)" },
-          { ar: "تصميم بمكونات قياسية نخصصها بهوية شركتك", en: "A design from standard components styled in your brand" },
-          { ar: "نموذج تواصل يصل لبريدك وزر واتساب ثابت", en: "Contact form to your inbox and a fixed WhatsApp button" },
-          { ar: "شهادة أمان وتهيئة أساسية لمحركات البحث", en: "SSL and basic search engine set-up" },
-          { ar: "جولة تعديل واحدة على التصميم", en: "One round of design revisions" },
-          { ar: "شهر لمعالجة العيوب البرمجية بعد التسليم", en: "One month of bug fixing after delivery" }
+          t("حتى 5 صفحات: الرئيسية، من نحن، الخدمات، الأعمال، تواصل معنا", "Up to 5 pages: home, about, services, work, contact"),
+          t("لغة واحدة: العربية أو الإنجليزية", "One language: Arabic or English"),
+          t("تصميم من مكونات جاهزة مخصصة بهوية شركتك", "A design from ready components styled in your brand"),
+          t("نموذج تواصل وزر واتساب", "A contact form and a WhatsApp button"),
+          t("شهادة أمان وتهيئة أساسية لمحركات البحث", "SSL and basic search engine set-up"),
+          t("شهر لإصلاح الأعطال البرمجية بعد التسليم", "One month of bug fixing after delivery")
         ],
-        excludes: [
-          { ar: "الاستضافة والنطاق (باسمك وعلى حسابك)", en: "Hosting and domain (in your name)" },
-          { ar: "لوحة تحكم لتعديل المحتوى", en: "A content management panel" },
-          { ar: "تصميم مخصص بالكامل (في باقة موقع الأعمال)", en: "A fully custom design (in the Business website)" }
-        ]
+        excludes: [t("الاستضافة والنطاق", "Hosting and domain"), t("لوحة تحكم لتعديل المحتوى", "A content management panel"), t("التصميم المخصص بالكامل (في موقع الأعمال)", "A fully custom design (in the Business website)")]
       },
       {
         key: "web-growth",
         icon: "Rocket",
-        name: { ar: "موقع الأعمال", en: "Business website" },
-        tagline: { ar: "موقع يجلب العملاء وتديره بنفسك", en: "A site that brings clients and you run yourself" },
-        idealFor: { ar: "الشركات التي تعتمد على موقعها في جلب العملاء والحملات", en: "Companies that rely on their site for leads and campaigns" },
+        name: t("موقع الأعمال", "Business website"),
+        tagline: t("موقع ثنائي اللغة بتصميم مخصص تديره بنفسك", "A bilingual, custom-designed site you manage yourself"),
+        idealFor: t("الشركات التي تعتمد على موقعها في استقبال العملاء والحملات", "Companies that rely on their site for enquiries and campaigns"),
+        model: PROJECT,
+        about: t("موقع بالعربية والإنجليزية بتصميم مخصص لهويتك، مع لوحة تحكم تعدّل منها النصوص والصور وتنشر المقالات بنفسك، ومجهّز للحملات الإعلانية والتحليلات.", "A bilingual site with a custom design in your brand and a content panel where you edit text and images and publish articles yourself, set up for ad campaigns and analytics."),
+        youProvide: [t("النصوص والصور باللغتين، أو نُسعّر الكتابة والترجمة منفصلة", "Text and images in both languages, or we price writing and translation separately"), t("الشعار ودليل الهوية إن وُجد", "Your logo and brand guide, if any"), t("قائمة الصفحات المطلوبة", "The list of pages you need")],
+        after: t("3 أشهر دعم لإصلاح الأعطال والتعديلات البسيطة. الاستضافة والنطاق مشمولان للسنة الأولى، ثم يُجدَّدان باسمك بسعر المزود.", "3 months of support for bug fixes and small edits. Hosting and domain are included for year one, then renewed in your name at the provider's price."),
         price: 10999,
         from: false,
         ...oneTime,
-        delivery: { ar: "21 يوم عمل", en: "21 business days" },
+        delivery: t("21 يوم عمل", "21 business days"),
+        revisions: t("جولتا تعديل", "Two rounds"),
         featured: true,
         features: [
-          { ar: "حتى 15 صفحة بالعربية والإنجليزية", en: "Up to 15 pages in Arabic and English" },
-          { ar: "تصميم مخصص بهوية شركتك (ليس قالباً جاهزاً)", en: "A custom design in your brand (not a ready template)" },
-          { ar: "لوحة تحكم لتعديل النصوص والصور والمقالات (دون إنشاء أقسام أو قوالب جديدة)", en: "A panel to edit text, images and articles (not to create new sections or templates)" },
-          { ar: "مدونة، ويمكن أن تكون حتى 3 من الصفحات صفحات هبوط للحملات", en: "A blog; up to 3 of the pages can be campaign landing pages" },
-          { ar: "إعداد تحليلات جوجل وبكسل الإعلانات وتهيئة تقنية لمحركات البحث", en: "Google Analytics, ad pixels and technical SEO set up" },
-          { ar: "استضافة سحابية قياسية ونطاق دوت كوم للسنة الأولى", en: "Standard cloud hosting and a .com domain for the first year" },
-          { ar: "جولتا تعديل", en: "Two revision rounds" },
-          { ar: "3 أشهر دعم: إصلاح الأعطال وتعديلات محتوى بسيطة في أيام العمل", en: "3 months of support: bug fixes and small content edits on business days" }
+          t("حتى 15 صفحة بالعربية والإنجليزية", "Up to 15 pages in Arabic and English"),
+          t("تصميم مخصص بهوية شركتك", "A custom design in your brand"),
+          t("لوحة تحكم لتعديل النصوص والصور والمقالات", "A panel to edit text, images and articles"),
+          t("مدونة، ويمكن تخصيص حتى 3 صفحات للحملات الإعلانية", "A blog; up to 3 pages can serve ad campaigns"),
+          t("إعداد التحليلات وبكسل الإعلانات والتهيئة التقنية لمحركات البحث", "Analytics, ad pixels and technical SEO set up"),
+          t("استضافة سحابية قياسية ونطاق (.com) للسنة الأولى", "Standard cloud hosting and a .com domain for the first year"),
+          t("3 أشهر دعم لإصلاح الأعطال وتعديلات المحتوى البسيطة", "3 months of support for bug fixes and small content edits")
         ],
-        excludes: [
-          { ar: "تجديد الاستضافة والنطاق بعد السنة الأولى (بسعر المزود وقتها)", en: "Hosting and domain renewal after year one (at the provider's price then)" },
-          { ar: "تطوير مميزات جديدة خلال فترة الدعم", en: "New features during the support period" },
-          { ar: "كتابة المحتوى والتصوير", en: "Copywriting and photography" }
-        ]
+        excludes: [t("تجديد الاستضافة والنطاق بعد السنة الأولى", "Hosting and domain renewal after year one"), t("إضافة أقسام أو مزايا جديدة خلال فترة الدعم", "New sections or features during support"), t("كتابة المحتوى والتصوير", "Copywriting and photography")]
       },
       {
         key: "web-pro",
         icon: "Layers",
-        name: { ar: "موقع المؤسسات", en: "Enterprise website" },
-        tagline: { ar: "موقع مؤسسي مخصص بتكاملات وصلاحيات", en: "A custom corporate site with integrations and permissions" },
-        idealFor: { ar: "الشركات الكبيرة والجهات التي تحتاج تصميماً وتكاملات خاصة", en: "Large companies and entities that need custom design and integrations" },
+        name: t("الموقع المؤسسي", "Corporate website"),
+        tagline: t("موقع مخصص بصلاحيات وتكاملات للشركات الكبيرة والجهات", "A custom site with permissions and integrations for large organisations"),
+        idealFor: t("الشركات الكبيرة والجهات التي تحتاج أدوار صلاحيات وتكاملات", "Large companies and entities that need roles and integrations"),
+        model: PROJECT,
+        about: t("موقع مؤسسي يُبنى حسب وثيقة نطاق نتفق عليها: صفحات بلغتين، ولوحة إدارة بصلاحيات لفريقك، وتكامل مع أحد أنظمتك. السعر المعلن للنطاق الأساسي، والسعر النهائي بعد ورشة المتطلبات.", "A corporate site built to an agreed scope document: bilingual pages, an admin panel with roles for your team and an integration with one of your systems. The published price covers the base scope; the final price follows the requirements workshop."),
+        youProvide: [t("المحتوى والهوية المؤسسية", "Content and corporate identity"), t("بيانات الوصول للنظام المطلوب ربطه", "Access to the system to integrate"), t("شخص مسؤول من جهتك لاعتماد المراحل", "A person on your side to approve each stage")],
+        after: t("6 أشهر دعم، ثم عقد صيانة اختياري. الاستضافة والتراخيص الخارجية على حساب الجهة.", "6 months of support, then an optional maintenance contract. Hosting and third-party licences are on your account."),
         price: 21999,
         from: true,
         ...oneTime,
-        delivery: { ar: "من 6 أسابيع حسب نطاق المشروع", en: "From 6 weeks, depending on scope" },
+        delivery: t("من 6 أسابيع حسب النطاق", "From 6 weeks, depending on scope"),
+        revisions: byScope,
         features: [
-          { ar: "ورشة متطلبات ووثيقة نطاق متفق عليها قبل البدء", en: "A requirements workshop and an agreed scope before work starts" },
-          { ar: "سعر البداية للنطاق الأساسي: حتى 20 صفحة بلغتين", en: "The starting price covers the base scope: up to 20 pages in two languages" },
-          { ar: "تصميم مخصص بالكامل بهوية مؤسستك", en: "A fully custom design in your corporate identity" },
-          { ar: "لوحة إدارة بحتى 3 أدوار صلاحيات", en: "An admin panel with up to 3 permission roles" },
-          { ar: "تكامل واحد محدد ضمن النطاق الأساسي (نظام العملاء أو الحجوزات أو الدفع)", en: "One defined integration in the base scope (CRM, bookings or payments)" },
-          { ar: "ملكية كاملة للكود ودعم 6 أشهر", en: "Full code ownership and 6 months of support" }
+          t("ورشة متطلبات ووثيقة نطاق معتمدة قبل البدء", "A requirements workshop and an approved scope before work starts"),
+          t("النطاق الأساسي: حتى 20 صفحة بلغتين", "Base scope: up to 20 pages in two languages"),
+          t("تصميم مخصص بالكامل", "A fully custom design"),
+          t("لوحة إدارة بحتى 3 أدوار صلاحيات", "An admin panel with up to 3 permission roles"),
+          t("تكامل واحد ضمن النطاق الأساسي (نظام العملاء أو الحجوزات أو الدفع)", "One integration in the base scope (CRM, bookings or payments)"),
+          t("6 أشهر دعم", "6 months of support")
         ],
-        excludes: [
-          { ar: "الصفحات والتكاملات والأدوار الإضافية (تُسعَّر بعد تحليل المتطلبات)", en: "Extra pages, integrations and roles (priced after requirements analysis)" },
-          { ar: "الاستضافة والتراخيص الخارجية", en: "Hosting and third-party licences" },
-          { ar: "تطبيقات الجوال (في تطوير الأنظمة والتطبيقات)", en: "Mobile apps (in systems & app development)" }
-        ]
+        excludes: [t("الصفحات والتكاملات والأدوار الإضافية (تُسعَّر بعد التحليل)", "Extra pages, integrations and roles (priced after analysis)"), t("الاستضافة والتراخيص الخارجية", "Hosting and third-party licences"), t("تطبيقات الجوال", "Mobile apps")]
       }
-    ],
-    compare: [
-      row("الصفحات", "Pages", [["صفحة واحدة", "One page"], ["حتى 5", "Up to 5"], ["حتى 15", "Up to 15"], ["الأساسي حتى 20 — والباقي حسب النطاق", "Base up to 20 — more by scope"]]),
-      row("اللغات", "Languages", [["واحدة", "One"], ["واحدة", "One"], ["العربية والإنجليزية", "Arabic and English"], ["لغتان", "Two"]]),
-      row("التصميم", "Design", [["متجاوب لصفحة واحدة", "One responsive page"], ["مكونات قياسية بهويتك", "Standard components in your brand"], ["مخصص بهويتك", "Custom, in your brand"], ["مخصص بالكامل", "Fully custom"]]),
-      row("لوحة التحكم", "Content panel", [none, none, ["ضمن نطاق محدد", "Within a defined scope"], ["بحتى 3 أدوار صلاحيات", "Up to 3 permission roles"]]),
-      row("جولات التعديل", "Revision rounds", [["2", "2"], ["1", "1"], ["2", "2"], ["حسب وثيقة النطاق", "Per the scope document"]]),
-      row("الدعم بعد التسليم", "Support after delivery", [none, ["شهر لمعالجة العيوب", "1 month of bug fixing"], ["3 أشهر", "3 months"], ["6 أشهر", "6 months"]])
     ]
   },
   {
@@ -215,103 +230,99 @@ export const packageGroups: PackageGroup[] = [
     segment: "smb",
     service: "ecommerce",
     icon: "ShoppingCart",
-    title: { ar: "باقات المتاجر الإلكترونية", en: "Online store packages" },
-    short: { ar: "متاجر إلكترونية", en: "Online stores" },
-    text: { ar: "متجر جاهز للبيع والإعلان على زد أو سلة أو شوبيفاي — من التأسيس حتى أول طلب، ثم نكمل معك التسويق شهرياً.", en: "A store ready to sell and advertise on Zid, Salla or Shopify — from founding to the first order, then monthly marketing with you." },
-    highlights: [{ ar: "متجر على زد أو سلة أو شوبيفاي جاهز للبيع", en: "A Zid, Salla or Shopify store ready to sell" }, { ar: "وسائل الدفع والشحن المتاحة لحسابك مربوطة", en: "The payment and shipping options available to your account connected" }, { ar: "التتبع والكتالوج جاهزان للإعلان", en: "Tracking and catalogue ready for ads" }],
-    notice: { ar: "مهم: اشتراكات زد وسلة وشوبيفاي والتطبيقات المدفوعة ورسوم بوابات الدفع وشركات الشحن غير مشمولة — تُدفع مباشرة وباسمك ليبقى المتجر ملكك. وميزانية الإعلانات تُدفع لمنصات الإعلان من حسابك. أي تكامل يعتمد على إتاحة واجهة برمجية لدى المنصة أو موافقة طرف ثالث نوضحه لك قبل البدء.", en: "Important: Zid, Salla and Shopify subscriptions, paid apps, payment gateway and shipping fees are not included — you pay them directly, in your name, so the store stays yours. Ad budgets are paid to the ad platforms from your account. Any integration that depends on a platform API or a third party's approval is explained to you before we start." },
+    title: t("باقات المتاجر الإلكترونية", "Online store packages"),
+    short: t("المتاجر الإلكترونية", "Online stores"),
+    text: t("متجر جاهز للبيع على زد أو سلة أو شوبيفاي، من الإعداد حتى أول طلب، مع ربط وسائل الدفع والشحن والتتبع.", "A store ready to sell on Zid, Salla or Shopify — from set-up to the first order, with payments, shipping and tracking connected."),
+    highlights: [t("متجر على زد أو سلة أو شوبيفاي باسمك", "A Zid, Salla or Shopify store in your name"), t("وسائل الدفع والشحن المتاحة لحسابك مربوطة", "The payment and shipping options available to your account connected"), t("التتبع جاهز للإعلان من اليوم الأول", "Tracking ready for ads from day one")],
+    notice: t("اشتراك المنصة (زد أو سلة أو شوبيفاي) والتطبيقات المدفوعة ورسوم بوابات الدفع وشركات الشحن غير مشمولة، وتُدفع باسمك مباشرة ليبقى المتجر ملكك. الميزانية الإعلانية تُدفع من حسابك. أي تكامل يعتمد على واجهة برمجية لدى المنصة أو موافقة طرف ثالث نوضّحه قبل البدء.", "The platform subscription (Zid, Salla or Shopify), paid apps, payment gateway and shipping fees are not included; you pay them directly, in your name, so the store stays yours. Ad spend is paid from your account. Any integration that depends on a platform API or a third party's approval is explained before we start."),
     tiers: [
       {
         key: "store-launch",
         icon: "ShoppingBag",
-        name: { ar: "متجر الانطلاق", en: "Launch store" },
-        tagline: { ar: "متجر جاهز للبيع والإعلان بسرعة", en: "A store ready to sell and advertise, fast" },
-        idealFor: { ar: "من يبيع على إنستغرام أو واتساب ويريد متجراً حقيقياً", en: "Sellers on Instagram or WhatsApp who want a real store" },
+        name: t("المتجر الأساسي", "Starter store"),
+        tagline: t("متجر جاهز للبيع خلال 5 أيام عمل", "A store ready to sell in 5 business days"),
+        idealFor: t("من يبيع عبر إنستغرام أو واتساب ويحتاج متجراً رسمياً", "Sellers on Instagram or WhatsApp who need a proper store"),
+        model: STORE,
+        about: t("نجهّز متجرك على زد أو سلة بقالب المنصة وبألوانك وشعارك، ونرفع منتجاتك، ونفعّل وسائل الدفع والشحن المتاحة لحسابك، ونربط أدوات التتبع لتبدأ البيع والإعلان.", "We set up your Zid or Salla store with the platform theme in your colours and logo, upload your products, activate the payment and shipping options available to your account and connect tracking, so you can start selling and advertising."),
+        youProvide: [t("اشتراك زد أو سلة باسمك", "A Zid or Salla subscription in your name"), t("بيانات المنتجات وصورها", "Product data and photos"), t("السجل التجاري ووثائق تفعيل الدفع التي تطلبها المنصة", "Your commercial registration and the payment documents the platform asks for")],
+        after: t("أسبوعا دعم بعد الإطلاق. اشتراك المنصة ورسوم الدفع والشحن تُدفع للمنصة مباشرة.", "Two weeks of support after launch. Platform, payment and shipping fees are paid to the platform directly."),
         price: 2799,
         from: false,
         ...oneTime,
-        delivery: { ar: "5 أيام عمل", en: "5 business days" },
+        delivery: t("5 أيام عمل", "5 business days"),
+        revisions: t("جولة تعديل واحدة", "One round"),
         features: [
-          { ar: "إعداد المتجر على زد أو سلة بقالب المنصة وتخصيصه بشعارك وألوانك", en: "Store set up on Zid or Salla with a platform theme styled in your logo and colours" },
-          { ar: "رفع حتى 30 منتجاً من صورك وبياناتك", en: "Up to 30 products from your photos and data" },
-          { ar: "الصفحات الأساسية: من نحن، الاسترجاع، الشحن، الخصوصية", en: "Core pages: about, returns, shipping, privacy" },
-          { ar: "إعداد وسائل الدفع والشحن المتاحة لحسابك على المنصة", en: "The payment and shipping options available to your account set up" },
-          { ar: "ربط التتبع القياسي الذي تدعمه المنصة: بكسل سناب وتيك توك وميتا وتحليلات جوجل", en: "The platform's supported standard tracking: Snap, TikTok and Meta pixels and Google Analytics" },
-          { ar: "دعم فني أسبوعين بعد الإطلاق", en: "Two weeks of support after launch" }
+          t("إعداد المتجر على زد أو سلة بقالب المنصة وتخصيصه بشعارك وألوانك", "Store set up on Zid or Salla with a platform theme in your logo and colours"),
+          t("رفع حتى 30 منتجاً من بياناتك وصورك", "Up to 30 products from your data and photos"),
+          t("الصفحات الأساسية: من نحن، الاسترجاع، الشحن، الخصوصية", "Core pages: about, returns, shipping, privacy"),
+          t("إعداد وسائل الدفع والشحن المتاحة لحسابك", "The payment and shipping options available to your account set up"),
+          t("ربط بكسل سناب وتيك توك وميتا وتحليلات جوجل", "Snap, TikTok and Meta pixels and Google Analytics connected"),
+          t("دعم فني لمدة أسبوعين بعد الإطلاق", "Two weeks of support after launch")
         ],
-        excludes: [
-          { ar: "اشتراك المنصة وتطبيقاتها ورسوم بوابات الدفع والشحن", en: "Platform subscription, its apps, payment and shipping fees" },
-          { ar: "التصميم المخصص وتصوير المنتجات", en: "Custom design and product photography" },
-          { ar: "إدارة الحملات وميزانية الإعلانات", en: "Campaign management and ad budget" }
-        ]
+        excludes: [t("اشتراك المنصة وتطبيقاتها ورسوم الدفع والشحن", "Platform subscription, apps, payment and shipping fees"), t("التصميم المخصص وتصوير المنتجات", "Custom design and product photography"), t("إدارة الحملات والميزانية الإعلانية", "Campaign management and ad spend")]
       },
       {
         key: "store-growth",
         icon: "TrendingUp",
-        name: { ar: "متجر النمو", en: "Growth store" },
-        tagline: { ar: "متجر بهويتك وجاهز لحملة الإطلاق", en: "A store in your brand, ready for its launch campaign" },
-        idealFor: { ar: "العلامات التي تريد متجراً مميزاً وتعلن على السوشيال ميديا", en: "Brands that want a distinctive store and advertise on social media" },
+        name: t("المتجر الاحترافي", "Professional store"),
+        tagline: t("متجر بهوية علامتك جاهز لحملة الإطلاق", "A store in your brand, ready for its launch campaign"),
+        idealFor: t("العلامات التجارية التي تعلن على منصات التواصل وتحتاج متجراً مميزاً", "Brands advertising on social media that need a distinctive store"),
+        model: STORE,
+        about: t("متجر بهوية علامتك ضمن إمكانيات منصة زد أو سلة، بحتى 100 منتج بخياراتها، ومربوط بالتتبع والكتالوج الإعلاني، مع تجهيز أول حملة و10 تصاميم للإطلاق.", "A store in your brand within what Zid or Salla allows, with up to 100 products and their options, connected to tracking and the ad catalogue, plus your first campaign prepared and 10 launch designs."),
+        youProvide: [t("اشتراك زد أو سلة باسمك", "A Zid or Salla subscription in your name"), t("بيانات المنتجات وصورها", "Product data and photos"), t("السجل التجاري ووثائق تفعيل الدفع", "Commercial registration and payment documents"), t("حساب منصة إعلانية واحدة باسمك", "One ad platform account in your name")],
+        after: t("شهر دعم وتدريب لفريقك على إدارة الطلبات. إدارة الحملات بعد الإطلاق متاحة في باقات الحملات الإعلانية.", "One month of support and team training on managing orders. Campaign management after launch is in the ad campaign plans."),
         price: 6599,
         from: false,
         ...oneTime,
-        delivery: { ar: "10 أيام عمل", en: "10 business days" },
+        delivery: t("10 أيام عمل", "10 business days"),
+        revisions: t("جولتا تعديل", "Two rounds"),
         featured: true,
         features: [
-          { ar: "تخصيص الواجهات بهويتك ضمن الإمكانيات المتاحة في المنصة", en: "Storefront customised in your brand within what the platform allows" },
-          { ar: "رفع حتى 100 منتج بالخيارات (المقاس، اللون…) والتصنيفات", en: "Up to 100 products with options (size, colour…) and categories" },
-          { ar: "إعداد الدفع والشحن والدفع عند الاستلام المتاحة لحسابك", en: "Payments, shipping and cash on delivery available to your account set up" },
-          { ar: "بكسل سناب وتيك توك وميتا مع تتبع الإضافة للسلة والشراء، وتحليلات جوجل", en: "Snap, TikTok and Meta pixels tracking add-to-cart and purchases, plus Google Analytics" },
-          { ar: "ربط كتالوج المنتجات بالمنصات الإعلانية حيث تدعمه المنصة", en: "Product catalogue linked to ad platforms where the platform supports it" },
-          { ar: "تجهيز حملة افتتاحية على منصة إعلانية واحدة (دون ميزانية الإعلان)", en: "An opening campaign prepared on one ad platform (ad budget not included)" },
-          { ar: "10 تصاميم إطلاق للسوشيال ميديا", en: "10 social media launch designs" },
-          { ar: "تدريب فريقك ودعم فني شهر", en: "Team training and one month of support" }
+          t("تخصيص واجهة المتجر بهويتك ضمن إمكانيات المنصة", "Storefront customised in your brand within the platform's options"),
+          t("رفع حتى 100 منتج بالخيارات (المقاس واللون) والتصنيفات", "Up to 100 products with options (size, colour) and categories"),
+          t("إعداد الدفع والشحن والدفع عند الاستلام المتاحة لحسابك", "Payments, shipping and cash on delivery available to your account set up"),
+          t("بكسل سناب وتيك توك وميتا مع تتبع الإضافة للسلة والشراء", "Snap, TikTok and Meta pixels tracking add-to-cart and purchases"),
+          t("ربط كتالوج المنتجات بالمنصات الإعلانية حيث تدعمه المنصة", "Product catalogue linked to ad platforms where the platform supports it"),
+          t("تجهيز حملة إطلاق على منصة إعلانية واحدة", "A launch campaign prepared on one ad platform"),
+          t("10 تصاميم إطلاق لحسابات التواصل", "10 launch designs for your social accounts"),
+          t("تدريب فريقك ودعم فني لمدة شهر", "Team training and one month of support")
         ],
-        excludes: [
-          { ar: "اشتراك المنصة وتطبيقاتها ورسوم بوابات الدفع والشحن", en: "Platform subscription, its apps, payment and shipping fees" },
-          { ar: "ميزانية الإعلانات (تُدفع للمنصة من حسابك)", en: "Ad budget (paid to the platform from your account)" },
-          { ar: "إدارة الحملات بعد الإطلاق (في باقات التسويق الشهرية)", en: "Campaign management after launch (in the monthly marketing plans)" }
-        ]
+        excludes: [t("اشتراك المنصة وتطبيقاتها ورسوم الدفع والشحن", "Platform subscription, apps, payment and shipping fees"), t("الميزانية الإعلانية", "Ad spend"), t("إدارة الحملات بعد الإطلاق (في باقات الحملات الإعلانية)", "Campaign management after launch (in the ad campaign plans)")]
       },
       {
         key: "store-scale",
         icon: "Building2",
-        name: { ar: "التجارة المتقدمة", en: "Advanced commerce" },
-        tagline: { ar: "منصة وتكاملات ونطاق عمل على مقاس متجرك", en: "Platform, integrations and scope fitted to your store" },
-        idealFor: { ar: "المتاجر ذات المبيعات العالية أو الفروع أو التي تبيع خارج المملكة", en: "High-volume stores, multi-branch businesses or cross-border sellers" },
+        name: t("المتجر المتقدم", "Advanced store"),
+        tagline: t("نطاق مخصص وتكاملات تُدرس حسب احتياج متجرك", "A custom scope, with integrations studied for your store"),
+        idealFor: t("المتاجر ذات المبيعات العالية أو متعددة الفروع أو التي تبيع خارج المملكة", "High-volume, multi-branch or cross-border stores"),
+        model: STORE,
+        about: t("متجر بنطاق مخصص لمبيعات أكبر أو أكثر من فرع أو سوق، على شوبيفاي أو بتصميم مخصص. تكاملات المخزون والمحاسبة والفوترة الإلكترونية تُدرس أولاً ثم تُسعَّر منفصلة.", "A store with a custom scope for higher sales, several branches or markets, on Shopify or custom-designed. Inventory, accounting and e-invoicing integrations are studied first, then priced separately."),
+        youProvide: [t("بيانات المنتجات والأنظمة الحالية", "Product data and your current systems"), t("حسابات المنصة والدفع والشحن باسمك", "Platform, payment and shipping accounts in your name"), t("شخص مسؤول لاعتماد النطاق والمراحل", "A person to approve the scope and stages")],
+        after: t("3 أشهر دعم بأولوية، ثم صيانة اختيارية.", "3 months of priority support, then optional maintenance."),
         price: 19799,
         from: true,
         ...oneTime,
-        delivery: { ar: "من 4 أسابيع حسب النطاق", en: "From 4 weeks, depending on scope" },
+        delivery: t("من 4 أسابيع حسب النطاق", "From 4 weeks, depending on scope"),
+        revisions: byScope,
         features: [
-          { ar: "تحليل متطلبات ووثيقة نطاق مكتوبة قبل البدء", en: "Requirements analysis and a written scope before we start" },
-          { ar: "متجر بتصميم مخصص أو على شوبيفاي حسب احتياجك", en: "A custom-designed store or a Shopify store, as you need" },
-          { ar: "بكسل المنصات وتحليلات جوجل وربط المنتجات بتسوق جوجل", en: "Platform pixels, Google Analytics and products linked to Google Shopping" },
-          { ar: "دراسة تقنية لتكاملات المخزون والمحاسبة والفوترة الإلكترونية والتتبع من الخادم — تُسعَّر منفصلة", en: "A technical study of inventory, accounting, e-invoicing and server-side tracking integrations — priced separately" },
-          { ar: "متعدد اللغات والعملات عند البيع خارج المملكة", en: "Multi-language and multi-currency for selling abroad" },
-          { ar: "خطة تسويق إطلاق 90 يوماً وإدارة حملات الشهر الأول على منصتين", en: "A 90-day launch marketing plan and first-month campaigns on two platforms" },
-          { ar: "دعم بأولوية لمدة 3 أشهر", en: "3 months of priority support" }
+          t("تحليل المتطلبات ووثيقة نطاق قبل البدء", "Requirements analysis and a scope document before we start"),
+          t("متجر بتصميم مخصص أو على شوبيفاي", "A custom-designed store or a Shopify store"),
+          t("بكسل المنصات الإعلانية وربط المنتجات بتسوق جوجل", "Ad platform pixels and products linked to Google Shopping"),
+          t("دراسة تقنية لتكاملات المخزون والمحاسبة والفوترة الإلكترونية (تُسعَّر منفصلة)", "A technical study of inventory, accounting and e-invoicing integrations (priced separately)"),
+          t("تعدد اللغات والعملات للبيع خارج المملكة", "Multiple languages and currencies for selling abroad"),
+          t("خطة إطلاق تسويقية لمدة 90 يوماً وإدارة حملات الشهر الأول على منصتين", "A 90-day launch marketing plan and first-month campaigns on two platforms"),
+          t("دعم بأولوية لمدة 3 أشهر", "3 months of priority support")
         ],
-        excludes: [
-          { ar: "اشتراك المنصة وتطبيقاتها المدفوعة", en: "Platform subscription and paid apps" },
-          { ar: "تنفيذ تكاملات ERP أو المحاسبة أو الفوترة الإلكترونية دون دراسة وعرض منفصل", en: "ERP, accounting or e-invoicing integrations without a study and a separate quote" },
-          { ar: "رسوم بوابات الدفع والشحن وميزانية الإعلانات", en: "Payment and shipping fees and ad budget" }
-        ]
+        excludes: [t("اشتراك المنصة وتطبيقاتها ورسوم الدفع والشحن", "Platform subscription, apps, payment and shipping fees"), t("تنفيذ التكاملات قبل دراستها واعتماد عرض سعرها", "Building integrations before they are studied and quoted"), t("الميزانية الإعلانية", "Ad spend")]
       }
     ],
-    compare: [
-      row("المنتجات", "Products", [["حتى 30", "Up to 30"], ["حتى 100", "Up to 100"], ["حسب النطاق", "By scope"]]),
-      row("التصميم", "Design", [["قالب المنصة بهويتك", "Platform theme in your brand"], ["تخصيص ضمن إمكانيات المنصة", "Customised within the platform"], ["مخصص أو شوبيفاي", "Custom or Shopify"]]),
-      row("التتبع", "Tracking", [["التتبع القياسي للمنصة", "The platform's standard tracking"], ["البكسل وأحداث السلة والشراء", "Pixels with cart and purchase events"], ["+ دراسة التتبع من الخادم", "+ server-side tracking study"]]),
-      row("حملة الإطلاق", "Launch campaign", [none, ["حملة على منصة واحدة و10 تصاميم", "One platform and 10 designs"], ["خطة 90 يوماً وحملات منصتين", "90-day plan, two platforms"]]),
-      row("الدعم", "Support", [["أسبوعان", "Two weeks"], ["شهر", "One month"], ["3 أشهر بأولوية", "3 months, priority"]])
-    ],
     journey: [
-      { icon: "Lightbulb", title: { ar: "التأسيس", en: "Founding" }, text: { ar: "نختار معك المنصة المناسبة ونجهز الشعار والألوان وصفحات السياسات.", en: "We choose the right platform with you and prepare your logo, colours and policy pages." }, tier: "store-launch" },
-      { icon: "ShoppingBag", title: { ar: "بناء المتجر", en: "Building the store" }, text: { ar: "تجهيز المتجر ورفع المنتجات وربط الدفع والشحن.", en: "Store built, products uploaded, payments and shipping connected." }, tier: "store-growth" },
-      { icon: "Target", title: { ar: "التجهيز للإعلان", en: "Ready to advertise" }, text: { ar: "البكسل والتحليلات وكتالوج المنتجات — كل طلب يُقاس.", en: "Pixels, analytics and the product catalogue — every order is measured." }, tier: "store-growth" },
-      { icon: "Rocket", title: { ar: "الإطلاق", en: "Launch" }, text: { ar: "تصاميم الافتتاح وأول حملة إعلانية.", en: "Opening designs and the first ad campaign." }, tier: "store-growth" },
-      { icon: "MessagesSquare", title: { ar: "أول الطلبات", en: "First orders" }, text: { ar: "واتساب يرد على العملاء ويؤهلهم ويبلغك بكل طلب جديد.", en: "WhatsApp answers and qualifies clients and alerts you to every new order." }, tier: "wa-pro" },
-      { icon: "TrendingUp", title: { ar: "النمو المستمر", en: "Ongoing growth" }, text: { ar: "إدارة الحملات والسوشيال ميديا شهرياً بتقارير تقيس الطلبات والتكلفة.", en: "Monthly campaign and social media management with reports on orders and cost." }, tier: "mkt-growth" }
+      { icon: "Lightbulb", title: t("الإعداد", "Set-up"), text: t("نختار معك المنصة المناسبة ونجهّز الشعار والألوان وصفحات السياسات.", "We choose the right platform with you and prepare your logo, colours and policy pages."), tier: "store-launch" },
+      { icon: "ShoppingBag", title: t("بناء المتجر", "Building the store"), text: t("تخصيص المتجر ورفع المنتجات وربط الدفع والشحن.", "Store customised, products uploaded, payments and shipping connected."), tier: "store-growth" },
+      { icon: "Target", title: t("التجهيز للإعلان", "Ready to advertise"), text: t("البكسل والتحليلات وكتالوج المنتجات، ليُقاس كل طلب.", "Pixels, analytics and the product catalogue, so every order is measured."), tier: "store-growth" },
+      { icon: "Rocket", title: t("الإطلاق", "Launch"), text: t("تصاميم الإطلاق وأول حملة إعلانية.", "Launch designs and the first ad campaign."), tier: "store-growth" },
+      { icon: "MessagesSquare", title: t("خدمة العملاء", "Customer service"), text: t("واتساب يرد على العملاء ويؤهلهم ويحوّلهم إلى فريقك.", "WhatsApp answers and qualifies customers and hands them to your team."), tier: "wa-pro" },
+      { icon: "TrendingUp", title: t("النمو المستمر", "Ongoing growth"), text: t("إدارة الحملات شهرياً بتقارير تقيس الطلبات والتكلفة.", "Monthly campaign management with reports on orders and cost."), tier: "mkt-growth" }
     ]
   },
   {
@@ -319,121 +330,113 @@ export const packageGroups: PackageGroup[] = [
     segment: "smb",
     service: "digital-marketing",
     icon: "Megaphone",
-    title: { ar: "باقات إدارة الحملات الإعلانية", en: "Ad campaign management plans" },
-    short: { ar: "الحملات الإعلانية", en: "Ad campaigns" },
-    text: { ar: "ندير حملاتك على سناب وتيك توك وميتا وجوجل بخطة واضحة: عدد منصات وحملات ومواد إعلانية محدد، ومتابعة وتقارير تقيس النتائج الفعلية.", en: "We run your Snap, TikTok, Meta and Google campaigns with a clear plan: a set number of platforms, campaigns and creatives, with monitoring and reports on real results." },
-    highlights: [
-      { ar: "إعداد وإدارة الحملات على المنصات المناسبة لنشاطك", en: "Campaigns set up and run on the platforms that fit your business" },
-      { ar: "مواد إعلانية واختبار أكثر من إعلان", en: "Ad creatives and testing several ads" },
-      { ar: "تقارير بالتكلفة والنتائج القابلة للقياس", en: "Reports on cost and measurable results" }
-    ],
-    notice: { ar: "الأسعار رسوم إدارة قبل الضريبة. الميزانية الإعلانية تُدفع للمنصات من حسابك مباشرة ومنفصلة عن الباقة. أتعاب كل باقة تغطي إنفاقاً إعلانياً شهرياً حتى الحد المذكور فيها؛ إذا تجاوزه الإنفاق يُعاد تسعير الأتعاب بالاتفاق قبل الشهر التالي. لا نَعِد بعدد مبيعات أو عملاء محتملين أو عائد إعلاني أو تكلفة اكتساب محددة — نَعِد بإدارة احترافية وقياس شفاف.", en: "Prices are management fees before VAT. Ad spend is paid to the platforms from your own account, separately. Each plan's fee covers monthly ad spend up to the limit it states; above it, the fee is re-quoted by agreement before the next month. We don't promise a number of sales or leads, a return on ad spend or a set acquisition cost — we promise professional management and transparent measurement." },
+    title: t("باقات إدارة الحملات الإعلانية", "Ad campaign management plans"),
+    short: t("الحملات الإعلانية", "Ad campaigns"),
+    text: t("إدارة حملاتك على سناب شات وتيك توك وميتا وجوجل بعدد محدد من المنصات والحملات والمواد الإعلانية، مع متابعة دورية وتقرير شهري.", "Your campaigns on Snapchat, TikTok, Meta and Google with a set number of platforms, campaigns and creatives, regular optimisation and a monthly report."),
+    highlights: [t("إعداد الحملات وإدارتها على المنصات المناسبة لنشاطك", "Campaigns set up and run on the platforms that fit your business"), t("مواد إعلانية واختبار أكثر من نسخة", "Ad creatives and testing several versions"), t("تقارير بالتكلفة والنتائج القابلة للقياس", "Reports on cost and measurable results")],
+    notice: t("الأسعار أتعاب إدارة قبل الضريبة، والميزانية الإعلانية تُدفع للمنصات من حسابك مباشرة. تغطي أتعاب كل باقة إنفاقاً إعلانياً حتى الحد المذكور فيها، وإذا تجاوزه يُعاد تسعير الأتعاب بالاتفاق قبل الشهر التالي. لا نضمن عدداً محدداً من المبيعات أو العملاء المحتملين أو عائداً إعلانياً محدداً، ونلتزم بإدارة احترافية وتقارير شفافة.", "Prices are management fees before VAT; ad spend is paid to the platforms from your own account. Each plan's fee covers ad spend up to the limit it states; above it, the fee is re-quoted by agreement before the next month. We don't guarantee a number of sales or leads or a return on ad spend; we commit to professional management and transparent reporting."),
     tiers: [
       {
         key: "ads-launch",
         icon: "Target",
-        name: { ar: "جاهز للإعلان", en: "Ready to advertise" },
-        tagline: { ar: "خدمة إعداد تجريبية: تجهيز وإدارة 14 يوماً", en: "A trial set-up: preparation and 14 days of management" },
-        idealFor: { ar: "من يبدأ الإعلان لأول مرة أو يعلن دون قياس واضح", en: "Anyone advertising for the first time, or without clear measurement" },
+        name: t("التجربة الإعلانية", "Ads trial"),
+        tagline: t("إعداد حملة وإدارتها 14 يوماً لتجربة الإعلان المدفوع", "One campaign set up and run for 14 days to try paid ads"),
+        idealFor: t("من يبدأ الإعلان لأول مرة أو يعلن دون قياس واضح", "Anyone advertising for the first time, or without clear measurement"),
+        model: TRIAL,
+        about: t("تجربة قصيرة للإعلان المدفوع: نراجع جاهزية موقعك، ونجهّز التتبع، ونطلق حملة واحدة وندير ميزانيتها 14 يوماً، ثم نسلّمك تقريراً بالنتائج والخطوة المناسبة بعدها.", "A short trial of paid ads: we review your site's readiness, set up tracking, launch one campaign and manage its budget for 14 days, then hand you a report with the results and the right next step."),
+        youProvide: [t("حساب إعلاني باسمك على المنصة المختارة", "An ad account in your name on the chosen platform"), t("الميزانية الإعلانية من حسابك", "The ad budget, from your account"), t("صور أو فيديو للمنتج أو الخدمة", "Photos or video of your product or service")],
+        after: t("تنتهي الخدمة بعد 14 يوماً دون أي التزام، ويمكنك الاستمرار بإحدى الباقات الشهرية.", "The service ends after 14 days with no commitment; you can continue with a monthly plan."),
         price: 1499,
         from: false,
-        period: { ar: "لمدة 14 يوماً", en: "for 14 days" },
+        period: t("لمدة 14 يوماً", "for 14 days"),
         billing: "one-time",
-        delivery: { ar: "التجهيز خلال 3 أيام عمل، ثم 14 يوم إدارة", en: "Set up in 3 business days, then 14 days of management" },
+        delivery: t("الإعداد خلال 3 أيام عمل، ثم 14 يوماً من الإدارة", "Set up in 3 business days, then 14 days of management"),
         features: [
-          { ar: "مراجعة جاهزية الموقع أو المتجر للإعلان", en: "A readiness review of your site or store" },
-          { ar: "إعداد التتبع على منصة واحدة", en: "Tracking set up on one platform" },
-          { ar: "إطلاق حملة واحدة على منصة واحدة", en: "One campaign launched on one platform" },
-          { ar: "مادتان إعلانيتان من محتواك", en: "Two ad creatives from your content" },
-          { ar: "متابعة وتحسين خلال 14 يوماً لإنفاق حتى 2,500 ريال", en: "Monitoring and optimisation for 14 days, for spend up to SAR 2,500" },
-          { ar: "تقرير ختامي بالنتائج القابلة للقياس", en: "A final report on measurable results" }
+          t("مراجعة جاهزية الموقع أو المتجر للإعلان", "A readiness review of your site or store"),
+          t("إعداد التتبع على منصة واحدة", "Tracking set up on one platform"),
+          t("إطلاق حملة واحدة على منصة واحدة", "One campaign launched on one platform"),
+          t("مادتان إعلانيتان من محتواك", "Two ad creatives from your content"),
+          t("متابعة وتحسين خلال 14 يوماً لإنفاق حتى 2,500 ريال", "Optimisation over 14 days, for spend up to SAR 2,500"),
+          t("تقرير ختامي بالنتائج", "A final report on the results")
         ],
-        excludes: [
-          { ar: "الميزانية الإعلانية ورسوم المنصات", en: "Ad spend and platform fees" },
-          { ar: "التصوير وتصميم صفحات هبوط جديدة", en: "Photography and new landing pages" }
-        ]
+        excludes: [t("الميزانية الإعلانية ورسوم المنصات", "Ad spend and platform fees"), t("التصوير وتصميم صفحات الهبوط", "Photography and landing page design")]
       },
       {
         key: "mkt-start",
         icon: "Megaphone",
-        name: { ar: "البداية", en: "Starter" },
-        tagline: { ar: "حملة واحدة تُدار باحتراف", en: "One campaign, professionally run" },
-        idealFor: { ar: "المشاريع التي تبدأ الإعلان بانتظام", en: "Businesses starting to advertise regularly" },
+        name: t("الأساسية", "Essential"),
+        tagline: t("حملة واحدة تُدار باحتراف على منصة واحدة", "One campaign, professionally run on one platform"),
+        idealFor: t("المشاريع التي بدأت الإعلان بانتظام", "Businesses that have started advertising regularly"),
+        model: MONTHLY,
+        about: t("ندير حملة إعلانية واحدة على منصة تختارها: نجهّز الاستهداف والإعلانات، ونتابع النتائج أسبوعياً ونحسّنها، ونرسل تقريراً شهرياً بالتكلفة والنتائج.", "We run one ad campaign on a platform you choose: targeting and ads set up, results reviewed and improved weekly, and a monthly report on cost and results."),
+        youProvide: [t("حساب إعلاني باسمك", "An ad account in your name"), t("الميزانية الإعلانية، حتى 5,000 ريال شهرياً ضمن هذه الأتعاب", "Ad budget, up to SAR 5,000 a month within this fee"), t("صور أو فيديو من نشاطك", "Photos or video from your business")],
+        after: t("تتجدد الخدمة شهرياً، ويمكنك الترقية أو الإلغاء بإشعار قبل 30 يوماً.", "The service renews monthly; you can upgrade or cancel with 30 days' notice."),
         price: 2199,
         from: false,
         ...perMonth,
-        delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+        delivery: t("نبدأ خلال 5 أيام عمل", "We start within 5 business days"),
         features: [
-          { ar: "منصة إعلانية واحدة", en: "One ad platform" },
-          { ar: "حملة نشطة واحدة", en: "One active campaign" },
-          { ar: "مادتان إعلانيتان شهرياً", en: "Two ad creatives a month" },
-          { ar: "إعداد التتبع والتأكد من قياس الطلبات", en: "Tracking set up and order measurement checked" },
-          { ar: "متابعة وتحسين أسبوعي", en: "Weekly monitoring and optimisation" },
-          { ar: "تقرير شهري بالتكلفة والنتائج", en: "A monthly report on cost and results" },
-          { ar: "تغطي الأتعاب إنفاقاً حتى 5,000 ريال شهرياً", en: "The fee covers spend up to SAR 5,000 a month" }
+          t("منصة إعلانية واحدة", "One ad platform"),
+          t("حملة نشطة واحدة", "One active campaign"),
+          t("مادتان إعلانيتان شهرياً", "Two ad creatives a month"),
+          t("إعداد التتبع والتحقق من قياس الطلبات", "Tracking set up and order measurement checked"),
+          t("متابعة وتحسين أسبوعي", "Weekly optimisation"),
+          t("تقرير شهري بالتكلفة والنتائج", "A monthly report on cost and results"),
+          t("تغطي الأتعاب إنفاقاً حتى 5,000 ريال شهرياً", "The fee covers spend up to SAR 5,000 a month")
         ],
-        excludes: [
-          { ar: "الميزانية الإعلانية ورسوم المنصات", en: "Ad spend and platform fees" },
-          { ar: "التصوير وإنتاج الفيديو", en: "Photography and video production" }
-        ]
+        excludes: [t("الميزانية الإعلانية ورسوم المنصات", "Ad spend and platform fees"), t("التصوير وإنتاج الفيديو", "Photography and video production")]
       },
       {
         key: "mkt-growth",
         icon: "ChartLine",
-        name: { ar: "النمو", en: "Growth" },
-        tagline: { ar: "حملات متعددة على منصتين", en: "Several campaigns on two platforms" },
-        idealFor: { ar: "المتاجر والشركات التي بدأت تبيع وتريد التوسع", en: "Stores and companies already selling that want to grow" },
+        name: t("الاحترافية", "Professional"),
+        tagline: t("حتى 3 حملات على منصتين", "Up to 3 campaigns on two platforms"),
+        idealFor: t("المتاجر والشركات التي تبيع وتريد التوسع", "Stores and companies already selling that want to grow"),
+        model: MONTHLY,
+        about: t("ندير حتى 3 حملات على منصتين، مع إعادة استهداف من زار موقعك أو ترك السلة، و8 مواد إعلانية شهرياً، ومتابعة مرتين أسبوعياً.", "We run up to 3 campaigns on two platforms, retargeting site visitors and abandoned carts, with 8 creatives a month and optimisation twice a week."),
+        youProvide: [t("حسابات إعلانية باسمك على المنصتين", "Ad accounts in your name on both platforms"), t("الميزانية الإعلانية، حتى 15,000 ريال شهرياً ضمن هذه الأتعاب", "Ad budget, up to SAR 15,000 a month within this fee"), t("صور أو فيديو من نشاطك", "Photos or video from your business")],
+        after: t("تتجدد الخدمة شهرياً، ويمكنك الترقية أو الإلغاء بإشعار قبل 30 يوماً.", "The service renews monthly; you can upgrade or cancel with 30 days' notice."),
         price: 4399,
         from: false,
         ...perMonth,
-        delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+        delivery: t("نبدأ خلال 5 أيام عمل", "We start within 5 business days"),
         featured: true,
         features: [
-          { ar: "منصتان إعلانيتان", en: "Two ad platforms" },
-          { ar: "حتى 3 حملات نشطة", en: "Up to 3 active campaigns" },
-          { ar: "8 مواد إعلانية شهرياً", en: "8 ad creatives a month" },
-          { ar: "إعادة استهداف الزوار ومن ترك السلة", en: "Retargeting visitors and abandoned carts" },
-          { ar: "متابعة وتحسين مرتين أسبوعياً", en: "Monitoring and optimisation twice a week" },
-          { ar: "تقرير شهري مفصل بالتوصيات", en: "A detailed monthly report with recommendations" },
-          { ar: "تغطي الأتعاب إنفاقاً حتى 15,000 ريال شهرياً", en: "The fee covers spend up to SAR 15,000 a month" }
+          t("منصتان إعلانيتان", "Two ad platforms"),
+          t("حتى 3 حملات نشطة", "Up to 3 active campaigns"),
+          t("8 مواد إعلانية شهرياً", "8 ad creatives a month"),
+          t("إعادة استهداف زوار الموقع ومن تركوا السلة", "Retargeting site visitors and abandoned carts"),
+          t("متابعة وتحسين مرتين أسبوعياً", "Optimisation twice a week"),
+          t("تقرير شهري مفصل مع توصيات", "A detailed monthly report with recommendations"),
+          t("تغطي الأتعاب إنفاقاً حتى 15,000 ريال شهرياً", "The fee covers spend up to SAR 15,000 a month")
         ],
-        excludes: [
-          { ar: "الميزانية الإعلانية ورسوم المنصات", en: "Ad spend and platform fees" },
-          { ar: "إدارة حسابات السوشيال (في باقات السوشيال ميديا)", en: "Social account management (in the social media plans)" }
-        ]
+        excludes: [t("الميزانية الإعلانية ورسوم المنصات", "Ad spend and platform fees"), t("إدارة حسابات التواصل (في باقاتها المستقلة)", "Social account management (in its own plans)")]
       },
       {
         key: "mkt-pro",
         icon: "Sparkles",
-        name: { ar: "الأعمال", en: "Business" },
-        tagline: { ar: "إدارة إعلانية شاملة على 3 منصات", en: "Full ad management on 3 platforms" },
-        idealFor: { ar: "المتاجر والشركات ذات الميزانيات الإعلانية الأكبر", en: "Stores and companies with larger ad budgets" },
+        name: t("المتقدمة", "Advanced"),
+        tagline: t("حتى 6 حملات على 3 منصات", "Up to 6 campaigns on 3 platforms"),
+        idealFor: t("الشركات والمتاجر ذات الميزانيات الإعلانية الأكبر", "Companies and stores with larger ad budgets"),
+        model: MONTHLY,
+        about: t("إدارة إعلانية شاملة لحتى 6 حملات على 3 منصات، منها إعلانات جوجل، مع خطة لتحسين معدل التحويل في موقعك، واجتماعين شهرياً لمراجعة النتائج.", "Full ad management for up to 6 campaigns on 3 platforms, including Google Ads, with a conversion-rate plan for your site and two meetings a month to review results."),
+        youProvide: [t("حسابات إعلانية باسمك", "Ad accounts in your name"), t("الميزانية الإعلانية، حتى 40,000 ريال شهرياً ضمن هذه الأتعاب", "Ad budget, up to SAR 40,000 a month within this fee"), t("صلاحية الوصول للموقع أو المتجر وأدوات التحليل", "Access to your site or store and analytics")],
+        after: t("تتجدد الخدمة شهرياً، ويمكنك الترقية أو الإلغاء بإشعار قبل 30 يوماً.", "The service renews monthly; you can upgrade or cancel with 30 days' notice."),
         price: 8299,
         from: false,
         ...perMonth,
-        delivery: { ar: "نبدأ خلال 7 أيام عمل", en: "We start within 7 business days" },
+        delivery: t("نبدأ خلال 7 أيام عمل", "We start within 7 business days"),
         features: [
-          { ar: "3 منصات إعلانية، منها إعلانات جوجل في البحث والتسوق عند الحاجة", en: "3 ad platforms, including Google Search and Shopping when needed" },
-          { ar: "حتى 6 حملات نشطة", en: "Up to 6 active campaigns" },
-          { ar: "16 مادة إعلانية شهرياً", en: "16 ad creatives a month" },
-          { ar: "خطة لتحسين نسبة التحويل في متجرك أو موقعك", en: "A conversion-rate improvement plan for your store or site" },
-          { ar: "متابعة وتحسين 3 مرات أسبوعياً", en: "Monitoring and optimisation 3 times a week" },
-          { ar: "تقرير شهري مفصل واجتماعان شهرياً", en: "A detailed monthly report and two meetings a month" },
-          { ar: "تغطي الأتعاب إنفاقاً حتى 40,000 ريال شهرياً", en: "The fee covers spend up to SAR 40,000 a month" }
+          t("3 منصات إعلانية، منها إعلانات جوجل للبحث والتسوق عند الحاجة", "3 ad platforms, including Google Search and Shopping when needed"),
+          t("حتى 6 حملات نشطة", "Up to 6 active campaigns"),
+          t("16 مادة إعلانية شهرياً", "16 ad creatives a month"),
+          t("خطة لتحسين معدل التحويل في متجرك أو موقعك", "A conversion-rate plan for your store or site"),
+          t("متابعة وتحسين 3 مرات أسبوعياً", "Optimisation 3 times a week"),
+          t("تقرير شهري مفصل واجتماعان شهرياً", "A detailed monthly report and two meetings a month"),
+          t("تغطي الأتعاب إنفاقاً حتى 40,000 ريال شهرياً", "The fee covers spend up to SAR 40,000 a month")
         ],
-        excludes: [
-          { ar: "الميزانية الإعلانية ورسوم المنصات", en: "Ad spend and platform fees" },
-          { ar: "التصوير وأجور المؤثرين", en: "Photography and influencer fees" }
-        ]
+        excludes: [t("الميزانية الإعلانية ورسوم المنصات", "Ad spend and platform fees"), t("التصوير وأجور المؤثرين", "Photography and influencer fees")]
       }
-    ],
-    compare: [
-      row("المنصات", "Platforms", [["1", "1"], ["1", "1"], ["2", "2"], ["3", "3"]]),
-      row("الحملات النشطة", "Active campaigns", [["1", "1"], ["1", "1"], ["حتى 3", "Up to 3"], ["حتى 6", "Up to 6"]]),
-      row("المواد الإعلانية", "Ad creatives", [["2 للمدة", "2 for the period"], ["2 شهرياً", "2 a month"], ["8 شهرياً", "8 a month"], ["16 شهرياً", "16 a month"]]),
-      row("المتابعة والتحسين", "Optimisation", [["خلال 14 يوماً", "Over 14 days"], ["أسبوعي", "Weekly"], ["مرتين أسبوعياً", "Twice a week"], ["3 مرات أسبوعياً", "3 times a week"]]),
-      row("التقرير", "Report", [["تقرير ختامي", "A final report"], ["شهري", "Monthly"], ["شهري بالتوصيات", "Monthly, with recommendations"], ["شهري واجتماعان", "Monthly and two meetings"]]),
-      row("الإنفاق الذي تغطيه الأتعاب", "Ad spend the fee covers", [["حتى 2,500 للمدة", "Up to 2,500 for the period"], ["حتى 5,000 شهرياً", "Up to 5,000 a month"], ["حتى 15,000 شهرياً", "Up to 15,000 a month"], ["حتى 40,000 شهرياً", "Up to 40,000 a month"]])
     ]
   },
   {
@@ -441,95 +444,87 @@ export const packageGroups: PackageGroup[] = [
     segment: "smb",
     service: "digital-marketing",
     icon: "Share2",
-    title: { ar: "باقات إدارة السوشيال ميديا", en: "Social media management plans" },
-    short: { ar: "السوشيال ميديا", en: "Social media" },
-    text: { ar: "خلّ حضور علامتك التجارية يعكس قيمتها: تخطيط محتوى وتصاميم ونشر منظم يحافظ على حضور احترافي.", en: "Let your brand's presence reflect its value: content planning, designs and organised publishing for a professional presence." },
-    highlights: [
-      { ar: "خطة محتوى شهرية بهويتك", en: "A monthly content plan in your brand" },
-      { ar: "تصاميم ونصوص وفيديوهات قصيرة من موادك", en: "Designs, captions and short videos from your material" },
-      { ar: "نشر منظم وتقارير شهرية", en: "Organised publishing and monthly reports" }
-    ],
-    notice: { ar: "المنشورات قطع محتوى فريدة يُعاد تهيئتها للمنصات المشمولة، ولا يتضاعف عددها لكل منصة. الفيديوهات القصيرة حتى 60 ثانية بمونتاج مواد يوفرها العميل، ولكل منشور أو فيديو جولة تعديل واحدة. التصوير الميداني والممثلون والتعليق الصوتي المدفوع غير مشمولة إلا بتسعير منفصل، ولا نَعِد بعدد متابعين أو وصول محدد.", en: "Posts are unique pieces adapted to the included platforms; their number doesn't multiply per platform. Short videos run up to 60 seconds, edited from footage the client provides, and every post or video has one revision round. On-site filming, actors and paid voice-over are not included unless priced separately, and we don't promise a set number of followers or reach." },
+    title: t("باقات إدارة حسابات التواصل الاجتماعي", "Social media management plans"),
+    short: t("التواصل الاجتماعي", "Social media"),
+    text: t("محتوى منتظم بهوية علامتك: خطة شهرية وتصاميم ونصوص ونشر مجدول، بعدد منشورات ومنصات محدد.", "Steady content in your brand: a monthly plan, designs, captions and scheduled publishing, with a set number of posts and platforms."),
+    highlights: [t("خطة محتوى شهرية بهوية علامتك", "A monthly content plan in your brand"), t("تصاميم ونصوص وفيديوهات قصيرة من موادك", "Designs, captions and short videos from your material"), t("نشر مجدول وتقرير شهري", "Scheduled publishing and a monthly report")],
+    notice: t("المنشور قطعة محتوى واحدة تُهيَّأ للمنصات المشمولة، ولا يتضاعف عددها لكل منصة. الفيديوهات القصيرة حتى 60 ثانية من مواد يوفرها العميل، ولكل منشور أو فيديو جولة تعديل واحدة. التصوير الميداني والممثلون والتعليق الصوتي المدفوع غير مشمولة إلا بتسعير منفصل، ولا نضمن عدداً محدداً من المتابعين أو الوصول.", "A post is one piece of content adapted to the included platforms; the count doesn't multiply per platform. Short videos run up to 60 seconds, from footage the client provides, and each post or video has one revision round. On-site filming, actors and paid voice-over are only available at a separate price, and we don't guarantee a number of followers or reach."),
     tiers: [
       {
         key: "social-presence",
         icon: "Share2",
-        name: { ar: "الحضور", en: "Presence" },
-        tagline: { ar: "حساب نشط واحترافي", en: "One active, professional account" },
-        idealFor: { ar: "المشاريع الصغيرة التي تريد حضوراً منتظماً", en: "Small businesses that want a steady presence" },
+        name: t("الأساسية", "Essential"),
+        tagline: t("حضور منتظم على منصة واحدة", "A steady presence on one platform"),
+        idealFor: t("المشاريع الصغيرة التي تحتاج حضوراً منتظماً", "Small businesses that need a steady presence"),
+        model: MONTHLY,
+        about: t("نكتب ونصمم 8 منشورات شهرياً لحساب واحد، وننشرها حسب تقويم محتوى تعتمده مسبقاً، ونرسل لك تقريراً شهرياً بالأداء.", "We write and design 8 posts a month for one account, publish them on a content calendar you approve in advance, and send a monthly performance report."),
+        youProvide: [t("صلاحية الوصول للحساب", "Access to the account"), t("الشعار وصور من نشاطك", "Your logo and photos from your business"), t("اعتماد خطة المحتوى قبل بداية كل شهر", "Approval of the content plan before each month")],
+        after: t("تتجدد الخدمة شهرياً، ويمكنك الترقية أو الإلغاء بإشعار قبل 30 يوماً.", "The service renews monthly; you can upgrade or cancel with 30 days' notice."),
         price: 1999,
         from: false,
         ...perMonth,
-        delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+        delivery: t("نبدأ خلال 5 أيام عمل", "We start within 5 business days"),
+        revisions: t("جولة لكل منشور", "One round per post"),
         features: [
-          { ar: "8 منشورات شهرياً بالكتابة والتصميم", en: "8 posts a month, written and designed" },
-          { ar: "منصة واحدة", en: "One platform" },
-          { ar: "جدولة النشر وتقويم محتوى شهري", en: "Scheduled publishing and a monthly content calendar" },
-          { ar: "جولة تعديل واحدة لكل منشور", en: "One revision round per post" },
-          { ar: "تقرير شهري", en: "A monthly report" }
+          t("8 منشورات شهرياً (كتابة وتصميم)", "8 posts a month (copy and design)"),
+          t("منصة واحدة", "One platform"),
+          t("تقويم محتوى شهري ونشر مجدول", "A monthly content calendar and scheduled publishing"),
+          t("جولة تعديل واحدة لكل منشور", "One revision round per post"),
+          t("تقرير شهري", "A monthly report")
         ],
-        excludes: [
-          { ar: "الفيديو والتصوير", en: "Video and filming" },
-          { ar: "الرد على التعليقات والرسائل", en: "Replying to comments and messages" },
-          { ar: "الحملات الإعلانية (في باقات الحملات)", en: "Ad campaigns (in the campaign plans)" }
-        ]
+        excludes: [t("الفيديو والتصوير", "Video and filming"), t("الرد على التعليقات والرسائل", "Replying to comments and messages"), t("الحملات الإعلانية (في باقات الحملات)", "Ad campaigns (in the campaign plans)")]
       },
       {
         key: "social-engage",
         icon: "MessagesSquare",
-        name: { ar: "التفاعل", en: "Engagement" },
-        tagline: { ar: "محتوى وفيديو ومتابعة على منصتين", en: "Content, video and community on two platforms" },
-        idealFor: { ar: "العلامات التي تريد تفاعلاً أكبر مع جمهورها", en: "Brands that want more engagement with their audience" },
+        name: t("الاحترافية", "Professional"),
+        tagline: t("محتوى وفيديو ومتابعة للتعليقات على منصتين", "Content, video and comment monitoring on two platforms"),
+        idealFor: t("العلامات التي تريد تفاعلاً أكبر مع جمهورها", "Brands that want more engagement with their audience"),
+        model: MONTHLY,
+        about: t("16 منشوراً و4 فيديوهات قصيرة شهرياً على منصتين، مع متابعة التعليقات والرد عليها بردود تعتمدها مسبقاً في ساعات العمل المتفق عليها.", "16 posts and 4 short videos a month on two platforms, with comments monitored and answered with replies you approve, during agreed working hours."),
+        youProvide: [t("صلاحية الوصول للحسابات", "Access to the accounts"), t("مقاطع فيديو خام من نشاطك للمونتاج", "Raw video clips from your business for editing"), t("اعتماد خطة المحتوى والردود الجاهزة", "Approval of the content plan and ready replies")],
+        after: t("تتجدد الخدمة شهرياً، ويمكنك الترقية أو الإلغاء بإشعار قبل 30 يوماً.", "The service renews monthly; you can upgrade or cancel with 30 days' notice."),
         price: 3899,
         from: false,
         ...perMonth,
-        delivery: { ar: "نبدأ خلال 5 أيام عمل", en: "We start within 5 business days" },
+        delivery: t("نبدأ خلال 5 أيام عمل", "We start within 5 business days"),
+        revisions: t("جولة لكل منشور أو فيديو", "One round per post or video"),
         featured: true,
         features: [
-          { ar: "16 منشوراً شهرياً بالكتابة والتصميم", en: "16 posts a month, written and designed" },
-          { ar: "4 فيديوهات قصيرة (حتى 60 ثانية) من مواد يوفرها العميل", en: "4 short videos (up to 60 seconds) from footage the client provides" },
-          { ar: "منصتان", en: "Two platforms" },
-          { ar: "متابعة التعليقات في أيام العمل خلال ساعات متفق عليها، بردود تعتمدها مسبقاً", en: "Comment monitoring on business days during agreed hours, with replies you approve in advance" },
-          { ar: "خطة محتوى شهرية", en: "A monthly content plan" },
-          { ar: "تقرير أداء شهري", en: "A monthly performance report" }
+          t("16 منشوراً شهرياً (كتابة وتصميم)", "16 posts a month (copy and design)"),
+          t("4 فيديوهات قصيرة (حتى 60 ثانية) من موادك", "4 short videos (up to 60 seconds) from your footage"),
+          t("منصتان", "Two platforms"),
+          t("متابعة التعليقات في أيام العمل خلال ساعات متفق عليها، بردود تعتمدها مسبقاً", "Comment monitoring on business days during agreed hours, with replies you approve in advance"),
+          t("خطة محتوى شهرية", "A monthly content plan"),
+          t("تقرير أداء شهري", "A monthly performance report")
         ],
-        excludes: [
-          { ar: "التصوير الميداني والتعليق الصوتي المدفوع", en: "On-site filming and paid voice-over" },
-          { ar: "الردود خارج ساعات العمل المتفق عليها", en: "Replies outside the agreed working hours" },
-          { ar: "الحملات الإعلانية", en: "Ad campaigns" }
-        ]
+        excludes: [t("التصوير الميداني والتعليق الصوتي المدفوع", "On-site filming and paid voice-over"), t("الردود خارج الساعات المتفق عليها", "Replies outside the agreed hours"), t("الحملات الإعلانية", "Ad campaigns")]
       },
       {
         key: "social-brand",
         icon: "Sparkles",
-        name: { ar: "العلامة التجارية", en: "Brand" },
-        tagline: { ar: "حضور متكامل حتى 3 منصات", en: "A complete presence on up to 3 platforms" },
-        idealFor: { ar: "العلامات المتوسعة التي تبني صورتها باستمرار", en: "Growing brands building their image continuously" },
+        name: t("المتقدمة", "Advanced"),
+        tagline: t("حضور متكامل على 3 منصات", "A complete presence on 3 platforms"),
+        idealFor: t("العلامات المتوسعة التي تبني صورتها باستمرار", "Growing brands building their image continuously"),
+        model: MONTHLY,
+        about: t("حضور متكامل على حتى 3 منصات: 20 منشوراً و6 فيديوهات شهرياً، ومتابعة التعليقات، وتقرير شهري مع توصيات لتطوير المحتوى.", "A complete presence on up to 3 platforms: 20 posts and 6 videos a month, comment monitoring and a monthly report with recommendations."),
+        youProvide: [t("صلاحية الوصول للحسابات", "Access to the accounts"), t("مقاطع فيديو خام من نشاطك", "Raw video clips from your business"), t("اعتماد خطة المحتوى والردود الجاهزة", "Approval of the content plan and ready replies")],
+        after: t("تتجدد الخدمة شهرياً، ويمكنك الترقية أو الإلغاء بإشعار قبل 30 يوماً.", "The service renews monthly; you can upgrade or cancel with 30 days' notice."),
         price: 6599,
         from: false,
         ...perMonth,
-        delivery: { ar: "نبدأ خلال 7 أيام عمل", en: "We start within 7 business days" },
+        delivery: t("نبدأ خلال 7 أيام عمل", "We start within 7 business days"),
+        revisions: t("جولة لكل منشور أو فيديو", "One round per post or video"),
         features: [
-          { ar: "20 منشوراً شهرياً بالكتابة والتصميم", en: "20 posts a month, written and designed" },
-          { ar: "6 فيديوهات قصيرة (حتى 60 ثانية) من مواد العميل", en: "6 short videos (up to 60 seconds) from the client's footage" },
-          { ar: "حتى 3 منصات", en: "Up to 3 platforms" },
-          { ar: "خطة محتوى شهرية", en: "A monthly content plan" },
-          { ar: "تقارير أداء شهرية وتوصيات للتطوير", en: "Monthly performance reports and improvement recommendations" }
+          t("20 منشوراً شهرياً (كتابة وتصميم)", "20 posts a month (copy and design)"),
+          t("6 فيديوهات قصيرة (حتى 60 ثانية) من موادك", "6 short videos (up to 60 seconds) from your footage"),
+          t("حتى 3 منصات", "Up to 3 platforms"),
+          t("متابعة التعليقات في أيام العمل خلال ساعات متفق عليها، بردود تعتمدها مسبقاً", "Comment monitoring on business days during agreed hours, with replies you approve in advance"),
+          t("خطة محتوى شهرية", "A monthly content plan"),
+          t("تقرير أداء شهري مع توصيات", "A monthly performance report with recommendations")
         ],
-        excludes: [
-          { ar: "التصوير الميداني والممثلون والتعليق الصوتي المدفوع", en: "On-site filming, actors and paid voice-over" },
-          { ar: "إدارة التعليقات والرسائل (تُضاف عند الطلب)", en: "Comment and message management (added on request)" },
-          { ar: "الحملات الإعلانية", en: "Ad campaigns" }
-        ]
+        excludes: [t("التصوير الميداني والممثلون والتعليق الصوتي المدفوع", "On-site filming, actors and paid voice-over"), t("الردود خارج الساعات المتفق عليها", "Replies outside the agreed hours"), t("الحملات الإعلانية", "Ad campaigns")]
       }
-    ],
-    compare: [
-      row("المنشورات شهرياً", "Posts a month", [["8", "8"], ["16", "16"], ["20", "20"]]),
-      row("الفيديوهات القصيرة", "Short videos", [none, ["4 حتى 60 ثانية", "4, up to 60 s"], ["6 حتى 60 ثانية", "6, up to 60 s"]]),
-      row("المنصات", "Platforms", [["1", "1"], ["2", "2"], ["حتى 3", "Up to 3"]]),
-      row("التعليقات", "Comments", [none, ["أيام العمل بساعات متفق عليها", "Business days, agreed hours"], ["تُضاف عند الطلب", "Added on request"]]),
-      row("التخطيط", "Planning", [["تقويم وجدولة", "Calendar and scheduling"], ["خطة محتوى شهرية", "Monthly content plan"], ["خطة محتوى شهرية", "Monthly content plan"]]),
-      row("التقارير", "Reports", [["شهري", "Monthly"], ["تقرير أداء", "Performance report"], ["أداء وتوصيات", "Performance and recommendations"]])
     ]
   },
   {
@@ -538,94 +533,85 @@ export const packageGroups: PackageGroup[] = [
     service: "digital-marketing",
     icon: "Rocket",
     draft: true,
-    title: { ar: "باقات التسويق المتكامل – 90 يوماً لنمو أعمالك", en: "Integrated marketing – 90 days to grow your business" },
-    short: { ar: "التسويق المتكامل 90 يوماً", en: "90-day marketing" },
-    text: { ar: "السوشيال ميديا والحملات الإعلانية وخطة المحتوى في عقد واحد لمدة 3 أشهر — فريق واحد يخطط وينفذ ويقيس.", en: "Social media, ad campaigns and a content plan in one 3-month contract — one team that plans, delivers and measures." },
-    highlights: [
-      { ar: "محتوى وحملات بخطة واحدة متسقة", en: "Content and campaigns on one consistent plan" },
-      { ar: "مخرجات شهرية بعدد محدد", en: "A set number of deliverables every month" },
-      { ar: "تقارير شهرية ومتابعة للنتائج", en: "Monthly reports and follow-up on results" }
-    ],
-    notice: { ar: "مدة التعاقد 3 أشهر، والسعر المعلن إجمالي المدة وليس سعر الشهر. الميزانية الإعلانية منفصلة وتُدفع من حسابك، وتصوير الفيديو وإنشاء الموقع والهوية البصرية الكاملة وكتابة المقالات وتهيئة محركات البحث الشهرية المتقدمة غير مشمولة إلا بإضافة منفصلة. إعادة استخدام المواد على المنصات لا تعني مضاعفة عدد المخرجات، وأي إنتاج إضافي يُسعَّر بعد موافقتك.", en: "The contract runs 3 months and the price shown is the total for the term, not per month. Ad spend is separate and paid from your account; video filming, building a website, a full brand identity, article writing and advanced monthly SEO are not included unless added separately. Reusing material across platforms doesn't multiply the deliverables, and any extra production is priced after your approval." },
+    title: t("باقات التسويق المتكامل (90 يوماً)", "Integrated marketing plans (90 days)"),
+    short: t("التسويق المتكامل", "Integrated marketing"),
+    text: t("إدارة حسابات التواصل والحملات الإعلانية وخطة المحتوى في عقد واحد لمدة 3 أشهر، بفريق واحد يخطط وينفذ ويقيس.", "Social accounts, ad campaigns and a content plan in one 3-month contract — one team that plans, delivers and measures."),
+    highlights: [t("محتوى وحملات بخطة واحدة متسقة", "Content and campaigns on one consistent plan"), t("مخرجات شهرية بعدد محدد", "A set number of deliverables every month"), t("سعر أقل من الباقات المنفصلة مقابل الالتزام 3 أشهر", "Less than the separate plans, for a 3-month commitment")],
+    notice: t("مدة العقد 3 أشهر، والسعر المعلن إجمالي المدة وليس سعر الشهر. الميزانية الإعلانية منفصلة وتُدفع من حسابك. تصوير الفيديو وإنشاء الموقع والهوية البصرية وكتابة المقالات والتهيئة الشهرية لمحركات البحث غير مشمولة. نشر المادة نفسها على أكثر من منصة لا يضاعف عدد المخرجات، وأي إنتاج إضافي يُسعَّر بعد موافقتك.", "The contract runs 3 months and the price shown is the total for the term, not per month. Ad spend is separate and paid from your account. Video filming, building a website, brand identity, article writing and monthly SEO are not included. Publishing the same material on several platforms doesn't multiply the deliverables, and any extra production is priced after your approval."),
     tiers: [
       {
         key: "mkt90-basic",
         icon: "Megaphone",
-        name: { ar: "الأساسية", en: "Essential" },
-        tagline: { ar: "منصة وحملة ومحتوى منتظم", en: "One platform, one campaign, steady content" },
-        idealFor: { ar: "المشاريع التي تبدأ التسويق المنظم", en: "Businesses starting organised marketing" },
+        name: t("الأساسية", "Essential"),
+        tagline: t("منصة وحملة ومحتوى منتظم", "One platform, one campaign and steady content"),
+        idealFor: t("المشاريع التي تبدأ التسويق المنظم", "Businesses starting organised marketing"),
+        model: TERM,
+        about: t("حساب تواصل واحد وحملة إعلانية واحدة بخطة محتوى شهرية لمدة 3 أشهر، يديرها فريق واحد ويقيس نتائجها.", "One social account and one ad campaign with a monthly content plan for 3 months, run and measured by one team."),
+        youProvide: [t("حسابات التواصل والإعلانات باسمك", "Social and ad accounts in your name"), t("الميزانية الإعلانية من حسابك", "Ad budget from your account"), t("مقاطع فيديو خام من نشاطك", "Raw video clips from your business")],
+        after: t("ينتهي العقد بعد 3 أشهر، ويمكن تجديده أو الانتقال إلى باقة شهرية.", "The contract ends after 3 months; you can renew it or move to a monthly plan."),
         price: 10500,
         from: false,
         ...threeMonths,
-        delivery: { ar: "نبدأ خلال 7 أيام عمل", en: "We start within 7 business days" },
+        delivery: t("نبدأ خلال 7 أيام عمل", "We start within 7 business days"),
         features: [
-          { ar: "إدارة منصة تواصل اجتماعي واحدة", en: "One social media platform managed" },
-          { ar: "8 منشورات مصممة شهرياً", en: "8 designed posts a month" },
-          { ar: "فيديو قصير واحد شهرياً من مواد العميل", en: "One short video a month from the client's footage" },
-          { ar: "إدارة حملة إعلانية واحدة", en: "One ad campaign managed" },
-          { ar: "خطة محتوى شهرية", en: "A monthly content plan" },
-          { ar: "تقرير شهري", en: "A monthly report" }
+          t("إدارة منصة تواصل واحدة", "One social platform managed"),
+          t("8 منشورات مصممة شهرياً", "8 designed posts a month"),
+          t("فيديو قصير واحد شهرياً من مواد العميل", "One short video a month from the client's footage"),
+          t("إدارة حملة إعلانية واحدة", "One ad campaign managed"),
+          t("خطة محتوى شهرية", "A monthly content plan"),
+          t("تقرير شهري", "A monthly report")
         ],
-        excludes: [
-          { ar: "الميزانية الإعلانية", en: "Ad spend" },
-          { ar: "تصوير الفيديو", en: "Video filming" }
-        ]
+        excludes: [t("الميزانية الإعلانية", "Ad spend"), t("تصوير الفيديو", "Video filming")]
       },
       {
         key: "mkt90-growth",
         icon: "ChartLine",
-        name: { ar: "النمو", en: "Growth" },
-        tagline: { ar: "منصتان وحملتان وخطة تسويق شهرية", en: "Two platforms, two campaigns and a monthly marketing plan" },
-        idealFor: { ar: "العلامات التي تريد نمواً ملحوظاً خلال ربع سنة", en: "Brands that want visible growth over a quarter" },
+        name: t("الاحترافية", "Professional"),
+        tagline: t("منصتان وحملتان وخطة تسويق شهرية", "Two platforms, two campaigns and a monthly marketing plan"),
+        idealFor: t("العلامات التي تريد نمواً واضحاً خلال 3 أشهر", "Brands that want clear growth over 3 months"),
+        model: TERM,
+        about: t("منصتان وحتى حملتين إعلانيتين وخطة محتوى وتسويق شهرية لمدة 3 أشهر، مع تقرير أداء وتوصيات كل شهر.", "Two platforms, up to two ad campaigns and a monthly content and marketing plan for 3 months, with a performance report and recommendations each month."),
+        youProvide: [t("حسابات التواصل والإعلانات باسمك", "Social and ad accounts in your name"), t("الميزانية الإعلانية من حسابك", "Ad budget from your account"), t("مقاطع فيديو خام من نشاطك", "Raw video clips from your business")],
+        after: t("ينتهي العقد بعد 3 أشهر، ويمكن تجديده أو الانتقال إلى باقة شهرية.", "The contract ends after 3 months; you can renew it or move to a monthly plan."),
         price: 21000,
         from: false,
         ...threeMonths,
-        delivery: { ar: "نبدأ خلال 7 أيام عمل", en: "We start within 7 business days" },
+        delivery: t("نبدأ خلال 7 أيام عمل", "We start within 7 business days"),
         featured: true,
         features: [
-          { ar: "إدارة منصتين", en: "Two platforms managed" },
-          { ar: "12 منشوراً مصمماً شهرياً", en: "12 designed posts a month" },
-          { ar: "3 فيديوهات قصيرة شهرياً من مواد العميل", en: "3 short videos a month from the client's footage" },
-          { ar: "إدارة حتى حملتين إعلانيتين", en: "Up to two ad campaigns managed" },
-          { ar: "خطة محتوى وتسويق شهرية", en: "A monthly content and marketing plan" },
-          { ar: "تقرير أداء وتوصيات", en: "A performance report and recommendations" }
+          t("إدارة منصتين", "Two platforms managed"),
+          t("12 منشوراً مصمماً شهرياً", "12 designed posts a month"),
+          t("3 فيديوهات قصيرة شهرياً من مواد العميل", "3 short videos a month from the client's footage"),
+          t("إدارة حتى حملتين إعلانيتين", "Up to two ad campaigns managed"),
+          t("خطة محتوى وتسويق شهرية", "A monthly content and marketing plan"),
+          t("تقرير أداء مع توصيات", "A performance report with recommendations")
         ],
-        excludes: [
-          { ar: "الميزانية الإعلانية", en: "Ad spend" },
-          { ar: "تصوير الفيديو", en: "Video filming" }
-        ]
+        excludes: [t("الميزانية الإعلانية", "Ad spend"), t("تصوير الفيديو", "Video filming")]
       },
       {
         key: "mkt90-full",
         icon: "Sparkles",
-        name: { ar: "الشاملة", en: "Complete" },
-        tagline: { ar: "حتى 3 منصات و3 حملات واستراتيجية تسويق", en: "Up to 3 platforms, 3 campaigns and a marketing strategy" },
-        idealFor: { ar: "الشركات التي تريد فريق تسويق متكاملاً دون توظيف", en: "Companies that want a complete marketing team without hiring" },
+        name: t("الشاملة", "Complete"),
+        tagline: t("حتى 3 منصات و3 حملات واستراتيجية تسويق", "Up to 3 platforms, 3 campaigns and a marketing strategy"),
+        idealFor: t("الشركات التي تحتاج فريق تسويق متكاملاً دون توظيف", "Companies that need a full marketing team without hiring"),
+        model: TERM,
+        about: t("فريق تسويق متكامل لمدة 3 أشهر: حتى 3 منصات و3 حملات، واستراتيجية محتوى وتسويق، واجتماع متابعة شهري.", "A full marketing team for 3 months: up to 3 platforms and 3 campaigns, a content and marketing strategy and a monthly follow-up meeting."),
+        youProvide: [t("حسابات التواصل والإعلانات باسمك", "Social and ad accounts in your name"), t("الميزانية الإعلانية من حسابك", "Ad budget from your account"), t("مقاطع فيديو خام من نشاطك", "Raw video clips from your business")],
+        after: t("ينتهي العقد بعد 3 أشهر، ويمكن تجديده أو الانتقال إلى باقة شهرية.", "The contract ends after 3 months; you can renew it or move to a monthly plan."),
         price: 37500,
         from: false,
         ...threeMonths,
-        delivery: { ar: "نبدأ خلال 10 أيام عمل", en: "We start within 10 business days" },
+        delivery: t("نبدأ خلال 10 أيام عمل", "We start within 10 business days"),
         features: [
-          { ar: "إدارة حتى 3 منصات", en: "Up to 3 platforms managed" },
-          { ar: "20 منشوراً مصمماً شهرياً", en: "20 designed posts a month" },
-          { ar: "5 فيديوهات قصيرة شهرياً من مواد العميل", en: "5 short videos a month from the client's footage" },
-          { ar: "إدارة حتى 3 حملات إعلانية", en: "Up to 3 ad campaigns managed" },
-          { ar: "استراتيجية محتوى وتسويق", en: "A content and marketing strategy" },
-          { ar: "تقارير شهرية واجتماع متابعة", en: "Monthly reports and a follow-up meeting" }
+          t("إدارة حتى 3 منصات", "Up to 3 platforms managed"),
+          t("20 منشوراً مصمماً شهرياً", "20 designed posts a month"),
+          t("5 فيديوهات قصيرة شهرياً من مواد العميل", "5 short videos a month from the client's footage"),
+          t("إدارة حتى 3 حملات إعلانية", "Up to 3 ad campaigns managed"),
+          t("استراتيجية محتوى وتسويق", "A content and marketing strategy"),
+          t("تقارير شهرية واجتماع متابعة", "Monthly reports and a follow-up meeting")
         ],
-        excludes: [
-          { ar: "الميزانية الإعلانية", en: "Ad spend" },
-          { ar: "تصوير الفيديو وإنشاء الموقع والهوية البصرية الكاملة", en: "Video filming, building a website and a full brand identity" }
-        ]
+        excludes: [t("الميزانية الإعلانية", "Ad spend"), t("تصوير الفيديو والموقع والهوية البصرية", "Video filming, website and brand identity")]
       }
-    ],
-    compare: [
-      row("المنصات", "Platforms", [["1", "1"], ["2", "2"], ["حتى 3", "Up to 3"]]),
-      row("المنشورات شهرياً", "Posts a month", [["8", "8"], ["12", "12"], ["20", "20"]]),
-      row("الفيديوهات شهرياً", "Videos a month", [["1", "1"], ["3", "3"], ["5", "5"]]),
-      row("الحملات الإعلانية", "Ad campaigns", [["1", "1"], ["حتى 2", "Up to 2"], ["حتى 3", "Up to 3"]]),
-      row("التخطيط", "Planning", [["خطة محتوى", "Content plan"], ["خطة محتوى وتسويق", "Content and marketing plan"], ["استراتيجية محتوى وتسويق", "Content and marketing strategy"]]),
-      row("التقارير", "Reports", [["شهري", "Monthly"], ["أداء وتوصيات", "Performance and recommendations"], ["شهرية واجتماع متابعة", "Monthly and a follow-up meeting"]])
     ]
   },
   {
@@ -633,89 +619,88 @@ export const packageGroups: PackageGroup[] = [
     segment: "smb",
     service: "whatsapp-automation",
     icon: "MessagesSquare",
-    title: { ar: "باقات واتساب للأعمال", en: "WhatsApp for business plans" },
-    short: { ar: "واتساب للأعمال", en: "WhatsApp" },
-    text: { ar: "حوّل واتساب من رسائل متراكمة إلى قناة مبيعات وخدمة عملاء منظمة: رقم رسمي موثق، وفريق يعمل من صندوق واحد، وردود ومسارات آلية، وتقارير تقيس سرعة الرد والطلبات.", en: "Turn WhatsApp from a pile of messages into an organised sales and service channel: a verified official number, a team working from one inbox, automated replies and flows, and reports on response time and orders." },
-    highlights: [
-      { ar: "رقم رسمي موثق باسم نشاطك عبر منصة واتساب للأعمال", en: "A verified official number under your business name on the WhatsApp Business Platform" },
-      { ar: "صندوق محادثات واحد لفريقك مع توزيع المحادثات", en: "One shared inbox for your team with conversation routing" },
-      { ar: "مسارات آلية تعمل على مدار الساعة وتحوّل للموظف عند الحاجة", en: "Automated flows around the clock, handing over to staff when needed" }
-    ],
-    notice: { ar: "الأسعار اشتراك شهري قبل الضريبة (أو سنوي بخصم شهرين)، والحد الأدنى 3 أشهر، والإعداد مشمول. رسوم ميتا غير مشمولة في الباقات: الرسائل التسويقية والحملات والرسائل التي تبدأ بها أنت مع العميل تُحتسب لكل رسالة حسب أسعار ميتا، وهي متغيرة وتتحدث من ميتا من وقت لآخر، وتُدفع حسب الاستخدام الفعلي وباسمك. ردودك على رسائل العملاء خلال 24 ساعة من رسالتهم مجانية ضمن حدود ميتا. اعتماد الحساب وقوالب الرسائل يخضع لموافقة ميتا.", en: "Prices are monthly subscriptions before VAT (or yearly with two months off), minimum 3 months, set-up included. Meta's fees are not included: marketing messages, campaigns and conversations you start are charged per message at Meta's prices, which change as Meta updates them, and are paid by actual usage in your name. Your replies within 24 hours of a client's message are free within Meta's limits. Account and template approval is subject to Meta." },
+    title: t("باقات واتساب للأعمال", "WhatsApp Business plans"),
+    short: t("واتساب للأعمال", "WhatsApp"),
+    text: t("حوّل محادثات واتساب إلى قناة مبيعات وخدمة منظمة: رقم رسمي موثّق، وصندوق محادثات مشترك لفريقك، وردود ومسارات آلية، وتقارير بسرعة الرد.", "Turn WhatsApp into an organised sales and service channel: a verified official number, a shared inbox for your team, automated replies and flows, and reports on response time."),
+    highlights: [t("رقم رسمي موثّق باسم نشاطك على منصة واتساب للأعمال", "A verified official number in your business name on the WhatsApp Business Platform"), t("صندوق محادثات مشترك لفريقك مع توزيع المحادثات", "A shared team inbox with conversation routing"), t("مسارات آلية على مدار الساعة مع التحويل للموظف عند الحاجة", "Automated flows around the clock, handing over to staff when needed")],
+    notice: t("الأسعار اشتراك شهري قبل الضريبة، أو سنوي بخصم شهرين، والحد الأدنى 3 أشهر، والإعداد مشمول. رسوم ميتا غير مشمولة: الرسائل التسويقية والحملات والمحادثات التي تبدأها أنت تُحتسب لكل رسالة حسب أسعار ميتا المتغيرة، وتُدفع حسب الاستخدام الفعلي وباسمك. ردودك على رسائل العملاء خلال 24 ساعة من رسالتهم مجانية ضمن حدود ميتا، واعتماد الحساب وقوالب الرسائل يخضع لموافقة ميتا.", "Prices are monthly subscriptions before VAT, or yearly with two months off; minimum 3 months, set-up included. Meta's fees are not included: marketing messages, campaigns and conversations you start are charged per message at Meta's changing prices, by actual usage, in your name. Replies within 24 hours of a customer's message are free within Meta's limits, and account and template approval is subject to Meta."),
     tiers: [
       {
         key: "wa-basic",
         icon: "MessageSquareMore",
-        name: { ar: "الانطلاق", en: "Launch" },
-        tagline: { ar: "رقم رسمي منظم وفريق يرد من مكان واحد", en: "An organised official number and a team replying from one place" },
-        idealFor: { ar: "الأنشطة التي تنتقل من واتساب الجوال إلى واتساب الأعمال الرسمي", en: "Businesses moving from WhatsApp on a phone to the official business platform" },
+        name: t("الأساسية", "Essential"),
+        tagline: t("رقم رسمي وصندوق محادثات منظم", "An official number and an organised inbox"),
+        idealFor: t("الأنشطة التي تنتقل من واتساب الجوال إلى واتساب الأعمال الرسمي", "Businesses moving from WhatsApp on a phone to the official platform"),
+        model: WA,
+        about: t("ننقل رقمك إلى منصة واتساب للأعمال الرسمية ونوثّق نشاطك لدى ميتا، ونجهّز قائمة ترحيب وردوداً سريعة، ليرد موظفك من صندوق محادثات منظم بدل جوال شخصي.", "We move your number to the official WhatsApp Business Platform, verify your business with Meta and set up a welcome menu and quick replies, so your staff answer from an organised inbox instead of a personal phone."),
+        youProvide: [t("رقم جوال غير مرتبط بتطبيق واتساب العادي، أو نساعدك في نقله", "A number not tied to the regular WhatsApp app, or we help you move it"), t("السجل التجاري ووثائق التوثيق لدى ميتا", "Commercial registration and Meta verification documents"), t("حساب Meta Business باسمك", "A Meta Business account in your name")],
+        after: t("اشتراك شهري بحد أدنى 3 أشهر. الرقم وحساب ميتا باسمك ويبقيان لك إذا أوقفت الاشتراك.", "A monthly subscription, minimum 3 months. The number and Meta account are in your name and stay yours if you stop."),
         price: 599,
         annual: 5990,
         from: false,
         ...perMonth,
-        delivery: { ar: "3 أيام عمل بعد اعتماد ميتا", en: "3 business days after Meta approval" },
+        delivery: t("3 أيام عمل بعد اعتماد ميتا", "3 business days after Meta approval"),
         features: [
-          { ar: "ربط رقمك بمنصة واتساب للأعمال وتوثيق نشاطك لدى ميتا", en: "Your number on the WhatsApp Business Platform, business verified with Meta" },
-          { ar: "صندوق محادثات لمستخدم واحد", en: "An inbox for one user" },
-          { ar: "قائمة ترحيب آلية بالخدمات والفروع وأوقات العمل", en: "An automated welcome menu with services, branches and hours" },
-          { ar: "رد خارج أوقات العمل و20 رداً سريعاً جاهزاً", en: "Out-of-hours replies and 20 ready quick replies" },
-          { ar: "تصنيف المحادثات وملاحظات داخلية", en: "Conversation labels and internal notes" },
-          { ar: "تقرير شهري بعدد المحادثات وسرعة الرد", en: "A monthly report on conversations and response time" }
+          t("ربط رقمك بمنصة واتساب للأعمال وتوثيق نشاطك لدى ميتا", "Your number on the WhatsApp Business Platform, business verified with Meta"),
+          t("صندوق محادثات لمستخدم واحد", "An inbox for one user"),
+          t("قائمة ترحيب آلية بالخدمات والفروع وأوقات العمل", "An automated welcome menu with services, branches and hours"),
+          t("رد آلي خارج أوقات العمل و20 رداً سريعاً", "Out-of-hours auto-reply and 20 quick replies"),
+          t("تصنيف المحادثات وملاحظات داخلية", "Conversation labels and internal notes"),
+          t("تقرير شهري بعدد المحادثات وسرعة الرد", "A monthly report on conversations and response time")
         ],
-        excludes: [
-          { ar: "رسوم رسائل ميتا (التسويقية والحملات) حسب أسعار ميتا", en: "Meta message fees (marketing and campaigns) at Meta's prices" },
-          { ar: "الشات بوت والحملات (في الباقات الأعلى)", en: "Chatbot and campaigns (in the higher plans)" }
-        ]
+        excludes: [t("رسوم رسائل ميتا (التسويقية والحملات)", "Meta message fees (marketing and campaigns)"), t("الشات بوت والحملات (في الباقات الأعلى)", "Chatbot and campaigns (in the higher plans)")]
       },
       {
         key: "wa-pro",
         icon: "Bot",
-        name: { ar: "الاحترافية", en: "Professional" },
-        tagline: { ar: "بوت يرد ويحجز ويؤهل العملاء ويوزعهم على فريقك", en: "A bot that answers, books, qualifies and routes clients to your team" },
-        idealFor: { ar: "العيادات والمتاجر والعقار والشركات الخدمية كثيرة الاستفسارات", en: "Clinics, stores, real estate and service companies with many enquiries" },
+        name: t("الاحترافية", "Professional"),
+        tagline: t("شات بوت يؤهل العملاء ويوزعهم على فريقك", "A chatbot that qualifies customers and routes them to your team"),
+        idealFor: t("العيادات والمتاجر والعقار والشركات الخدمية كثيرة الاستفسارات", "Clinics, stores, real estate and service companies with many enquiries"),
+        model: WA,
+        about: t("كل ما في الأساسية مع شات بوت نصممه لنشاطك: يعرض الخدمات والأسعار، ويحجز أو يستقبل الطلب، ويجمع بيانات العميل ثم يحوّله للموظف المناسب مع ملخص المحادثة.", "Everything in Essential plus a chatbot designed for your business: it shows services and prices, books or takes the order, collects the customer's details and hands them to the right person with a summary."),
+        youProvide: [t("رقم جوال غير مرتبط بتطبيق واتساب العادي", "A number not tied to the regular WhatsApp app"), t("السجل التجاري وحساب Meta Business باسمك", "Commercial registration and a Meta Business account in your name"), t("قائمة الخدمات والأسعار والأسئلة الشائعة", "Your services, prices and frequent questions")],
+        after: t("اشتراك شهري بحد أدنى 3 أشهر. الرقم وحساب ميتا باسمك ويبقيان لك إذا أوقفت الاشتراك.", "A monthly subscription, minimum 3 months. The number and Meta account are in your name and stay yours if you stop."),
         price: 1299,
         annual: 12990,
         from: false,
         ...perMonth,
-        delivery: { ar: "7 أيام عمل بعد اعتماد ميتا", en: "7 business days after Meta approval" },
+        delivery: t("7 أيام عمل بعد اعتماد ميتا", "7 business days after Meta approval"),
         featured: true,
         features: [
-          { ar: "مستخدمان مع توزيع المحادثات بينهما", en: "Two users with conversation routing" },
-          { ar: "شات بوت بمسارات مصممة لنشاطك: خدمات، أسعار، حجز، طلبات", en: "A chatbot with flows designed for you: services, prices, booking, orders" },
-          { ar: "تأهيل العملاء (الاسم، المدينة، الخدمة) وتحويلهم بملخص", en: "Lead qualification (name, city, service) and hand-over with a summary" },
-          { ar: "10 قوالب رسائل معتمدة: تأكيد، تذكير، متابعة", en: "10 approved templates: confirmation, reminder, follow-up" },
-          { ar: "إعداد وإرسال حملاتك للعملاء الموافقين (تكلفة رسائل ميتا عليك)", en: "Your campaigns set up and sent to opted-in clients (Meta message costs are yours)" },
-          { ar: "ربط مع سلة أو زد أو جداول جوجل", en: "Integration with Salla, Zid or Google Sheets" },
-          { ar: "تقارير أداء الفريق والحملات شهرياً", en: "Monthly team and campaign reports" }
+          t("مستخدمان مع توزيع المحادثات", "Two users with conversation routing"),
+          t("شات بوت بمسارات مصممة لنشاطك: الخدمات والأسعار والحجز والطلبات", "A chatbot with flows for your business: services, prices, bookings and orders"),
+          t("تأهيل العميل (الاسم والمدينة والخدمة) وتحويله بملخص", "Customer qualification (name, city, service) and hand-over with a summary"),
+          t("10 قوالب رسائل معتمدة: تأكيد وتذكير ومتابعة", "10 approved templates: confirmation, reminder and follow-up"),
+          t("إعداد حملاتك وإرسالها للعملاء الموافقين (تكلفة الرسائل حسب ميتا)", "Your campaigns set up and sent to opted-in customers (message cost per Meta)"),
+          t("ربط مع سلة أو زد أو جداول جوجل", "Integration with Salla, Zid or Google Sheets"),
+          t("تقرير شهري بأداء الفريق والحملات", "A monthly report on team and campaign performance")
         ],
-        excludes: [
-          { ar: "رسوم رسائل ميتا (التسويقية والحملات) حسب أسعار ميتا", en: "Meta message fees (marketing and campaigns) at Meta's prices" },
-          { ar: "الذكاء الاصطناعي وتكامل أنظمة العملاء (في أتمتة الأعمال)", en: "AI and CRM integration (in Business automation)" }
-        ]
+        excludes: [t("رسوم رسائل ميتا (التسويقية والحملات)", "Meta message fees (marketing and campaigns)"), t("الذكاء الاصطناعي وتكامل نظام العملاء (في الأتمتة المتكاملة)", "AI and CRM integration (in Full automation)")]
       },
       {
         key: "wa-advanced",
         icon: "Workflow",
-        name: { ar: "أتمتة الأعمال", en: "Business automation" },
-        tagline: { ar: "واتساب مربوط بأنظمتك ومساعد ذكي وأتمتة كاملة", en: "WhatsApp linked to your systems, an AI assistant and full automation" },
-        idealFor: { ar: "الشركات متعددة الفروع والمتاجر ذات الطلبات العالية", en: "Multi-branch companies and high-volume stores" },
+        name: t("الأتمتة المتكاملة", "Full automation"),
+        tagline: t("واتساب مرتبط بأنظمتك مع مساعد ذكي", "WhatsApp linked to your systems, with an AI assistant"),
+        idealFor: t("الشركات متعددة الفروع والمتاجر ذات الطلبات العالية", "Multi-branch companies and high-volume stores"),
+        model: WA,
+        about: t("واتساب مرتبط بأنظمتك: مساعد ذكاء اصطناعي يجيب من ملفاتك، وتكامل مع نظام العملاء أو المبيعات، وإشعارات الطلب والشحن، وتوزيع المحادثات على الفروع. السعر المعلن للنطاق الأساسي ويُحدَّد النهائي بعد التحليل.", "WhatsApp connected to your systems: an AI assistant answering from your files, CRM or sales integration, order and shipping notifications and routing across branches. The published price covers the base scope; the final price follows analysis."),
+        youProvide: [t("رقم جوال وحساب Meta Business باسمك", "A number and a Meta Business account in your name"), t("الملفات التي سيجيب منها المساعد", "The files the assistant will answer from"), t("صلاحيات الوصول لأنظمتك (CRM / ERP)", "Access to your systems (CRM / ERP)")],
+        after: t("اشتراك شهري بحد أدنى 3 أشهر، مع مدير حساب. رسوم ميتا والذكاء الاصطناعي حسب الاستخدام.", "A monthly subscription, minimum 3 months, with an account manager. Meta and AI fees by usage."),
         price: 2999,
         annual: 29990,
         from: true,
         ...perMonth,
-        delivery: { ar: "بعد تحليل النطاق — عادة 3 إلى 4 أسابيع", en: "After scope analysis — usually 3–4 weeks" },
+        delivery: t("بعد تحليل النطاق، عادة 3 إلى 4 أسابيع", "After scope analysis, usually 3 to 4 weeks"),
         features: [
-          { ar: "كل مميزات الاحترافية و3 مستخدمين", en: "Everything in Professional and 3 users" },
-          { ar: "مساعد ذكاء اصطناعي يجيب من ملفاتك بالعربي والإنجليزي", en: "An AI assistant answering from your files in Arabic and English" },
-          { ar: "تكامل مع نظام العملاء أو نظام المبيعات (CRM / ERP)", en: "Integration with your CRM or sales system (CRM / ERP)" },
-          { ar: "استرداد السلات المتروكة وإشعارات الطلب والشحن", en: "Abandoned-cart recovery and order / shipping notifications" },
-          { ar: "توزيع المحادثات على الفروع تلقائياً", en: "Automatic routing across branches" },
-          { ar: "مدير حساب مخصص ومراجعة شهرية للأداء", en: "A dedicated account manager and monthly performance review" }
+          t("كل ما في الاحترافية مع 3 مستخدمين", "Everything in Professional, with 3 users"),
+          t("مساعد ذكاء اصطناعي يجيب من ملفاتك بالعربية والإنجليزية", "An AI assistant answering from your files in Arabic and English"),
+          t("تكامل مع نظام العملاء أو نظام المبيعات (CRM / ERP)", "Integration with your CRM or sales system (CRM / ERP)"),
+          t("استرداد السلات المتروكة وإشعارات الطلب والشحن", "Abandoned-cart recovery and order and shipping notifications"),
+          t("توزيع المحادثات على الفروع تلقائياً", "Automatic routing across branches"),
+          t("مدير حساب ومراجعة شهرية للأداء", "An account manager and a monthly performance review")
         ],
-        excludes: [
-          { ar: "رسوم رسائل ميتا ورسوم الذكاء الاصطناعي حسب الاستخدام", en: "Meta message and AI usage fees, by usage" },
-          { ar: "المستخدمون والتكاملات الإضافية تُسعَّر حسب الطلب", en: "Extra users and integrations priced on request" }
-        ]
+        excludes: [t("رسوم رسائل ميتا ورسوم الذكاء الاصطناعي حسب الاستخدام", "Meta message and AI usage fees"), t("المستخدمون والتكاملات الإضافية (تُسعَّر عند الطلب)", "Extra users and integrations (priced on request)")]
       }
     ]
   },
@@ -724,114 +709,110 @@ export const packageGroups: PackageGroup[] = [
     segment: "business",
     service: "ai-automation",
     icon: "Bot",
-    title: { ar: "باقات الذكاء الاصطناعي والأتمتة", en: "AI & automation packages" },
-    short: { ar: "ذكاء اصطناعي وأتمتة", en: "AI & automation" },
-    text: { ar: "اجعل الأعمال المتكررة تعمل وحدها، ومساعداً ذكياً يرد على عملائك ويخدم فريقك على مدار الساعة — بحدود استخدام مكتوبة.", en: "Let repetitive work run by itself, and an AI assistant answer your clients and serve your team around the clock — with written usage limits." },
-    highlights: [
-      { ar: "أتمتة العمليات بين أدواتك وأنظمتك", en: "Process automation across your tools and systems" },
-      { ar: "مساعد ذكاء اصطناعي يفهم اللهجة السعودية", en: "An AI assistant that understands Saudi Arabic" },
-      { ar: "بياناتك ملكك ولا تُستخدم لتدريب نماذج عامة", en: "Your data stays yours and never trains public models" }
-    ],
-    notice: { ar: "أسعار البداية رسوم تأسيس لمرة واحدة للنطاق المذكور. استضافة التشغيل ورسوم نماذج الذكاء الاصطناعي تُدفع حسب الاستخدام الفعلي وباسمك ونقدّرها مكتوبة قبل البدء، ولكل حل حد استهلاك شهري في العقد مع تنبيه قبل بلوغه — لا نقدّم استخداماً أو رسائل غير محدودة. الصيانة والتحسين بعد فترة الدعم اشتراك شهري اختياري يُسعَّر في عرض السعر.", en: "Starting prices are one-time set-up fees for the stated scope. Hosting and AI model fees are paid by actual usage, in your name, and estimated in writing before we start; every solution has a monthly usage limit in the contract with an alert before it is reached — we don't offer unlimited usage or messages. Maintenance and tuning after the support period is an optional monthly subscription priced in the quote." },
+    title: t("حلول الذكاء الاصطناعي والأتمتة", "AI & automation solutions"),
+    short: t("الذكاء الاصطناعي", "AI & automation"),
+    text: t("أتمتة الأعمال المتكررة، ومساعد ذكي يرد على عملائك ويخدم فريقك، بحدود استخدام مكتوبة في العقد.", "Automating repetitive work, and an AI assistant that answers your customers and serves your team, with usage limits written into the contract."),
+    highlights: [t("أتمتة العمليات بين أدواتك وأنظمتك", "Process automation across your tools and systems"), t("مساعد يفهم العربية واللهجة السعودية", "An assistant that understands Arabic, including the Saudi dialect"), t("بياناتك ملكك ولا تُستخدم لتدريب نماذج عامة", "Your data stays yours and never trains public models")],
+    notice: t("أسعار البداية رسوم تأسيس لمرة واحدة للنطاق المذكور. استضافة التشغيل ورسوم نماذج الذكاء الاصطناعي تُدفع حسب الاستخدام الفعلي وباسمك، ونقدّرها كتابياً قبل البدء. لكل حل حد استهلاك شهري مكتوب في العقد مع تنبيه قبل بلوغه، ولا نقدّم استخداماً أو رسائل بلا حد. الصيانة والتحسين بعد فترة الدعم اشتراك شهري اختياري يُسعَّر في عرض السعر.", "Starting prices are one-time set-up fees for the stated scope. Hosting and AI model fees are paid by actual usage, in your name, and estimated in writing before we start. Every solution has a monthly usage limit in the contract with an alert before it is reached; we don't offer usage or messages without a limit. Maintenance and tuning after the support period is an optional monthly subscription priced in the quote."),
     tiers: [
       {
         key: "ai-auto-starter",
         icon: "Workflow",
-        name: { ar: "أتمتة عمليتين قياسيتين", en: "Two standard automations" },
-        tagline: { ar: "عمليتان تعملان وحدهما بدل فريقك", en: "Two processes that run themselves" },
-        idealFor: { ar: "الشركات التي يكرر فريقها نفس الخطوات يدوياً كل يوم", en: "Companies whose team repeats the same manual steps every day" },
+        name: t("أتمتة العمليات", "Process automation"),
+        tagline: t("عمليتان متكررتان تعملان تلقائياً دون تدخل يدوي", "Two repetitive processes that run automatically, without manual work"),
+        idealFor: t("الشركات التي يكرر فريقها الخطوات نفسها يدوياً كل يوم", "Companies whose team repeats the same manual steps every day"),
+        model: SYSTEM,
+        about: t("نبني لك نظام أتمتة يعمل داخل أدواتك. مثال: طلب يصل من نموذج الموقع فيُسجَّل في نظام العملاء، ويصل للعميل رد عبر واتساب، ويُبلَّغ الموظف المختص، دون أي تدخل يدوي. نختار معك عمليتين، ونبنيهما ونختبرهما ونسلّمهما موثّقتين.", "We build an automation system that runs inside your tools. Example: a request from your site form is saved to your CRM, the customer gets a WhatsApp reply and the right employee is notified, with no manual work. We pick two processes with you, build and test them, and hand them over documented."),
+        youProvide: [t("وصف العمليتين وخطواتهما الحالية", "A description of the two processes and their current steps"), t("صلاحيات الوصول للأدوات المطلوب ربطها", "Access to the tools to connect"), t("اشتراكات الأدوات باسمك", "Tool subscriptions in your name")],
+        after: t("النظام ملكك وحساباته باسمك. بعد فترة الدعم تتوفر صيانة اختيارية، وتكلفة التشغيل الشهرية (الاستضافة واستخدام الذكاء الاصطناعي) تُدفع حسب الاستخدام ونقدّرها لك كتابياً قبل البدء.", "The system is yours and its accounts are in your name. After the support period, maintenance is optional; the monthly running cost (hosting and AI usage) is paid by usage and estimated for you in writing before we start."),
         price: 5499,
         from: true,
         ...oneTime,
-        delivery: { ar: "من 10 أيام عمل", en: "From 10 business days" },
+        delivery: t("من 10 أيام عمل", "From 10 business days"),
         features: [
-          { ar: "رسوم التأسيس: تحليل عملياتك وأتمتة عمليتين قياسيتين حتى 10 خطوات لكل منهما", en: "Set-up fee: your processes reviewed and two standard processes automated, up to 10 steps each" },
-          { ar: "ربط حتى 3 أدوات (نماذج، جداول، بريد، واتساب، نظام العملاء)", en: "Up to 3 tools connected (forms, sheets, e-mail, WhatsApp, CRM)" },
-          { ar: "مصدرا بيانات كحد أقصى", en: "Up to two data sources" },
-          { ar: "ذكاء اصطناعي لتصنيف الرسائل وتلخيصها ضمن حد استهلاك شهري متفق عليه", en: "AI to sort and summarise messages within an agreed monthly usage limit" },
-          { ar: "تنبيهات عند أي خطأ وتوثيق لكل عملية", en: "Alerts on any failure and documentation for every process" },
-          { ar: "تدريب فريقك ودعم فني لمدة شهر", en: "Team training and one month of support" }
+          t("تحليل عملياتك وأتمتة عمليتين قياسيتين حتى 10 خطوات لكل منهما", "Your processes reviewed and two standard processes automated, up to 10 steps each"),
+          t("ربط حتى 3 أدوات (النماذج، الجداول، البريد، واتساب، نظام العملاء)", "Up to 3 tools connected (forms, sheets, e-mail, WhatsApp, CRM)"),
+          t("مصدرا بيانات كحد أقصى", "Up to two data sources"),
+          t("تصنيف الرسائل وتلخيصها بالذكاء الاصطناعي ضمن حد استهلاك شهري متفق عليه", "AI sorting and summarising of messages within an agreed monthly usage limit"),
+          t("تنبيه عند أي خطأ وتوثيق لكل عملية", "An alert on any failure and documentation for each process"),
+          t("تدريب فريقك ودعم فني لمدة شهر", "Team training and one month of support")
         ],
-        excludes: [
-          { ar: "اشتراكات الأدوات واستضافة التشغيل ورسوم الذكاء الاصطناعي حسب الاستخدام", en: "Tool subscriptions, hosting and AI usage fees" },
-          { ar: "الصيانة الشهرية بعد شهر الدعم (اختيارية وتُسعَّر في العرض)", en: "Monthly maintenance after the support month (optional, priced in the quote)" },
-          { ar: "أي عملية أو تكامل إضافي", en: "Any extra process or integration" }
-        ]
+        excludes: [t("اشتراكات الأدوات واستضافة التشغيل ورسوم الذكاء الاصطناعي حسب الاستخدام", "Tool subscriptions, hosting and AI usage fees"), t("الصيانة الشهرية بعد شهر الدعم (اختيارية)", "Monthly maintenance after the support month (optional)"), t("أي عملية أو تكامل إضافي", "Any extra process or integration")]
       },
       {
         key: "ai-site-bot",
         icon: "MessagesSquare",
-        name: { ar: "مساعد ذكي للموقع", en: "Website AI assistant" },
-        tagline: { ar: "يجيب زوار موقعك فوراً من ملفاتك", en: "Answers your site visitors instantly from your files" },
-        idealFor: { ar: "الشركات التي يسأل زوار موقعها نفس الأسئلة كثيراً", en: "Companies whose site visitors keep asking the same questions" },
+        name: t("المساعد الذكي للموقع", "Website AI assistant"),
+        tagline: t("يجيب زوار موقعك فوراً من ملفاتك", "Answers your site visitors instantly from your files"),
+        idealFor: t("الشركات التي يتكرر فيها سؤال الزوار نفسه", "Companies whose visitors keep asking the same questions"),
+        model: SYSTEM,
+        about: t("نبني مساعداً ذكياً خاصاً بشركتك ونُدرّبه على ملفاتك وصفحات موقعك، ليجيب الزوار فوراً بالعربية والإنجليزية ويجمع بيانات المهتمين ويرسلها لك. يعمل على موقعك وبحسابك، وليس اشتراكاً في منصة جاهزة.", "We build an AI assistant for your company, trained on your files and site pages, that answers visitors instantly in Arabic and English and collects interested leads for you. It runs on your site and your account — not a subscription to a ready-made platform."),
+        youProvide: [t("الملفات والمعلومات التي سيجيب منها (حتى 50 صفحة)", "The files and information it will answer from (up to 50 pages)"), t("صلاحية إضافة نافذة المحادثة إلى موقعك", "Permission to add the chat window to your site"), t("حساب مزوّد الذكاء الاصطناعي باسمك، ونساعدك في إنشائه", "An AI provider account in your name; we help you create it")],
+        after: t("النظام ملكك وحساباته باسمك. بعد فترة الدعم تتوفر صيانة اختيارية، وتكلفة التشغيل الشهرية (الاستضافة واستخدام الذكاء الاصطناعي) تُدفع حسب الاستخدام ونقدّرها لك كتابياً قبل البدء.", "The system is yours and its accounts are in your name. After the support period, maintenance is optional; the monthly running cost (hosting and AI usage) is paid by usage and estimated for you in writing before we start."),
         price: 6599,
         from: true,
         ...oneTime,
-        delivery: { ar: "من 10 أيام عمل", en: "From 10 business days" },
+        delivery: t("من 10 أيام عمل", "From 10 business days"),
         features: [
-          { ar: "مدرَّب على حتى 50 صفحة من ملفاتك وموقعك", en: "Trained on up to 50 pages of your files and site" },
-          { ar: "نافذة محادثة بهويتك على موقع واحد", en: "A branded chat window on one website" },
-          { ar: "عربي وإنجليزي", en: "Arabic and English" },
-          { ar: "يجمع بيانات المهتمين ويرسلها لبريدك أو لنظام واحد", en: "Collects leads and sends them to your inbox or one system" },
-          { ar: "حد محادثات شهري متفق عليه مع تنبيه قبل بلوغه", en: "An agreed monthly conversation limit with an alert before it is reached" },
-          { ar: "مراجعة وتحسين الردود لمدة شهر", en: "A month of review and answer tuning" }
+          t("مدرَّب على حتى 50 صفحة من ملفاتك وموقعك", "Trained on up to 50 pages of your files and site"),
+          t("نافذة محادثة بهويتك على موقع واحد", "A branded chat window on one website"),
+          t("العربية والإنجليزية", "Arabic and English"),
+          t("جمع بيانات المهتمين وإرسالها إلى بريدك أو نظام واحد", "Collects leads and sends them to your inbox or one system"),
+          t("حد محادثات شهري متفق عليه مع تنبيه قبل بلوغه", "An agreed monthly conversation limit with an alert before it is reached"),
+          t("مراجعة الردود وتحسينها لمدة شهر", "A month of answer review and tuning")
         ],
-        excludes: [
-          { ar: "استضافة التشغيل ورسوم استخدام الذكاء الاصطناعي", en: "Hosting and AI usage fees" },
-          { ar: "واتساب والحجوزات (في المساعد المتكامل)", en: "WhatsApp and bookings (in the integrated assistant)" },
-          { ar: "الصيانة الشهرية بعد شهر الدعم (اختيارية)", en: "Monthly maintenance after the support month (optional)" }
-        ]
+        excludes: [t("استضافة التشغيل ورسوم استخدام الذكاء الاصطناعي", "Hosting and AI usage fees"), t("واتساب والحجوزات (في المساعد الذكي المتكامل)", "WhatsApp and bookings (in the Integrated AI assistant)"), t("الصيانة الشهرية بعد شهر الدعم (اختيارية)", "Monthly maintenance after the support month (optional)")]
       },
       {
         key: "ai-assistant",
         icon: "Bot",
-        name: { ar: "مساعد AI متكامل مع واتساب والحجوزات", en: "AI assistant with WhatsApp and bookings" },
-        tagline: { ar: "موظف ذكي يرد على عملائك ويحجز لهم", en: "A smart agent that answers your clients and books for them" },
-        idealFor: { ar: "العيادات والمتاجر والعقار والشركات الخدمية كثيرة الاستفسارات", en: "Clinics, stores, real estate and service companies with many enquiries" },
+        name: t("المساعد الذكي المتكامل", "Integrated AI assistant"),
+        tagline: t("يرد على عملائك عبر واتساب والموقع ويحجز مواعيدهم", "Answers your customers on WhatsApp and your site, and books their appointments"),
+        idealFor: t("العيادات والمتاجر والعقار والشركات الخدمية كثيرة الاستفسارات", "Clinics, stores, real estate and service companies with many enquiries"),
+        model: SYSTEM,
+        about: t("مساعد ذكي خاص بشركتك يرد على عملائك في واتساب والموقع ويفهم اللهجة السعودية، ويحجز المواعيد مباشرة في نظام الحجوزات، ويسجّل العميل في نظام العملاء، ويحوّل المحادثة لموظف عند الحاجة. نبنيه ونربطه ونسلّمه لك.", "An AI assistant for your company that answers customers on WhatsApp and your site, understands the Saudi dialect, books appointments directly in your booking system, records customers in your CRM and hands over to staff when needed. We build it, connect it and hand it over to you."),
+        youProvide: [t("معلومات الخدمات والأسعار والسياسات", "Your services, prices and policies"), t("اشتراك واتساب للأعمال (من باقاتنا أو مزوّد آخر)", "A WhatsApp Business subscription (ours or another provider's)"), t("صلاحيات الوصول لنظام الحجوزات ونظام العملاء", "Access to your booking system and CRM")],
+        after: t("النظام ملكك وحساباته باسمك. بعد فترة الدعم تتوفر صيانة اختيارية، وتكلفة التشغيل الشهرية (الاستضافة واستخدام الذكاء الاصطناعي) تُدفع حسب الاستخدام ونقدّرها لك كتابياً قبل البدء.", "The system is yours and its accounts are in your name. After the support period, maintenance is optional; the monthly running cost (hosting and AI usage) is paid by usage and estimated for you in writing before we start."),
         price: 14299,
         from: true,
         ...oneTime,
-        delivery: { ar: "من 3 أسابيع", en: "From 3 weeks" },
+        delivery: t("من 3 أسابيع", "From 3 weeks"),
         featured: true,
         features: [
-          { ar: "مدرَّب على خدماتك وأسعارك وسياساتك من حتى 3 مصادر بيانات", en: "Trained on your services, prices and policies from up to 3 data sources" },
-          { ar: "يرد على واتساب وموقعك بالعربي (واللهجة السعودية) والإنجليزي", en: "Answers on WhatsApp and your website in Arabic (incl. Saudi dialect) and English" },
-          { ar: "تكاملان: نظام حجوزات أو تقويم واحد، ونظام عملاء واحد", en: "Two integrations: one booking system or calendar, and one CRM" },
-          { ar: "يحوّل المحادثة للموظف المناسب، ولوحة مراجعة لحتى 3 مستخدمين", en: "Hands chats to the right person; a review dashboard for up to 3 users" },
-          { ar: "حد محادثات شهري متفق عليه مع تنبيه عند 80%", en: "An agreed monthly conversation limit with an alert at 80%" },
-          { ar: "بياناتك تبقى في حساباتك ولا تُستخدم لتدريب نماذج عامة، وتُحذف عند الطلب", en: "Your data stays in your accounts, never trains public models and is deleted on request" },
-          { ar: "ضبط وتحسين لمدة 3 أشهر", en: "Three months of tuning and improvement" }
+          t("مدرَّب على خدماتك وأسعارك وسياساتك من حتى 3 مصادر بيانات", "Trained on your services, prices and policies from up to 3 data sources"),
+          t("يرد على واتساب وموقعك بالعربية (واللهجة السعودية) والإنجليزية", "Answers on WhatsApp and your website in Arabic (incl. the Saudi dialect) and English"),
+          t("تكاملان: نظام حجوزات أو تقويم واحد، ونظام عملاء واحد", "Two integrations: one booking system or calendar, and one CRM"),
+          t("تحويل المحادثة للموظف المناسب، ولوحة مراجعة لحتى 3 مستخدمين", "Hand-over to the right person, and a review dashboard for up to 3 users"),
+          t("حد محادثات شهري متفق عليه مع تنبيه عند 80%", "An agreed monthly conversation limit with an alert at 80%"),
+          t("بياناتك تبقى في حساباتك ولا تُستخدم لتدريب نماذج عامة، وتُحذف عند الطلب", "Your data stays in your accounts, never trains public models and is deleted on request"),
+          t("ضبط وتحسين لمدة 3 أشهر", "Three months of tuning")
         ],
-        excludes: [
-          { ar: "استضافة التشغيل ورسوم الذكاء الاصطناعي ورسائل ميتا حسب الاستخدام", en: "Hosting, AI usage and Meta message fees, by usage" },
-          { ar: "اشتراك واتساب للأعمال (في باقات واتساب للأعمال)", en: "The WhatsApp Business subscription (in the WhatsApp packages)" },
-          { ar: "التكاملات والمستخدمون الإضافيون والصيانة بعد 3 أشهر", en: "Extra integrations and users, and maintenance after 3 months" }
-        ]
+        excludes: [t("استضافة التشغيل ورسوم الذكاء الاصطناعي ورسائل ميتا حسب الاستخدام", "Hosting, AI usage and Meta message fees"), t("اشتراك واتساب للأعمال (في باقات واتساب)", "The WhatsApp Business subscription (in the WhatsApp plans)"), t("التكاملات والمستخدمون الإضافيون والصيانة بعد 3 أشهر", "Extra integrations and users, and maintenance after 3 months")]
       },
       {
         key: "ai-custom",
         icon: "Sparkles",
-        name: { ar: "حلول ذكاء اصطناعي مخصصة للشركات", en: "Custom AI solutions for companies" },
-        tagline: { ar: "ذكاء اصطناعي داخل أنظمتك وبياناتك", en: "AI inside your systems and data" },
-        idealFor: { ar: "الشركات والجهات التي لديها بيانات ومستندات كثيرة وأنظمة قائمة", en: "Companies and entities with lots of data, documents and existing systems" },
+        name: t("الحلول المخصصة للشركات", "Custom solutions for companies"),
+        tagline: t("ذكاء اصطناعي داخل أنظمتك وبياناتك", "AI inside your systems and data"),
+        idealFor: t("الشركات والجهات التي لديها بيانات ومستندات كثيرة وأنظمة قائمة", "Companies and entities with lots of data, documents and existing systems"),
+        model: SYSTEM,
+        about: t("حل ذكاء اصطناعي يُبنى داخل أنظمة شركتك وبياناتها: مساعد معرفة لفريقك، وقراءة المستندات واستخراج بياناتها، وتكاملات بالعدد المحدد في وثيقة النطاق، مع صلاحيات وسجل تدقيق، ويمكن استضافته في حسابك السحابي.", "An AI solution built inside your company's systems and data: a knowledge assistant for your team, document reading and data extraction, and integrations as set in the scope document, with permissions and an audit trail; it can be hosted in your own cloud account."),
+        youProvide: [t("المستندات ومصادر البيانات المطلوبة", "The documents and data sources involved"), t("صلاحيات الأنظمة المراد ربطها", "Access to the systems to connect"), t("شخص أو فريق مسؤول لاعتماد حالات الاستخدام", "A person or team to approve the use cases")],
+        after: t("النظام ملكك وحساباته باسمك. بعد فترة الدعم تتوفر صيانة اختيارية، وتكلفة التشغيل الشهرية (الاستضافة واستخدام الذكاء الاصطناعي) تُدفع حسب الاستخدام ونقدّرها لك كتابياً قبل البدء.", "The system is yours and its accounts are in your name. After the support period, maintenance is optional; the monthly running cost (hosting and AI usage) is paid by usage and estimated for you in writing before we start."),
         price: 27499,
         from: true,
         ...oneTime,
-        delivery: { ar: "من 6 أسابيع حسب النطاق", en: "From 6 weeks, depending on scope" },
+        delivery: t("من 6 أسابيع حسب النطاق", "From 6 weeks, depending on scope"),
         features: [
-          { ar: "ورشة لتحديد حالات الاستخدام ووثيقة نطاق تحدد مصادر البيانات والتكاملات والمستخدمين", en: "A use-case workshop and a scope document naming data sources, integrations and users" },
-          { ar: "مساعد معرفة داخلي يجيب فريقك من مستندات الشركة", en: "An internal knowledge assistant answering your team from company documents" },
-          { ar: "قراءة الفواتير والعقود والمستندات واستخراج بياناتها", en: "Invoices, contracts and documents read and their data extracted" },
-          { ar: "تكاملات مع أنظمتك بالعدد المحدد في وثيقة النطاق", en: "Integrations with your systems, as many as the scope document sets" },
-          { ar: "صلاحيات وسجل تدقيق، وخيار الاستضافة في حسابك السحابي", en: "Permissions, an audit trail and the option to host in your own cloud account" },
-          { ar: "حدود استهلاك شهرية مكتوبة وتقرير استخدام", en: "Written monthly usage limits and a usage report" },
-          { ar: "تسليم موثق ودعم وتحسين لمدة 6 أشهر", en: "Documented hand-over and 6 months of support and tuning" }
+          t("ورشة لتحديد حالات الاستخدام ووثيقة نطاق تحدد مصادر البيانات والتكاملات والمستخدمين", "A use-case workshop and a scope document naming data sources, integrations and users"),
+          t("مساعد معرفة داخلي يجيب فريقك من مستندات الشركة", "An internal knowledge assistant answering your team from company documents"),
+          t("قراءة الفواتير والعقود والمستندات واستخراج بياناتها", "Invoices, contracts and documents read and their data extracted"),
+          t("تكاملات مع أنظمتك بالعدد المحدد في وثيقة النطاق", "Integrations with your systems, as many as the scope document sets"),
+          t("صلاحيات وسجل تدقيق، وخيار الاستضافة في حسابك السحابي", "Permissions, an audit trail and the option to host in your own cloud account"),
+          t("حدود استهلاك شهرية مكتوبة وتقرير استخدام", "Written monthly usage limits and a usage report"),
+          t("تسليم موثّق ودعم وتحسين لمدة 6 أشهر", "Documented hand-over and 6 months of support and tuning")
         ],
-        excludes: [
-          { ar: "الخوادم ورسوم نماذج الذكاء الاصطناعي حسب الاستخدام", en: "Servers and AI model costs, by usage" },
-          { ar: "تراخيص الأنظمة الخارجية", en: "Third-party system licences" },
-          { ar: "أي تكامل أو مصدر بيانات خارج وثيقة النطاق", en: "Any integration or data source outside the scope document" }
-        ]
+        excludes: [t("الخوادم ورسوم نماذج الذكاء الاصطناعي حسب الاستخدام", "Servers and AI model usage fees"), t("تراخيص الأنظمة الخارجية", "Third-party system licences"), t("أي تكامل أو مصدر بيانات خارج وثيقة النطاق", "Any integration or data source outside the scope document")]
       }
     ]
   },
@@ -840,127 +821,131 @@ export const packageGroups: PackageGroup[] = [
     segment: "business",
     service: "web-development",
     icon: "Layers",
-    title: { ar: "تطوير الأنظمة والتطبيقات", en: "Systems & app development" },
-    short: { ar: "الأنظمة والتطبيقات", en: "Systems & apps" },
-    text: { ar: "من تصميم واجهات تطبيقك إلى نظام متكامل لشركتك: نفهم المتطلبات، نوثّق النطاق، ونسلّم على مراحل مع اختبارات ودعم.", en: "From your app's interface design to a complete company system: we understand requirements, document the scope and deliver in stages with testing and support." },
-    highlights: [
-      { ar: "وثيقة نطاق مكتوبة قبل أي برمجة", en: "A written scope before any development" },
-      { ar: "تسليم على مراحل مع نسخ تجريبية", en: "Delivery in stages with test versions" },
-      { ar: "ملكية كاملة للكود وتوثيق للتسليم", en: "Full code ownership and documented hand-over" }
-    ],
-    notice: { ar: "أسعار البداية ليست وعداً بتنفيذ أي مشروع مهما كان حجمه: السعر النهائي يُحدَّد بعد تحليل المتطلبات حسب ساعات التصميم والتطوير والاختبار والإدارة والتكاملات والمخاطر والصيانة، والمشاريع الكبيرة تُنفَّذ بعرض سعر مخصص ووثيقة نطاق ومراحل تسليم. تطبيقات الآيفون والأندرويد الأصلية والاستضافة وتكاليف نماذج الذكاء الاصطناعي غير مشمولة.", en: "Starting prices are not a promise to build any project whatever its size: the final price is set after requirements analysis, by design, development, testing and management hours, integrations, risk and maintenance; large projects run on a custom quote, a scope document and delivery stages. Native iOS / Android apps, hosting and AI model costs are not included." },
+    title: t("تطوير الأنظمة والتطبيقات", "Systems & app development"),
+    short: t("الأنظمة والتطبيقات", "Systems & apps"),
+    text: t("من تصميم واجهات تطبيقك إلى نظام متكامل لشركتك: نحلل المتطلبات، ونوثّق النطاق، ونسلّم على مراحل مع الاختبار والدعم.", "From your app's interface design to a complete company system: we analyse requirements, document the scope and deliver in stages with testing and support."),
+    highlights: [t("وثيقة نطاق مكتوبة قبل أي برمجة", "A written scope before any development"), t("تسليم على مراحل مع نسخ تجريبية", "Delivery in stages with test versions"), t("ملكية كاملة للكود وتسليم موثّق", "Full code ownership and a documented hand-over")],
+    notice: t("أسعار البداية للنطاق الأساسي المذكور فقط، ولا تعني تنفيذ أي مشروع مهما كان حجمه. يُحدَّد السعر النهائي بعد تحليل المتطلبات حسب ساعات التصميم والتطوير والاختبار والإدارة والتكاملات والمخاطر والصيانة، وتُنفَّذ المشاريع الكبيرة بعرض سعر مخصص ووثيقة نطاق ومراحل تسليم. تطبيقات الآيفون والأندرويد الأصلية والاستضافة وتكاليف نماذج الذكاء الاصطناعي غير مشمولة.", "Starting prices cover the stated base scope only and are not a promise to build any project whatever its size. The final price follows requirements analysis — design, development, testing and management hours, integrations, risk and maintenance — and large projects run on a custom quote, a scope document and delivery stages. Native iOS / Android apps, hosting and AI model costs are not included."),
     tiers: [
       {
         key: "ux-ui",
         icon: "PenTool",
-        name: { ar: "تصميم واجهات UX/UI", en: "UX/UI design" },
-        tagline: { ar: "تصميم فقط — بدون برمجة", en: "Design only — no development" },
-        idealFor: { ar: "رواد الأعمال والشركات قبل بدء برمجة تطبيق أو نظام", en: "Founders and companies before building an app or system" },
+        name: t("تصميم واجهات المستخدم (UX/UI)", "UX/UI design"),
+        tagline: t("تصميم فقط، دون برمجة", "Design only, no development"),
+        idealFor: t("رواد الأعمال والشركات قبل بدء برمجة تطبيق أو نظام", "Founders and companies before building an app or system"),
+        model: DESIGN,
+        about: t("نصمم واجهات تطبيقك أو نظامك قبل البرمجة: رحلة المستخدم ومخطط الشاشات، ثم التصميم النهائي ونموذج تفاعلي تجرّبه، وتستلم ملفات منظمة يبني عليها أي فريق برمجة.", "We design your app or system's screens before development: user journey and wireframes, then the final design and a clickable prototype, delivered as organised files any development team can build from."),
+        youProvide: [t("فكرة المنتج والمستخدمون المستهدفون", "Your product idea and target users"), t("الشعار والهوية إن وُجدت", "Your logo and brand, if any"), t("أمثلة لتطبيقات تعجبك (اختياري)", "Examples of apps you like (optional)")],
+        after: t("تستلم ملفات التصميم المصدرية وتملكها. البرمجة غير مشمولة ويمكن تسعيرها منفصلة.", "You receive and own the source design files. Development isn't included and can be quoted separately."),
         price: 5499,
         from: true,
         ...oneTime,
-        delivery: { ar: "من 14 يوم عمل", en: "From 14 business days" },
+        delivery: t("من 14 يوم عمل", "From 14 business days"),
+        revisions: t("جولتا تعديل", "Two rounds"),
         features: [
-          { ar: "سعر البداية: حتى 15 شاشة ضمن تدفق استخدام واحد متفق عليه", en: "Starting price: up to 15 screens within one agreed user flow" },
-          { ar: "رحلة المستخدم وتخطيط الشاشات قبل التصميم", en: "User journey and wireframes before design" },
-          { ar: "نموذج تفاعلي قابل للتجربة", en: "A clickable interactive prototype" },
-          { ar: "جولتان من التعديلات", en: "Two revision rounds" },
-          { ar: "تسليم ملفات التصميم منظمة للمطورين", en: "Design files handed over, organised for developers" }
+          t("النطاق الأساسي: حتى 15 شاشة ضمن مسار استخدام واحد متفق عليه", "Base scope: up to 15 screens within one agreed user flow"),
+          t("رحلة المستخدم ومخططات الشاشات قبل التصميم", "User journey and wireframes before design"),
+          t("نموذج تفاعلي قابل للتجربة", "A clickable interactive prototype"),
+          t("جولتا تعديل", "Two revision rounds"),
+          t("ملفات تصميم منظمة جاهزة للمطورين", "Design files organised and ready for developers")
         ],
-        excludes: [
-          { ar: "برمجة التطبيق أو النظام", en: "Developing the app or system" },
-          { ar: "الشعار والهوية البصرية", en: "Logo and brand identity" }
-        ]
+        excludes: [t("برمجة التطبيق أو النظام", "Developing the app or system"), t("الشعار والهوية البصرية", "Logo and brand identity")]
       },
       {
         key: "integration",
         icon: "Plug",
-        name: { ar: "ربط الأنظمة", en: "System integration" },
-        tagline: { ar: "نظامان يتبادلان البيانات وحدهما", en: "Two systems exchanging data by themselves" },
-        idealFor: { ar: "الشركات التي تعيد إدخال نفس البيانات في أكثر من نظام", en: "Companies re-entering the same data in several systems" },
+        name: t("ربط الأنظمة", "System integration"),
+        tagline: t("نظامان يتبادلان البيانات تلقائياً", "Two systems exchanging data automatically"),
+        idealFor: t("الشركات التي تُدخل البيانات نفسها في أكثر من نظام", "Companies entering the same data in several systems"),
+        model: SYSTEM,
+        about: t("نربط نظامين تستخدمهما، مثل المتجر والمحاسبة أو نظام العملاء والجداول، لتنتقل البيانات بينهما تلقائياً بدل إدخالها مرتين، مع سجل لكل عملية وتنبيه عند الخطأ.", "We connect two systems you use — such as your store and accounting, or your CRM and spreadsheets — so data moves between them automatically instead of being entered twice, with a log of every transfer and alerts on errors."),
+        youProvide: [t("اسما النظامين والبيانات المطلوب نقلها", "The two systems and the data to move"), t("صلاحيات الوصول وواجهات البرمجة (API)", "Access and API credentials"), t("اشتراكات الأنظمة باسمك", "System subscriptions in your name")],
+        after: t("الربط ملكك ويعمل على حساباتك. شهر دعم، ثم صيانة اختيارية إذا تغيّر أحد النظامين.", "The integration is yours and runs on your accounts. One month of support, then optional maintenance if either system changes."),
         price: 6599,
         from: true,
         ...oneTime,
-        delivery: { ar: "من 7 أيام عمل", en: "From 7 business days" },
+        delivery: t("من 7 أيام عمل", "From 7 business days"),
         features: [
-          { ar: "ربط نظامين عبر واجهاتهما البرمجية الموثقة", en: "Two systems connected through their documented APIs" },
-          { ar: "مزامنة تلقائية في الاتجاهين عند الحاجة", en: "Automatic two-way sync when needed" },
-          { ar: "إعادة المحاولة تلقائياً عند انقطاع أي نظام", en: "Automatic retries when a system is down" },
-          { ar: "سجل لكل عملية وتنبيه عند الخطأ", en: "A log of every transfer and alerts on errors" },
-          { ar: "دعم لمدة شهر", en: "One month of support" }
+          t("ربط نظامين عبر واجهاتهما البرمجية الموثّقة", "Two systems connected through their documented APIs"),
+          t("مزامنة تلقائية في الاتجاهين عند الحاجة", "Automatic two-way sync when needed"),
+          t("إعادة المحاولة تلقائياً عند انقطاع أحد النظامين", "Automatic retries when either system is down"),
+          t("سجل لكل عملية وتنبيه عند الخطأ", "A log of every transfer and alerts on errors"),
+          t("دعم فني لمدة شهر", "One month of support")
         ],
-        excludes: [
-          { ar: "اشتراكات الأنظمة ورسوم واجهاتها", en: "System subscriptions and API fees" },
-          { ar: "الأنظمة التي لا تتيح واجهة برمجية أو تتطلب موافقة طرف ثالث (نوضحها قبل البدء)", en: "Systems without an API or that need a third party's approval (explained before we start)" }
-        ]
+        excludes: [t("اشتراكات الأنظمة ورسوم واجهاتها", "System subscriptions and API fees"), t("الأنظمة التي لا تتيح واجهة برمجية أو تتطلب موافقة طرف ثالث (نوضحها قبل البدء)", "Systems without an API or that need a third party's approval (explained before we start)")]
       },
       {
         key: "dashboard",
         icon: "ChartColumn",
-        name: { ar: "لوحة تقارير الإدارة", en: "Management dashboard" },
-        tagline: { ar: "أرقام شركتك في شاشة واحدة تتحدث وحدها", en: "Your company's numbers on one self-updating screen" },
-        idealFor: { ar: "المديرون الذين يريدون قرارات مبنية على أرقام حقيقية", en: "Managers who want decisions based on real numbers" },
+        name: t("لوحة مؤشرات الإدارة", "Management dashboard"),
+        tagline: t("أرقام شركتك في شاشة واحدة تتحدّث تلقائياً", "Your company's numbers on one self-updating screen"),
+        idealFor: t("المديرون الذين يريدون قرارات مبنية على أرقام فعلية", "Managers who want decisions based on real numbers"),
+        model: SYSTEM,
+        about: t("لوحة تجمع أهم أرقام شركتك، مثل المبيعات والطلبات والتحصيل، من مصدرين للبيانات، وتتحدّث تلقائياً، وتصلك ملخصاتها أسبوعياً بالبريد.", "A dashboard bringing together your key numbers — such as sales, orders and collections — from two data sources, updating automatically, with a weekly summary by e-mail."),
+        youProvide: [t("المؤشرات التي تريد متابعتها", "The KPIs you want to follow"), t("صلاحيات الوصول لمصادر البيانات", "Access to the data sources"), t("شخص يراجع الأرقام عند الإطلاق", "Someone to check the numbers at launch")],
+        after: t("اللوحة ملكك. شهر دعم، وإضافة مؤشرات أو مصادر لاحقاً تُسعَّر منفصلة.", "The dashboard is yours. One month of support; extra KPIs or sources later are priced separately."),
         price: 7699,
         from: true,
         ...oneTime,
-        delivery: { ar: "من 10 أيام عمل", en: "From 10 business days" },
+        delivery: t("من 10 أيام عمل", "From 10 business days"),
         features: [
-          { ar: "حتى 12 مؤشراً في لوحة واحدة", en: "Up to 12 KPIs on one dashboard" },
-          { ar: "ربط حتى مصدرين للبيانات", en: "Up to 2 data sources connected" },
-          { ar: "تحديث تلقائي وصلاحيات لمن يراها", en: "Automatic refresh and access control" },
-          { ar: "تقرير أسبوعي بالبريد", en: "A weekly e-mail report" },
-          { ar: "دعم لمدة شهر", en: "One month of support" }
+          t("حتى 12 مؤشراً في لوحة واحدة", "Up to 12 KPIs on one dashboard"),
+          t("ربط حتى مصدرين للبيانات", "Up to 2 data sources connected"),
+          t("تحديث تلقائي وصلاحيات لمن يطّلع عليها", "Automatic refresh and access control"),
+          t("تقرير أسبوعي بالبريد", "A weekly e-mail report"),
+          t("دعم فني لمدة شهر", "One month of support")
         ],
-        excludes: [
-          { ar: "تراخيص أدوات التقارير إن وُجدت", en: "Reporting tool licences, if any" },
-          { ar: "تنظيف بيانات تاريخية كبيرة", en: "Cleaning large historical data" }
-        ]
+        excludes: [t("تراخيص أدوات التقارير إن وُجدت", "Reporting tool licences, if any"), t("تنظيف البيانات التاريخية الكبيرة", "Cleaning large historical data")]
       },
       {
         key: "app-mvp",
         icon: "Rocket",
-        name: { ar: "تطبيق ويب أولي (MVP)", en: "Web app MVP" },
-        tagline: { ar: "نسخة أولى تعمل لاختبار فكرتك في السوق", en: "A working first version to test your idea" },
-        idealFor: { ar: "الشركات الناشئة والمشاريع الجديدة", en: "Start-ups and new ventures" },
+        name: t("نسخة أولى من تطبيق ويب (MVP)", "Web app MVP"),
+        tagline: t("نسخة تعمل لاختبار فكرتك في السوق", "A working version to test your idea in the market"),
+        idealFor: t("الشركات الناشئة والمشاريع الجديدة", "Start-ups and new ventures"),
+        model: SYSTEM,
+        about: t("نسخة أولى عاملة من تطبيق الويب الخاص بك بالمزايا الأساسية فقط، لتختبر فكرتك مع مستخدمين حقيقيين قبل التوسع. نحدد المزايا معاً في وثيقة نطاق، ثم نبني ونختبر ونسلّم الكود موثّقاً.", "A working first version of your web app with only the core features, to test your idea with real users before scaling. We define the features together in a scope document, then build, test and hand over documented code."),
+        youProvide: [t("وصف الفكرة والمستخدمين والمزايا الأساسية", "Your idea, users and core features"), t("شخص مسؤول لاعتماد المراحل", "A person to approve each stage"), t("حسابات الاستضافة والخدمات الخارجية باسمك", "Hosting and third-party accounts in your name")],
+        after: t("الكود ملكك بالكامل. 3 أشهر دعم، والتطوير بعدها بعرض سعر أو بفريق تقني شهري.", "The code is fully yours. 3 months of support; further development by quote or with a monthly tech team."),
         price: 27499,
         from: true,
         ...oneTime,
-        delivery: { ar: "من 8 أسابيع حسب النطاق", en: "From 8 weeks, depending on scope" },
+        delivery: t("من 8 أسابيع حسب النطاق", "From 8 weeks, depending on scope"),
+        revisions: byScope,
         features: [
-          { ar: "تحليل المتطلبات ووثيقة نطاق محددة", en: "Requirements analysis and a defined scope" },
-          { ar: "واجهات أساسية بالعربي والإنجليزي", en: "Core screens in Arabic and English" },
-          { ar: "قاعدة بيانات وحسابات مستخدمين عند الحاجة", en: "A database and user accounts when needed" },
-          { ar: "اختبارات قبل التسليم", en: "Testing before hand-over" },
-          { ar: "تسليم موثق ودعم لمدة 3 أشهر", en: "Documented hand-over and 3 months of support" }
+          t("تحليل المتطلبات ووثيقة نطاق محددة", "Requirements analysis and a defined scope"),
+          t("الشاشات الأساسية بالعربية والإنجليزية", "Core screens in Arabic and English"),
+          t("قاعدة بيانات وحسابات مستخدمين عند الحاجة", "A database and user accounts when needed"),
+          t("اختبار قبل التسليم", "Testing before hand-over"),
+          t("تسليم موثّق ودعم لمدة 3 أشهر", "Documented hand-over and 3 months of support")
         ],
-        excludes: [
-          { ar: "تطبيقات الآيفون والأندرويد الأصلية", en: "Native iOS and Android apps" },
-          { ar: "الاستضافة والخدمات الخارجية", en: "Hosting and third-party services" }
-        ]
+        excludes: [t("تطبيقات الآيفون والأندرويد الأصلية", "Native iOS and Android apps"), t("الاستضافة والخدمات الخارجية", "Hosting and third-party services")]
       },
       {
         key: "enterprise-systems",
         icon: "Building2",
-        name: { ar: "أنظمة الشركات والتكاملات", en: "Enterprise systems & integrations" },
-        tagline: { ar: "نظام على مقاس عمليات شركتك", en: "A system built around your operations" },
-        idealFor: { ar: "الشركات المتوسطة والكبيرة ذات العمليات والأنظمة المتعددة", en: "Mid-size and large companies with many processes and systems" },
+        name: t("أنظمة الشركات", "Enterprise systems"),
+        tagline: t("نظام مبني على طريقة عمل شركتك", "A system built around how your company works"),
+        idealFor: t("الشركات المتوسطة والكبيرة ذات العمليات والأنظمة المتعددة", "Mid-size and large companies with many processes and systems"),
+        model: SYSTEM,
+        about: t("نظام خاص بشركتك مبني على طريقة عملها: إدارة العمليات والصلاحيات والتقارير، وتكامل مع أنظمتك الحالية. نبدأ بدراسة المتطلبات، ثم عرض سعر ومراحل تسليم. الرقم المعلن مؤشر أولي فقط.", "A system built around how your company works: operations, permissions and reports, integrated with your current systems. We start with a requirements study, then a quote and delivery stages. The published figure is an initial indication only."),
+        youProvide: [t("وصف العمليات الحالية والأنظمة المستخدمة", "Your current processes and systems"), t("فريق أو شخص مسؤول من جهتك", "A responsible person or team on your side"), t("صلاحيات الأنظمة المراد ربطها", "Access to the systems to connect")],
+        after: t("النظام والكود ملكك. دعم بعد التسليم وعقد صيانة حسب الاتفاق.", "The system and code are yours. Support after delivery and a maintenance contract as agreed."),
         price: 38500,
         from: true,
         indicative: true,
         ...oneTime,
-        delivery: { ar: "تُحدَّد بعد دراسة المتطلبات", en: "Set after the requirements study" },
+        delivery: t("تُحدَّد بعد دراسة المتطلبات", "Set after the requirements study"),
+        revisions: byScope,
         features: [
-          { ar: "دراسة متطلبات ووثيقة نطاق ومراحل تسليم وعرض سعر مخصص", en: "A requirements study, a scope document, delivery stages and a custom quote" },
-          { ar: "لوحات إدارة وأدوار وصلاحيات", en: "Admin dashboards, roles and permissions" },
-          { ar: "تكاملات مع أنظمتك (ERP، المحاسبة، نظام العملاء) حسب الدراسة", en: "Integrations with your systems (ERP, accounting, CRM) per the study" },
-          { ar: "تقارير ومؤشرات للإدارة", en: "Reports and KPIs for management" },
-          { ar: "سجل تدقيق وحماية للبيانات", en: "Audit trail and data protection" },
-          { ar: "تسليم على مراحل ودعم وصيانة", en: "Staged delivery, support and maintenance" }
+          t("دراسة متطلبات ووثيقة نطاق ومراحل تسليم وعرض سعر مخصص", "A requirements study, scope document, delivery stages and a custom quote"),
+          t("لوحات إدارة وأدوار وصلاحيات", "Admin dashboards, roles and permissions"),
+          t("تكاملات مع أنظمتك (ERP، المحاسبة، نظام العملاء) حسب الدراسة", "Integrations with your systems (ERP, accounting, CRM) per the study"),
+          t("تقارير ومؤشرات للإدارة", "Reports and KPIs for management"),
+          t("سجل تدقيق وحماية للبيانات", "An audit trail and data protection"),
+          t("تسليم على مراحل ودعم وصيانة", "Staged delivery, support and maintenance")
         ],
-        excludes: [
-          { ar: "الخوادم والتراخيص الخارجية", en: "Servers and third-party licences" },
-          { ar: "تطبيقات الجوال الأصلية (تُسعَّر منفصلة)", en: "Native mobile apps (priced separately)" }
-        ]
+        excludes: [t("الخوادم والتراخيص الخارجية", "Servers and third-party licences"), t("تطبيقات الجوال الأصلية (تُسعَّر منفصلة)", "Native mobile apps (priced separately)")]
       }
     ]
   },
@@ -969,73 +954,82 @@ export const packageGroups: PackageGroup[] = [
     segment: "business",
     service: "dedicated-tech-team",
     icon: "Users",
-    title: { ar: "باقات الفريق التقني المتكامل", en: "Dedicated tech team plans" },
-    short: { ar: "فريق تقني", en: "Tech team" },
-    text: { ar: "فريق تقني يعمل لشركتك شهرياً بدون أعباء التوظيف.", en: "A tech team working for your company every month, without the hiring burden." },
-    highlights: [{ ar: "مطور ومصمم ومدير مشروع لشركتك", en: "A developer, designer and project manager for you" }, { ar: "120 ساعة مشتركة للفريق شهرياً حسب أولوياتك", en: "120 shared team hours a month on your priorities" }, { ar: "بلا أعباء توظيف أو تأمينات", en: "No hiring or payroll burden" }],
-    notice: { ar: "الفريق في كل الباقات: مطور برمجيات متكامل، ومصمم واجهات وتجربة مستخدم، ومدير مشروع. الـ 120 ساعة شهرياً مشتركة للفريق كاملاً — وليست 120 ساعة لكل فرد — وتُوزَّع بين التطوير والتصميم وإدارة المشروع حسب أولويات تتفق عليها كل شهر. العمل والدعم في أيام وساعات العمل الرسمية، والساعات الإضافية تُعتمد مسبقاً. الفرق بين الباقات في مدة الالتزام والسعر الشهري وترحيل الساعات والمزايا.", en: "Every plan: a Full-Stack developer, a UI/UX designer and a project manager. The 120 hours a month are shared by the whole team — not 120 hours per person — and split between development, design and project management by priorities you agree each month. Work and support run on official business days and hours; extra hours are approved in advance. Plans differ in term, monthly price, hour rollover and extras." },
+    title: t("الفريق التقني المخصص", "Dedicated tech team"),
+    short: t("الفريق التقني", "Tech team"),
+    text: t("فريق تقني يعمل لشركتك شهرياً دون أعباء التوظيف: مطور ومصمم ومدير مشروع.", "A tech team working for your company every month, without the cost of hiring: a developer, a designer and a project manager."),
+    highlights: [t("مطور ومصمم ومدير مشروع لشركتك", "A developer, a designer and a project manager for you"), t("120 ساعة مشتركة للفريق شهرياً حسب أولوياتك", "120 shared team hours a month on your priorities"), t("دون أعباء التوظيف والتأمينات", "No hiring or payroll costs")],
+    notice: t("يضم الفريق في كل الباقات مطوّر برمجيات متكاملاً ومصمم واجهات وتجربة مستخدم ومدير مشروع. الـ120 ساعة شهرياً مشتركة للفريق كاملاً، وليست 120 ساعة لكل فرد، وتُوزَّع بين التطوير والتصميم وإدارة المشروع حسب أولويات تتفقون عليها كل شهر. يعمل الفريق في أيام وساعات العمل الرسمية، والساعات الإضافية تُعتمد مسبقاً. تختلف الباقات في مدة الالتزام والسعر الشهري وترحيل الساعات.", "Every plan includes a full-stack developer, a UI/UX designer and a project manager. The 120 hours a month are shared by the whole team — not 120 hours per person — and split between development, design and project management by priorities agreed each month. The team works official business days and hours; extra hours are approved in advance. Plans differ in commitment, monthly price and hour rollover."),
     tiers: [
       {
         key: "team-monthly",
         icon: "CalendarClock",
-        name: { ar: "الشهري", en: "Monthly" },
-        tagline: { ar: "مرونة كاملة شهراً بشهر", en: "Full flexibility, month to month" },
-        idealFor: { ar: "مشروع قصير أو تجربة العمل معنا قبل الالتزام", en: "A short project, or trying us before committing" },
+        name: t("اشتراك شهري", "Monthly"),
+        tagline: t("مرونة كاملة شهراً بشهر", "Full flexibility, month to month"),
+        idealFor: t("مشروع قصير، أو تجربة العمل معنا قبل الالتزام", "A short project, or trying us before committing"),
+        model: TEAM_M,
+        about: t("مطور ومصمم ومدير مشروع يعملون على أولوياتك بـ120 ساعة مشتركة شهرياً، مع اجتماع أسبوعي وتقرير بالساعات والمهام. مناسب لتطوير منتجك أو موقعك أو أنظمتك باستمرار.", "A developer, a designer and a project manager working on your priorities for 120 shared hours a month, with a weekly meeting and a report of hours and tasks — for continuously developing your product, site or systems."),
+        youProvide: [t("قائمة الأولويات والمهام", "Your list of priorities and tasks"), t("صلاحيات الوصول للأنظمة والحسابات", "Access to the relevant systems and accounts"), t("شخص مسؤول للتواصل واعتماد الأعمال", "A contact person to approve the work")],
+        after: t("كل ما ينفّذه الفريق ملكك، والاستضافة وتراخيص الأدوات على حسابك.", "Everything the team builds is yours; hosting and tool licences are on your account."),
         price: 13500,
         from: false,
         ...perMonth,
-        delivery: { ar: "يبدأ الفريق خلال 7 أيام عمل", en: "The team starts within 7 business days" },
+        delivery: t("يبدأ الفريق خلال 7 أيام عمل", "The team starts within 7 business days"),
         features: [
-          { ar: "120 ساعة عمل مشتركة للفريق كاملاً شهرياً", en: "120 shared team hours a month" },
-          { ar: "اجتماع أسبوعي ومتابعة يومية على قناة مشتركة", en: "A weekly meeting and daily updates on a shared channel" },
-          { ar: "تعديل الأولويات ونطاق العمل كل شهر", en: "Adjust priorities and scope every month" },
-          { ar: "تقرير إنجاز شهري بالساعات والمهام", en: "A monthly report of hours and tasks" },
-          { ar: "إلغاء بإشعار قبل 30 يوماً", en: "Cancel with 30 days' notice" }
+          t("120 ساعة عمل مشتركة للفريق شهرياً", "120 shared team hours a month"),
+          t("اجتماع أسبوعي ومتابعة يومية عبر قناة مشتركة", "A weekly meeting and daily updates on a shared channel"),
+          t("تعديل الأولويات ونطاق العمل كل شهر", "Priorities and scope adjusted every month"),
+          t("تقرير إنجاز شهري بالساعات والمهام", "A monthly report of hours and tasks"),
+          t("الإلغاء بإشعار قبل 30 يوماً", "Cancel with 30 days' notice")
         ],
-        excludes: [
-          { ar: "الاستضافة وتراخيص الأدوات الخارجية", en: "Hosting and third-party tool licences" },
-          { ar: "الساعات غير المستخدمة لا تُرحَّل", en: "Unused hours don't roll over" }
-        ]
+        excludes: [t("الاستضافة وتراخيص الأدوات الخارجية", "Hosting and third-party tool licences"), t("ترحيل الساعات غير المستخدمة", "Rolling over unused hours")]
       },
       {
         key: "team-semiannual",
         icon: "Calendar",
-        name: { ar: "النصف سنوي", en: "Six-month" },
-        tagline: { ar: "خطة تطوير واضحة بسعر أفضل", en: "A clear development plan at a better rate" },
-        idealFor: { ar: "الشركات التي لديها خطة تطوير لعدة أشهر", en: "Companies with a multi-month development plan" },
+        name: t("التزام 6 أشهر", "6-month commitment"),
+        tagline: t("خطة تطوير واضحة بسعر شهري أقل", "A clear development plan at a lower monthly rate"),
+        idealFor: t("الشركات التي لديها خطة تطوير لعدة أشهر", "Companies with a multi-month development plan"),
+        model: TEAM_6,
+        about: t("الفريق نفسه بـ120 ساعة مشتركة شهرياً، مع خطة تطوير مكتوبة لستة أشهر، وترحيل حتى 20 ساعة غير مستخدمة للشهر التالي، ومراجعة أداء ربع سنوية.", "The same team for 120 shared hours a month, with a written six-month plan, up to 20 unused hours rolled to the next month and a quarterly review."),
+        youProvide: [t("قائمة الأولويات والمهام", "Your list of priorities and tasks"), t("صلاحيات الوصول للأنظمة والحسابات", "Access to the relevant systems and accounts"), t("شخص مسؤول للتواصل واعتماد الأعمال", "A contact person to approve the work")],
+        after: t("كل ما ينفّذه الفريق ملكك، والاستضافة وتراخيص الأدوات على حسابك.", "Everything the team builds is yours; hosting and tool licences are on your account."),
         price: 12400,
         from: false,
         ...perMonth,
-        delivery: { ar: "يبدأ الفريق خلال 7 أيام عمل", en: "The team starts within 7 business days" },
+        delivery: t("يبدأ الفريق خلال 7 أيام عمل", "The team starts within 7 business days"),
         featured: true,
         features: [
-          { ar: "120 ساعة مشتركة للفريق شهرياً — وفّر 8% عن الشهري", en: "120 shared team hours a month — 8% below monthly" },
-          { ar: "خطة تطوير مكتوبة لستة أشهر", en: "A written six-month development plan" },
-          { ar: "ترحيل حتى 20 ساعة غير مستخدمة للشهر التالي فقط", en: "Roll over up to 20 unused hours to the next month only" },
-          { ar: "مراجعة أداء ربع سنوية مع الإدارة", en: "A quarterly performance review with management" },
-          { ar: "أولوية في جدولة المهام العاجلة", en: "Priority scheduling for urgent tasks" }
+          t("120 ساعة مشتركة للفريق شهرياً، أقل من الاشتراك الشهري بـ8%", "120 shared team hours a month, 8% below the monthly plan"),
+          t("خطة تطوير مكتوبة لستة أشهر", "A written six-month development plan"),
+          t("ترحيل حتى 20 ساعة غير مستخدمة إلى الشهر التالي فقط", "Up to 20 unused hours roll over to the next month only"),
+          t("مراجعة أداء ربع سنوية مع الإدارة", "A quarterly performance review with management"),
+          t("أولوية في جدولة المهام العاجلة", "Priority scheduling for urgent tasks")
         ],
-        excludes: [{ ar: "الاستضافة وتراخيص الأدوات الخارجية", en: "Hosting and third-party tool licences" }]
+        excludes: [t("الاستضافة وتراخيص الأدوات الخارجية", "Hosting and third-party tool licences")]
       },
       {
         key: "team-annual",
         icon: "Award",
-        name: { ar: "السنوي", en: "Annual" },
-        tagline: { ar: "شريك تقني طويل المدى", en: "A long-term technology partner" },
-        idealFor: { ar: "الشركات التي تريد فريقاً تقنياً ثابتاً بدل التوظيف", en: "Companies that want a steady tech team instead of hiring" },
+        name: t("التزام سنوي", "Annual commitment"),
+        tagline: t("شريك تقني طويل المدى", "A long-term technology partner"),
+        idealFor: t("الشركات التي تريد فريقاً تقنياً ثابتاً بدل التوظيف", "Companies that want a steady tech team instead of hiring"),
+        model: TEAM_12,
+        about: t("الفريق نفسه طوال السنة بـ120 ساعة مشتركة شهرياً، مع خارطة طريق تقنية سنوية، وترحيل حتى 30 ساعة، واختبار قبل كل إصدار، وأعلى أولوية في الدعم.", "The same team all year for 120 shared hours a month, with an annual roadmap, up to 30 hours rolled over, testing before every release and top support priority."),
+        youProvide: [t("قائمة الأولويات والمهام", "Your list of priorities and tasks"), t("صلاحيات الوصول للأنظمة والحسابات", "Access to the relevant systems and accounts"), t("شخص مسؤول للتواصل واعتماد الأعمال", "A contact person to approve the work")],
+        after: t("كل ما ينفّذه الفريق ملكك، والاستضافة وتراخيص الأدوات على حسابك.", "Everything the team builds is yours; hosting and tool licences are on your account."),
         price: 11200,
         from: false,
         ...perMonth,
-        delivery: { ar: "يبدأ الفريق خلال 7 أيام عمل", en: "The team starts within 7 business days" },
+        delivery: t("يبدأ الفريق خلال 7 أيام عمل", "The team starts within 7 business days"),
         features: [
-          { ar: "120 ساعة مشتركة للفريق شهرياً — وفّر 17% عن الشهري", en: "120 shared team hours a month — 17% below monthly" },
-          { ar: "نفس أعضاء الفريق طوال السنة", en: "The same team members all year" },
-          { ar: "خارطة طريق تقنية سنوية", en: "An annual technology roadmap" },
-          { ar: "ترحيل حتى 30 ساعة غير مستخدمة للشهر التالي فقط", en: "Roll over up to 30 unused hours to the next month only" },
-          { ar: "مراجعة جودة واختبار قبل كل إصدار", en: "QA review and testing before every release" },
-          { ar: "أعلى أولوية في الدعم خلال ساعات العمل", en: "Top support priority during business hours" }
+          t("120 ساعة مشتركة للفريق شهرياً، أقل من الاشتراك الشهري بـ17%", "120 shared team hours a month, 17% below the monthly plan"),
+          t("أعضاء الفريق أنفسهم طوال السنة", "The same team members all year"),
+          t("خارطة طريق تقنية سنوية", "An annual technology roadmap"),
+          t("ترحيل حتى 30 ساعة غير مستخدمة إلى الشهر التالي فقط", "Up to 30 unused hours roll over to the next month only"),
+          t("مراجعة جودة واختبار قبل كل إصدار", "QA review and testing before every release"),
+          t("أعلى أولوية في الدعم خلال ساعات العمل", "Top support priority during business hours")
         ],
-        excludes: [{ ar: "الاستضافة وتراخيص الأدوات الخارجية", en: "Hosting and third-party tool licences" }]
+        excludes: [t("الاستضافة وتراخيص الأدوات الخارجية", "Hosting and third-party tool licences")]
       }
     ]
   }
@@ -1130,134 +1124,67 @@ export const groupAliases: Record<string, string> = {
 };
 
 /**
- * Limited-time campaigns. The self-renewing daily deals and weekly offers were stopped on 2026-11-05; a campaign is
- * added here only with the company's approval, real start / end dates and a `basis` of current fixed-price packages
- * (see `Offer`). AI packages have "from" prices only, so they can't back a campaign.
+ * Limited-time offers. The self-renewing daily deals and weekly offers were stopped on 2026-11-05; an offer is added
+ * here only with the company's approval, real dates and a `basis` of current fixed-price packages (see `Offer`). AI and
+ * systems packages have "from" prices only, so they can't back an offer.
  *
- * 1–14 Dec 2026, year-end and Ramadan-season preparation: four campaigns 13–18% below the current packages. They start
- * after the raised prices of 2026-11-05 are live, so the struck price is one the site really charged; none is cheaper
- * per month than a permanent plan for the same thing (the WhatsApp one is below the yearly WhatsApp price).
+ * 1–14 Dec 2026 ( after the raised prices of 2026-11-05 are live, so every struck price is one the site really
+ * charged): four offers 13–18% below their packages. None duplicates a permanent plan (ads + social together is the
+ * 90-day plan) and none is cheaper per month than a permanent price for the same thing.
  */
-const SEASON = { startsAt: "2026-12-01", endsAt: "2026-12-14", approved: "طلب المالك — 2026-11-05" };
-const lockPrice: L = { ar: "يُثبَّت سعر العرض للطلبات المرسلة حتى نهاية 14 ديسمبر 2026", en: "The offer price is kept for requests sent by the end of 14 December 2026" };
-const halfHalf: L = { ar: "الدفع: 50% عند البدء و50% عند التسليم", en: "Payment: 50% to start, 50% on delivery" };
-const sameScope: L = { ar: "النطاق والحدود نفسها المكتوبة في الباقة", en: "The same scope and limits as written in the package" };
+// the campaign name is shown on every banner, as the offers section title and on the hero button — change it here only
+const CAMPAIGN = { campaign: t("عروض لفترة محدودة", "Limited-time offers"), startsAt: "2026-12-01", endsAt: "2026-12-14", approved: "طلب المالك — 2026-11-05" };
+const holdPrice = t("يُثبَّت سعر العرض للطلبات المرسلة حتى نهاية 14 ديسمبر 2026، ولو بدأ التنفيذ بعد ذلك", "The offer price holds for requests sent by the end of 14 December 2026, even if work starts later");
+const halfHalf = t("الدفع: 50% عند البدء و50% عند التسليم", "Payment: 50% to start, 50% on delivery");
 
 export const offers: Offer[] = [
   {
     slug: "ramadan-store",
     service: "ecommerce",
-    icon: "ShoppingCart",
-    badge: { ar: "عرض الاستعداد لرمضان — المتاجر", en: "Ramadan-season prep — stores" },
-    title: { ar: "جهّز متجرك قبل موسم رمضان: متجر النمو + شهر حملات", en: "Get your store ready for Ramadan: Growth store + a month of ads" },
-    text: { ar: "«متجر النمو» مع أول شهر من باقة «البداية» للحملات بسعر واحد — متجر بهويتك جاهز للبيع والإعلان، وحملة تُدار في شهرها الأول.", en: "The Growth store with the first month of the Starter ads plan at one price — a store in your brand ready to sell and advertise, with a campaign run in its first month." },
-    forWho: { ar: "للعلامات التي تبيع على إنستغرام أو واتساب وتريد متجراً حقيقياً قبل موسم رمضان.", en: "For brands selling on Instagram or WhatsApp that want a real store before the Ramadan season." },
-    features: [
-      { ar: "متجر على زد أو سلة بهويتك وحتى 100 منتج", en: "A Zid or Salla store in your brand, up to 100 products" },
-      { ar: "الدفع والشحن والتتبع جاهزة للإعلان", en: "Payments, shipping and tracking ready for ads" },
-      { ar: "10 تصاميم إطلاق للسوشيال ميديا", en: "10 social media launch designs" },
-      { ar: "شهر إدارة حملة على منصة واحدة", en: "One month of campaign management on one platform" }
-    ],
-    deliverables: [
-      { title: { ar: "المتجر", en: "The store" }, text: { ar: "كل ما في باقة «متجر النمو»: تخصيص الواجهات ضمن إمكانيات المنصة، وحتى 100 منتج، والدفع والشحن المتاحة لحسابك.", en: "Everything in the Growth store: storefront customised within the platform, up to 100 products, the payments and shipping available to your account." } },
-      { title: { ar: "التتبع", en: "Tracking" }, text: { ar: "بكسل سناب وتيك توك وميتا وتحليلات جوجل بتتبع السلة والشراء.", en: "Snap, TikTok and Meta pixels and Google Analytics tracking cart and purchases." } },
-      { title: { ar: "الحملة", en: "The campaign" }, text: { ar: "حملة نشطة واحدة على منصة واحدة، ومادتان إعلانيتان، ومتابعة أسبوعية لمدة شهر، وتقرير.", en: "One active campaign on one platform, two creatives, weekly optimisation for a month and a report." } }
-    ],
-    delivery: { ar: "المتجر خلال 10 أيام عمل من استلام المحتوى والصلاحيات، ثم شهر الحملة", en: "The store in 10 business days from receiving content and access, then the campaign month" },
-    terms: [lockPrice, halfHalf, sameScope, { ar: "مدة التنفيذ تبدأ من استلام المحتوى والصلاحيات — أرسلها مبكراً ليكون متجرك جاهزاً قبل رمضان", en: "Delivery time starts when we receive content and access — send them early to be ready before Ramadan" }],
-    excludes: [
-      { ar: "اشتراك المنصة ورسوم الدفع والشحن", en: "Platform subscription, payment and shipping fees" },
-      { ar: "الميزانية الإعلانية (تُدفع من حسابك)", en: "Ad spend (paid from your account)" },
-      { ar: "تصوير المنتجات", en: "Product photography" }
-    ],
+    icon: "ShoppingBag",
+    ...CAMPAIGN,
+    name: t("إطلاق متجر متكامل", "Complete store launch"),
+    pitch: t("المتجر الاحترافي مع إدارة حملته الإعلانية في الشهر الأول، ليكون متجرك جاهزاً قبل موسم رمضان.", "The Professional store with its ad campaign managed for the first month, so your store is ready before the Ramadan season."),
+    forWho: t("العلامات التي تبيع عبر إنستغرام أو واتساب وتريد متجراً رسمياً يبدأ البيع والإعلان مباشرة.", "Brands selling on Instagram or WhatsApp that want a proper store that starts selling and advertising right away."),
     price: 7499,
-    basis: [{ key: "store-growth" }, { key: "mkt-start" }],
-    ...SEASON
+    basis: [{ key: "store-growth" }, { key: "mkt-start", months: 1 }],
+    terms: [holdPrice, halfHalf, t("يبدأ شهر الحملة بعد إطلاق المتجر", "The campaign month starts after the store goes live")]
   },
   {
     slug: "business-website-season",
     service: "web-development",
     icon: "Rocket",
-    badge: { ar: "عرض لفترة محدودة — المواقع", en: "Limited-time offer — websites" },
-    title: { ar: "موقع شركتك بالعربي والإنجليزي قبل بداية 2027", en: "Your bilingual company website before 2027" },
-    text: { ar: "باقة «موقع الأعمال» كاملة بسعر العرض: حتى 15 صفحة بالعربية والإنجليزية بتصميم مخصص، ولوحة تحكم ومدونة، واستضافة ونطاق للسنة الأولى.", en: "The full Business website package at the offer price: up to 15 custom-designed pages in Arabic and English, a content panel and blog, hosting and domain for year one." },
-    forWho: { ar: "للشركات التي تعتمد على موقعها في جلب العملاء وتريد إطلاقه قبل السنة الجديدة.", en: "For companies that rely on their website for leads and want it live before the new year." },
-    features: [
-      { ar: "حتى 15 صفحة بالعربية والإنجليزية", en: "Up to 15 pages in Arabic and English" },
-      { ar: "تصميم مخصص ولوحة تحكم ومدونة", en: "Custom design, content panel and blog" },
-      { ar: "استضافة ونطاق للسنة الأولى", en: "Hosting and domain for year one" },
-      { ar: "3 أشهر دعم", en: "3 months of support" }
-    ],
-    deliverables: [
-      { title: { ar: "التصميم", en: "Design" }, text: { ar: "تصميم مخصص بهوية شركتك، متجاوب مع الجوال، مع جولتي تعديل.", en: "A custom design in your brand, mobile-first, with two revision rounds." } },
-      { title: { ar: "المحتوى", en: "Content" }, text: { ar: "لوحة لتعديل النصوص والصور والمقالات، ومدونة.", en: "A panel to edit text, images and articles, and a blog." } },
-      { title: { ar: "الإطلاق", en: "Launch" }, text: { ar: "التحليلات وبكسل الإعلانات والتهيئة التقنية لمحركات البحث، واستضافة ونطاق للسنة الأولى.", en: "Analytics, ad pixels and technical SEO, hosting and domain for year one." } }
-    ],
-    delivery: { ar: "21 يوم عمل من استلام المحتوى والصلاحيات", en: "21 business days from receiving content and access" },
-    terms: [lockPrice, halfHalf, sameScope],
-    excludes: [
-      { ar: "كتابة المحتوى والتصوير", en: "Copywriting and photography" },
-      { ar: "تجديد الاستضافة والنطاق بعد السنة الأولى", en: "Hosting and domain renewal after year one" }
-    ],
+    ...CAMPAIGN,
+    name: t("موقع الأعمال", "Business website"),
+    pitch: t("موقع ثنائي اللغة بتصميم مخصص ولوحة تحكم واستضافة للسنة الأولى، لتبدأ عام 2027 بموقع جديد.", "A bilingual, custom-designed site with a content panel and first-year hosting, so you start 2027 with a new website."),
+    forWho: t("الشركات التي تعتمد على موقعها في استقبال العملاء والحملات.", "Companies that rely on their website for enquiries and campaigns."),
     price: 9499,
     basis: [{ key: "web-growth" }],
-    ...SEASON
+    terms: [holdPrice, halfHalf]
   },
   {
     slug: "landing-campaign-season",
     service: "digital-marketing",
     icon: "MousePointerClick",
-    badge: { ar: "عرض نهاية السنة — صفحة وحملة", en: "Year-end offer — page + campaign" },
-    title: { ar: "صفحة هبوط + أول شهر حملات لعرضك القادم", en: "A landing page + your first month of ads for your next offer" },
-    text: { ar: "«صفحة هبوط احترافية» مع أول شهر من «البداية» للحملات بسعر واحد — صفحة واحدة لعرضك وحملة تُدار وتُقاس.", en: "A professional landing page with the first month of the Starter ads plan at one price — one page for your offer and a managed, measured campaign." },
-    forWho: { ar: "لمن عنده منتج أو خدمة أو عرض يريد الإعلان عنه في بداية السنة أو موسم رمضان.", en: "For anyone with a product, service or offer to advertise at the start of the year or in Ramadan." },
-    features: [
-      { ar: "صفحة هبوط بنموذج طلب وزر واتساب", en: "A landing page with an order form and WhatsApp button" },
-      { ar: "تحليلات جوجل وبكسل منصة واحدة", en: "Google Analytics and one platform pixel" },
-      { ar: "حملة على منصة واحدة ومادتان إعلانيتان", en: "A campaign on one platform and two creatives" },
-      { ar: "متابعة أسبوعية وتقرير", en: "Weekly optimisation and a report" }
-    ],
-    deliverables: [
-      { title: { ar: "الصفحة", en: "The page" }, text: { ar: "كل ما في «صفحة هبوط احترافية» مع جولتي تعديل.", en: "Everything in the professional landing page, with two revision rounds." } },
-      { title: { ar: "الحملة", en: "The campaign" }, text: { ar: "شهر من باقة «البداية»: حملة نشطة واحدة لإنفاق حتى 5,000 ريال، ومتابعة أسبوعية وتقرير.", en: "A month of the Starter plan: one active campaign for spend up to SAR 5,000, weekly optimisation and a report." } }
-    ],
-    delivery: { ar: "الصفحة خلال 5 أيام عمل، ثم شهر الحملة", en: "The page in 5 business days, then the campaign month" },
-    terms: [lockPrice, halfHalf, sameScope],
-    excludes: [
-      { ar: "الميزانية الإعلانية (تُدفع من حسابك)", en: "Ad spend (paid from your account)" },
-      { ar: "الاستضافة والنطاق إن لم تكن لديك", en: "Hosting and domain if you don't have them" }
-    ],
+    ...CAMPAIGN,
+    name: t("حملة جاهزة: صفحة هبوط وشهر إعلانات", "Ready campaign: landing page + a month of ads"),
+    pitch: t("صفحة هبوط لعرضك أو منتجك، مع إدارة حملته الإعلانية لمدة شهر على منصة واحدة.", "A landing page for your offer or product, with its ad campaign managed for a month on one platform."),
+    forWho: t("من لديه منتج أو خدمة أو عرض يريد الإعلان عنه مطلع العام أو في موسم رمضان.", "Anyone with a product, service or offer to advertise early in the year or in Ramadan."),
     price: 4299,
-    basis: [{ key: "landing-page" }, { key: "mkt-start" }],
-    ...SEASON
+    basis: [{ key: "landing-page" }, { key: "mkt-start", months: 1 }],
+    terms: [holdPrice, halfHalf, t("يبدأ شهر الحملة بعد نشر الصفحة", "The campaign month starts once the page is live")]
   },
   {
     slug: "whatsapp-season",
     service: "whatsapp-automation",
     icon: "MessagesSquare",
-    badge: { ar: "عرض الاستعداد لرمضان — واتساب", en: "Ramadan-season prep — WhatsApp" },
-    title: { ar: "واتساب الاحترافية 3 أشهر: رد أسرع على عملاء رمضان", en: "WhatsApp Professional for 3 months: faster replies through Ramadan" },
-    text: { ar: "باقة «الاحترافية» لثلاثة أشهر بسعر العرض: رقم رسمي، وبوت يرد ويؤهل العملاء ويحوّلهم لفريقك، وصندوق محادثات لمستخدمَين.", en: "The Professional plan for three months at the offer price: an official number, a bot that answers, qualifies and routes clients to your team, and an inbox for two users." },
-    forWho: { ar: "للمتاجر والشركات التي تزيد رسائلها في موسم رمضان.", en: "For stores and companies whose messages peak in Ramadan." },
-    features: [
-      { ar: "رقم رسمي على منصة واتساب للأعمال", en: "An official number on the WhatsApp Business Platform" },
-      { ar: "شات بوت بمسارات مصممة لنشاطك", en: "A chatbot with flows designed for you" },
-      { ar: "مستخدمان وتوزيع المحادثات", en: "Two users and conversation routing" },
-      { ar: "10 قوالب رسائل معتمدة", en: "10 approved message templates" }
-    ],
-    deliverables: [
-      { title: { ar: "الإعداد", en: "Set-up" }, text: { ar: "ربط رقمك وتوثيق نشاطك لدى ميتا، وتصميم المسارات والقوالب.", en: "Your number connected and business verified with Meta, flows and templates designed." } },
-      { title: { ar: "3 أشهر تشغيل", en: "3 months running" }, text: { ar: "كل ما في باقة «الاحترافية» لمدة 3 أشهر مع تقرير شهري.", en: "Everything in the Professional plan for 3 months, with a monthly report." } }
-    ],
-    delivery: { ar: "7 أيام عمل بعد اعتماد ميتا", en: "7 business days after Meta approval" },
-    terms: [lockPrice, { ar: "يُدفع مقدماً عن الأشهر الثلاثة، ثم يستمر بالسعر الشهري المعلن إن رغبت", en: "Paid upfront for the three months, then continues at the published monthly price if you wish" }, { ar: "اعتماد الحساب والقوالب يخضع لموافقة ميتا", en: "Account and template approval is subject to Meta" }],
-    excludes: [
-      { ar: "رسوم رسائل ميتا (التسويقية والحملات) حسب أسعار ميتا", en: "Meta message fees (marketing and campaigns) at Meta's prices" },
-      { ar: "الذكاء الاصطناعي وتكامل الأنظمة", en: "AI and system integration" }
-    ],
-    price: 3199,
-    basis: [{ key: "wa-pro", months: 3 }],
-    ...SEASON
+    ...CAMPAIGN,
+    name: t("واتساب الاحترافية — الشهر الأول", "WhatsApp Professional — first month"),
+    pitch: t("رقم رسمي وشات بوت يؤهل العملاء ويوزعهم على فريقك، بسعر مخفّض للشهر الأول.", "An official number and a chatbot that qualifies customers and routes them to your team, at a reduced price for the first month."),
+    forWho: t("المتاجر والشركات التي تزيد رسائلها في المواسم وتحتاج رداً منظماً وسريعاً.", "Stores and companies whose messages peak in busy seasons and need organised, fast replies."),
+    price: 1079,
+    basis: [{ key: "wa-pro", months: 1 }],
+    terms: [holdPrice, t("سعر العرض للشهر الأول فقط ويُدفع مقدماً، ثم يستمر الاشتراك بالسعر الشهري المعلن للباقة وبشروطها، ومنها الحد الأدنى 3 أشهر", "The offer price covers the first month only, paid upfront; the subscription then continues at the package's published monthly price and terms, including its 3-month minimum"), t("اعتماد الحساب وقوالب الرسائل يخضع لموافقة ميتا", "Account and template approval is subject to Meta")]
   }
 ];
 
@@ -1284,19 +1211,20 @@ export const retiredOffers: Record<string, string | null> = {
   "day-dashboard": "dashboard",
   "day-ads": "ads-launch",
   "day-store-growth": "store-growth",
+  "season-marketing": "mkt-growth",
   today: null
 };
 
 export const deals: Deal[] = [
   {
     token: "example-k3v9q2",
-    client: { ar: "شركة المثال التجارية", en: "Example Trading Co." },
-    title: { ar: "عرض خاص: موقع ومتجر وواتساب", en: "Special offer: website, store and WhatsApp" },
-    text: { ar: "مثال لصفقة خاصة بعميل واحد — رابطها لا يظهر في الموقع ولا في محركات البحث.", en: "An example single-client deal — its link is not listed on the site or in search engines." },
+    client: t("شركة المثال التجارية", "Example Trading Co."),
+    title: t("عرض خاص: موقع ومتجر وواتساب", "Special offer: website, store and WhatsApp"),
+    text: t("مثال لعرض خاص بعميل واحد، ورابطه لا يظهر في الموقع ولا في محركات البحث.", "An example single-client offer; its link is not listed on the site or in search engines."),
     items: [
-      { label: { ar: "موقع الشركة — موقع الأعمال", en: "Company website — Business website" }, price: 10999 },
-      { label: { ar: "متجر إلكتروني — متجر النمو", en: "Online store — Growth store" }, price: 6599 },
-      { label: { ar: "واتساب للأعمال — الاحترافية (3 أشهر)", en: "WhatsApp — Professional (3 months)" }, price: 3897 }
+      { label: t("موقع الشركة — موقع الأعمال", "Company website — Business website"), price: 10999 },
+      { label: t("متجر إلكتروني — المتجر الاحترافي", "Online store — Professional store"), price: 6599 },
+      { label: t("واتساب للأعمال — الاحترافية (3 أشهر)", "WhatsApp — Professional (3 months)"), price: 3897 }
     ],
     total: 21495,
     expiresAt: "2030-12-31",
@@ -1305,46 +1233,58 @@ export const deals: Deal[] = [
 ];
 
 /** Design examples (`preview`) and unapproved groups (`draft`) exist in development only. */
-const live = (x: { preview?: boolean; draft?: boolean }) => !(x.preview || x.draft) || process.env.NODE_ENV !== "production";
+const inDevelopment = () => process.env.NODE_ENV !== "production";
+const live = (x: { preview?: boolean; draft?: boolean }) => !(x.preview || x.draft) || inDevelopment();
 /** The package groups visitors may see (drafts only in development). */
-export const visibleGroups = () => packageGroups.filter(live);
+export const visibleGroups = (groups: PackageGroup[] = packageGroups) => groups.filter(live);
 const day = (s: string) => new Date(`${s}T00:00:00+03:00`);
-/** End of the given Riyadh day as an ISO instant (private deals and campaigns run through their last day). */
+/** End of the given Riyadh day as an ISO instant (private deals and offers run through their last day). */
 export const offerEndInstant = (s: string) => new Date(day(s).getTime() + 86_400_000).toISOString();
 
 /** A visible package by key, with its group. */
-export function findTier(key: string) {
-  for (const g of visibleGroups()) {
-    const t = g.tiers.find((x) => x.key === key);
-    if (t) return { group: g, tier: t };
+export function findTier(key: string, groups: PackageGroup[] = packageGroups) {
+  for (const g of visibleGroups(groups)) {
+    const x = g.tiers.find((y) => y.key === key);
+    if (x) return { group: g, tier: x };
   }
   return null;
 }
-/** What a campaign's parts cost today at the published package prices; null when a part has no fixed price or is gone. */
-export function basisPrice(o: Offer): number | null {
-  let sum = 0;
-  for (const b of o.basis) {
-    const t = findTier(b.key)?.tier;
-    const p = !t || t.from ? null : b.annual ? (t.annual ?? null) : t.price === null ? null : t.price * (b.months ?? 1);
-    if (p === null) return null;
-    sum += p;
-  }
-  return o.basis.length ? sum : null;
+/** An offer's packages with what each costs today; null when a part has no fixed price or is not visible. */
+export function basisParts(o: Offer, groups: PackageGroup[] = packageGroups) {
+  const parts = o.basis.map((b) => {
+    const f = findTier(b.key, groups);
+    if (!f || f.tier.from || f.tier.price === null) return null;
+    const months = f.tier.billing === "one-time" ? null : (b.months ?? 1);
+    return { ...f, months, price: f.tier.price * (months ?? 1) };
+  });
+  return parts.length && parts.every((p) => p !== null) ? (parts as NonNullable<(typeof parts)[number]>[]) : null;
 }
-/** live = approved, within its dates and cheaper than its parts; scheduled / ended by date; invalid = never shown. */
-export function offerStatus(o: Offer, now = new Date()): "live" | "scheduled" | "ended" | "invalid" {
-  const base = basisPrice(o);
+/** What an offer's packages cost today at their published prices (its struck price). */
+export function basisPrice(o: Offer, groups: PackageGroup[] = packageGroups): number | null {
+  const parts = basisParts(o, groups);
+  return parts ? parts.reduce((s, p) => s + p.price, 0) : null;
+}
+/** live = approved, within its dates and cheaper than its packages; scheduled / ended by date; invalid = never shown. */
+export function offerStatus(o: Offer, now = new Date(), groups: PackageGroup[] = packageGroups): "live" | "scheduled" | "ended" | "invalid" {
+  const base = basisPrice(o, groups);
   if (!o.approved || base === null || o.price >= base || o.endsAt < o.startsAt) return "invalid";
   if (now < day(o.startsAt)) return "scheduled";
   if (now >= new Date(offerEndInstant(o.endsAt))) return "ended";
   return "live";
 }
-/** Campaigns running now. */
-export function activeOffers(now = new Date(), list = offers) {
-  return list.filter((o) => offerStatus(o, now) === "live");
+/** Offers running now. */
+export function activeOffers(now = new Date(), list = offers, groups: PackageGroup[] = packageGroups) {
+  return list.filter((o) => offerStatus(o, now, groups) === "live");
 }
-export function findOffer(slug: string, now = new Date(), list = offers) {
-  return activeOffers(now, list).find((o) => o.slug === slug) ?? null;
+/** What the page shows: running offers, plus — in development only — approved offers that haven't started (preview). */
+export function visibleOffers(now = new Date(), list = offers, groups: PackageGroup[] = packageGroups) {
+  return list.filter((o) => {
+    const s = offerStatus(o, now, groups);
+    return s === "live" || (s === "scheduled" && inDevelopment());
+  });
+}
+export function findOffer(slug: string, now = new Date(), list = offers, groups: PackageGroup[] = packageGroups) {
+  return activeOffers(now, list, groups).find((o) => o.slug === slug) ?? null;
 }
 /** A private deal by its token: `expired` once past expiresAt (the page then says so instead of showing it). */
 export function findDeal(token: string, now = new Date()) {
@@ -1355,20 +1295,20 @@ export function findDeal(token: string, now = new Date()) {
 
 const sar = (n: number) => `${n.toLocaleString("en-US")} ر.س`;
 /** What a form key stands for ("pkg:web-growth", "offer:<slug>", "deal:<token>"), in Arabic for the CRM / e-mail. */
-export function offerLabel(key: string): string | null {
+export function offerLabel(key: string, cat: Catalog = fileCatalog): string | null {
   const [kind, id] = key.split(":");
   if (kind === "pkg") {
-    const f = findTier(id);
+    const f = findTier(id, cat.groups);
     if (f) return `${f.group.title.ar} — ${f.tier.name.ar}`;
   }
   if (kind === "offer") {
-    const o = offers.find((x) => x.slug === id);
-    if (o) return `عرض لفترة محدودة: ${o.title.ar}`;
+    const o = cat.offers.find((x) => x.slug === id);
+    if (o) return `عرض لفترة محدودة: ${o.name.ar}`;
     if (id in retiredOffers) return `عرض سابق متوقف (${id})`;
   }
   if (kind === "deal") {
     const d = deals.find((x) => x.token === id && live(x));
-    if (d) return `صفقة خاصة: ${d.title.ar} (${d.client.ar})`;
+    if (d) return `عرض خاص: ${d.title.ar} (${d.client.ar})`;
   }
   return null;
 }
@@ -1376,19 +1316,19 @@ export function offerLabel(key: string): string | null {
  * The reference price of a form key at the moment of the request, resolved on the server (never from the visitor):
  * amount, how it is paid and one Arabic line for the CRM lead and the e-mail. null when the key has no price.
  */
-export function offerReference(key: string): { price: number; from: boolean; billing: Billing; termMonths: number | null; text: string } | null {
+export function offerReference(key: string, cat: Catalog = fileCatalog): { price: number; from: boolean; billing: Billing; termMonths: number | null; text: string } | null {
   const [kind, id] = key.split(":");
   const vat = "قبل ضريبة القيمة المضافة 15%";
   if (kind === "pkg") {
-    const t = findTier(id)?.tier;
-    if (!t || t.price === null) return null;
-    const lead = t.from ? (t.indicative ? "مؤشر أولي من " : "يبدأ من ") : "";
-    const avg = t.termMonths ? ` (متوسط ${sar(Math.round(t.price / t.termMonths))} شهرياً)` : "";
-    return { price: t.price, from: t.from, billing: t.billing, termMonths: t.termMonths ?? null, text: `${lead}${sar(t.price)} — ${t.period?.ar ?? ""}${avg}، ${vat}` };
+    const x = findTier(id, cat.groups)?.tier;
+    if (!x || x.price === null) return null;
+    const lead = x.from ? (x.indicative ? "مؤشر أولي من " : "يبدأ من ") : "";
+    const avg = x.termMonths ? ` (متوسط ${sar(Math.round(x.price / x.termMonths))} شهرياً)` : "";
+    return { price: x.price, from: x.from, billing: x.billing, termMonths: x.termMonths ?? null, text: `${lead}${sar(x.price)} — ${x.period?.ar ?? ""}${avg}، ${vat}` };
   }
   if (kind === "offer") {
-    const o = findOffer(id);
-    const base = o ? basisPrice(o) : null;
+    const o = findOffer(id, new Date(), cat.offers, cat.groups);
+    const base = o ? basisPrice(o, cat.groups) : null;
     if (!o || base === null) return null;
     return { price: o.price, from: false, billing: "one-time", termMonths: null, text: `${sar(o.price)} بدل ${sar(base)} حتى ${o.endsAt}، ${vat}` };
   }
@@ -1401,143 +1341,161 @@ export function offerReference(key: string): { price: number; from: boolean; bil
 }
 
 export const offersCopy = {
-  eyebrow: { ar: "الباقات والعروض", en: "Packages & offers" } as L,
-  title: { ar: "حلول تقنية وتسويقية *تساعد أعمالك تنمو*", en: "Tech and marketing solutions *that help your business grow*" } as L,
-  sub: { ar: "مواقع ومتاجر إلكترونية، تسويق رقمي، ذكاء اصطناعي وأتمتة أعمال. اختر الحل المناسب لمرحلة مشروعك بخدمات واضحة وأسعار شفافة.", en: "Websites and online stores, digital marketing, AI and business automation. Choose the solution that fits your stage, with clear services and transparent prices." } as L,
-  seePackages: { ar: "تصفح الباقات", en: "Browse packages" } as L,
-  whatsapp: { ar: "اسألنا على واتساب", en: "Ask us on WhatsApp" } as L,
-  offersTitle: { ar: "عروض *لفترة محدودة*", en: "Limited-time *offers*" } as L,
-  offersNote: { ar: "لكل عرض تاريخ بداية ونهاية معلن، والسعر قبل الخصم هو سعر الباقة الحالي — يُثبَّت السعر للطلبات المرسلة قبل انتهاء العرض.", en: "Every offer has a published start and end date, and the price before discount is the package's current price — requests sent before it ends keep the price." } as L,
-  campaign: { ar: "عرض لفترة محدودة", en: "Limited-time offer" } as L,
-  forWho: { ar: "لمن هذا العرض؟", en: "Who is it for?" } as L,
-  deliverables: { ar: "ماذا ستستلم بالتفصيل", en: "Exactly what you get" } as L,
-  delivery: { ar: "مدة التنفيذ", en: "Delivery time" } as L,
-  terms: { ar: "الشروط", en: "Conditions" } as L,
-  excludes: { ar: "لا يشمل العرض", en: "Not included" } as L,
-  seconds: { ar: "ثانية", en: "s" } as L,
-  save: { ar: "وفّر", en: "Save" } as L,
+  eyebrow: t("الباقات والعروض", "Packages & offers"),
+  title: t("حلول رقمية لأعمالك *بأسعار واضحة ونطاق محدد*", "Digital solutions for your business, *with clear prices and a defined scope*"),
+  sub: t("مواقع ومتاجر إلكترونية، وإدارة إعلانات وحسابات تواصل اجتماعي، وواتساب للأعمال، وحلول ذكاء اصطناعي وأنظمة. لكل باقة سعر معلن ونطاق مكتوب، وما لا تشمله مذكور بوضوح.", "Websites and online stores, ads and social media management, WhatsApp Business, AI and systems. Every package has a published price and a written scope, and states plainly what it doesn't include."),
+  seePackages: t("تصفّح الباقات", "Browse packages"),
+  whatsapp: t("تواصل عبر واتساب", "Chat on WhatsApp"),
+  heroPoints: [t("أسعار معلنة قبل الضريبة", "Published prices before VAT"), t("نطاق مكتوب لكل باقة", "A written scope for every package"), t("فاتورة ضريبية لكل دفعة", "A tax invoice for every payment"), t("ملكية كاملة بعد السداد", "Full ownership once paid")],
+  pickService: t("اختر الخدمة", "Choose a service"),
+  startsAt: t("يبدأ من", "From"),
+  // what the page means by each word
+  glossary: [
+    { title: t("الباقة", "Package"), text: t("خدمة بنطاق مكتوب وسعر معلن.", "A service with a written scope and a published price.") },
+    { title: t("العرض", "Offer"), text: t("سعر خاص على باقة أو أكثر لفترة محددة بتاريخ.", "A special price on one or more packages, for set dates.") },
+    { title: t("عرض السعر المخصص", "Custom quote"), text: t("للمشاريع التي يختلف سعرها حسب المتطلبات.", "For projects whose price depends on requirements.") }
+  ],
+  // offers
+  offersNote: t("أسعار خاصة على باقات محددة لفترة محدودة. السعر قبل الخصم هو سعر الباقة المعلن حالياً، ويُثبَّت سعر العرض للطلبات المرسلة قبل انتهائه.", "Special prices on selected packages for a limited time. The price before discount is the package's current published price, and requests sent before the end date keep the offer price."),
+  offerDates: t("من {start} إلى {end}", "{start} to {end}"),
+  upcoming: t("معاينة: يبدأ العرض في {date} ولا يظهر للزوار قبل ذلك", "Preview: the offer starts on {date} and is hidden from visitors until then"),
+  components: t("يشمل العرض", "The offer includes"),
+  partsTotal: t("بدلاً من", "Instead of"),
+  offerPrice: t("سعر العرض", "Offer price"),
+  forMonths: t("لمدة {n} أشهر", "for {n} months"),
+  forMonth: t("لمدة شهر", "for one month"),
+  packageDetails: t("تفاصيل الباقة", "Package details"),
+  offerTerms: t("شروط العرض", "Offer conditions"),
+  offerExcludes: t("لا يشمله العرض", "Not included"),
+  scopeFromPackages: t("نطاق كل باقة في العرض هو نفسه المكتوب في صفحتها.", "Each package in the offer keeps the scope written on its own page."),
+  ended: t("انتهى هذا العرض", "This offer has ended"),
+  endedText: t("يمكنك طلب الباقة بسعرها الحالي، أو طلب عرض سعر يناسب احتياجك.", "You can order the package at its current price, or ask for a quote that fits your needs."),
+  endsIn: t("ينتهي خلال", "Ends in"),
+  endsOn: t("ينتهي في", "Ends on"),
+  days: t("يوم", "d"),
+  hours: t("ساعة", "h"),
+  minutes: t("دقيقة", "m"),
+  save: t("توفير", "Save"),
   /** {n} = the discount percentage */
-  off: { ar: "خصم {n}%", en: "{n}% off" } as L,
-  details: { ar: "التفاصيل والطلب", en: "Details & order" } as L,
-  packagesTitle: { ar: "الباقات", en: "Packages" } as L,
-  packagesSub: { ar: "أسعار واضحة قبل الضريبة، وكل باقة تذكر ما تشمله وحدودها وما لا تشمله. «يبدأ من» سعر النطاق الأساسي المكتوب فقط، والسعر النهائي بعد تحليل احتياجك.", en: "Clear prices before VAT; every package states what it includes, its limits and what it doesn't. \"From\" covers the written base scope only — the final price follows an analysis of your needs." } as L,
-  mostPopular: { ar: "الباقة المقترحة", en: "Recommended" } as L,
-  idealFor: { ar: "مناسبة لـ", en: "Best for" } as L,
-  notIncluded: { ar: "غير مشمول", en: "Not included" } as L,
-  from: { ar: "يبدأ من", en: "From" } as L,
-  indicative: { ar: "مؤشر أولي من", en: "Initial indication from" } as L,
-  inclVat: { ar: "شامل الضريبة", en: "incl. VAT" } as L,
-  exVat: { ar: "قبل الضريبة", en: "before VAT" } as L,
-  monthlyAvg: { ar: "المتوسط الشهري", en: "Monthly average" } as L,
-  billing: { "one-time": { ar: "دفعة واحدة", en: "One-time" }, monthly: { ar: "اشتراك شهري", en: "Monthly subscription" }, term: { ar: "عقد 3 أشهر", en: "3-month contract" } } as Record<"one-time" | "monthly" | "term", L>,
-  customQuote: { ar: "اطلب عرض سعر مخصص", en: "Request a custom quote" } as L,
-  tableTitle: { ar: "مقارنة سريعة بين الباقات", en: "Quick package comparison" } as L,
-  tableItem: { ar: "البند", en: "Item" } as L,
-  tablePrice: { ar: "السعر قبل الضريبة", en: "Price before VAT" } as L,
-  tableBilling: { ar: "نوع الدفع", en: "Billing" } as L,
-  draft: { ar: "مسودة للمراجعة — تظهر على جهازك فقط حتى اعتماد الأسعار", en: "Draft for review — visible on your machine only until prices are approved" } as L,
-  onRequest: { ar: "السعر حسب احتياجك", en: "Priced to your needs" } as L,
-  choose: { ar: "اطلب هذه الباقة", en: "Request this package" } as L,
-  getOffer: { ar: "اطلب العرض", en: "Get this offer" } as L,
-  endsIn: { ar: "ينتهي خلال", en: "Ends in" } as L,
-  endsOn: { ar: "ينتهي في", en: "Ends on" } as L,
-  days: { ar: "يوم", en: "d" } as L,
-  hours: { ar: "ساعة", en: "h" } as L,
-  minutes: { ar: "دقيقة", en: "m" } as L,
-  custom: { ar: "لم تجد ما يناسبك؟", en: "Didn't find what you need?" } as L,
-  customText: { ar: "نصمم لك باقة على مقاس مشروعك.", en: "We'll build a package around your project." } as L,
-  customCta: { ar: "اطلب باقة مخصصة", en: "Request a custom package" } as L,
-  included: { ar: "ما تتضمنه", en: "What's included" } as L,
-  formTitle: { ar: "اطلب الآن وسنتواصل معك", en: "Request it — we'll get back to you" } as L,
-  formSub: { ar: "اترك بياناتك ويتواصل معك فريقنا خلال يوم عمل.", en: "Leave your details and our team will contact you within a business day." } as L,
-  chosen: { ar: "الباقة المختارة", en: "Your choice" } as L,
-  share: { ar: "شارك الرابط", en: "Share the link" } as L,
-  copy: { ar: "نسخ الرابط", en: "Copy link" } as L,
-  copied: { ar: "تم النسخ ✓", en: "Copied ✓" } as L,
-  shareWa: { ar: "أرسله لشخص على واتساب", en: "Send it to someone on WhatsApp" } as L,
-  orderNow: { ar: "اطلب الآن", en: "Order now" } as L,
-  orderWa: { ar: "اطلب على واتساب", en: "Order on WhatsApp" } as L,
-  waHello: { ar: "مرحباً DMS Tech، أريد طلب:", en: "Hello DMS Tech, I would like to order:" } as L,
-  waPrice: { ar: "السعر", en: "Price" } as L,
-  howTitle: { ar: "كيف *نبدأ*؟", en: "How do we *start*?" } as L,
+  off: t("خصم {n}%", "{n}% off"),
+  details: t("تفاصيل العرض", "Offer details"),
+  // packages
+  packagesTitle: t("الباقات", "Packages"),
+  packagesSub: t("كل باقة تذكر ما تشمله وحدودها وما لا تشمله. الأسعار قبل ضريبة القيمة المضافة، و«يبدأ من» سعر النطاق الأساسي المكتوب فقط.", "Every package states what it includes, its limits and what it doesn't. Prices are before VAT; \"From\" covers the written base scope only."),
+  mostPopular: t("الأكثر طلباً", "Most requested"),
+  idealFor: t("مناسبة لـ", "Best for"),
+  included: t("ما تشمله الباقة", "What's included"),
+  aboutPackage: t("ماذا ستحصل عليه", "What you get"),
+  youProvide: t("ما نحتاجه منك", "What we need from you"),
+  after: t("بعد التسليم", "After delivery"),
+  moreDetails: t("ما نحتاجه منك وما بعد التسليم", "What we need from you, and after delivery"),
+  notIncluded: t("لا تشمل", "Not included"),
+  delivery: t("مدة التنفيذ", "Delivery"),
+  revisions: t("جولات التعديل", "Revisions"),
+  from: t("يبدأ من", "From"),
+  indicative: t("مؤشر أولي من", "Initial indication from"),
+  scopeNote: t("السعر للنطاق الأساسي المذكور، والسعر النهائي بعد تحليل المتطلبات.", "The price covers the stated base scope; the final price follows a requirements analysis."),
+  inclVat: t("شامل الضريبة", "incl. VAT"),
+  exVat: t("قبل الضريبة", "before VAT"),
+  monthlyAvg: t("المتوسط الشهري", "Monthly average"),
+  billing: { "one-time": t("دفعة واحدة", "One-time"), monthly: t("اشتراك شهري", "Monthly subscription"), term: t("عقد 3 أشهر", "3-month contract") } as Record<"one-time" | "monthly" | "term", L>,
+  yearly: t("أو سنوياً", "or yearly"),
+  onRequest: t("السعر حسب المتطلبات", "Priced to your requirements"),
+  choose: t("اطلب الباقة", "Order this package"),
+  customQuote: t("اطلب عرض سعر", "Request a quote"),
+  quote: t("اطلب عرض سعر", "Request a quote"),
+  aboutService: t("عن الخدمة", "About the service"),
+  draft: t("مسودة للمراجعة — تظهر على جهازك فقط حتى اعتماد الأسعار", "Draft for review — visible on your machine only until prices are approved"),
+  journeyTitle: t("رحلة متجرك معنا: من الإعداد إلى النمو", "Your store's journey with us: from set-up to growth"),
+  journeySub: t("لكل خطوة باقة تغطيها، فابدأ من المرحلة التي أنت فيها.", "Each step has a package that covers it, so start from where you are."),
+  journeyStep: t("الخطوة", "Step"),
+  prev: t("السابق", "Previous"),
+  next: t("التالي", "Next"),
+  // business solutions
+  solutionsTitle: t("حلول *الشركات*", "Business *solutions*"),
+  solutionsSub: t("الذكاء الاصطناعي، والأنظمة والتطبيقات، والفريق التقني المخصص. نبدأ بجلسة لفهم المتطلبات، ثم نرسل عرض سعر مكتوباً بنطاق واضح.", "AI, systems and apps, and a dedicated tech team. We start with a session to understand your requirements, then send a written quote with a clear scope."),
+  // package / offer page
+  forWho: t("لمن هذا العرض؟", "Who is it for?"),
+  deliverables: t("ما يشمله العرض", "What the offer includes"),
+  terms: t("الشروط", "Conditions"),
+  excludes: t("لا يشمله العرض", "Not included"),
+  formTitle: t("أرسل طلبك", "Send your request"),
+  formSub: t("اترك بياناتك ويتواصل معك فريقنا خلال يوم عمل.", "Leave your details and our team will contact you within one business day."),
+  chosen: t("الطلب", "Your request"),
+  share: t("مشاركة الرابط", "Share the link"),
+  copy: t("نسخ الرابط", "Copy link"),
+  copied: t("تم النسخ ✓", "Copied ✓"),
+  shareWa: t("إرسال عبر واتساب", "Send on WhatsApp"),
+  orderNow: t("اطلب الآن", "Order now"),
+  orderWa: t("اطلب عبر واتساب", "Order on WhatsApp"),
+  waHello: t("مرحباً DMS Tech، أرغب في طلب:", "Hello DMS Tech, I would like to order:"),
+  waPrice: t("السعر", "Price"),
+  compareTitle: t("قارن *الباقات*", "Compare *packages*"),
+  compareSub: t("اختر ما يناسب مرحلة نشاطك، ويمكنك الترقية لاحقاً.", "Choose what fits your stage; you can upgrade later."),
+  current: t("الباقة الحالية", "This package"),
+  view: t("التفاصيل", "Details"),
+  allOffers: t("كل الباقات والعروض", "All packages & offers"),
+  consult: t("اطلب استشارة", "Book a consultation"),
+  customCta: t("اطلب عرض سعر مخصص", "Request a custom quote"),
+  howTitle: t("كيف *نبدأ*؟", "How do we *start*?"),
   how: [
-    { icon: "Send", title: { ar: "أرسل طلبك", en: "Send your request" }, text: { ar: "من النموذج أو على واتساب، مع اسم الباقة وسعرها المرجعي.", en: "Through the form or WhatsApp, with the package and its reference price." } },
-    { icon: "PhoneCall", title: { ar: "نتواصل معك", en: "We call you" }, text: { ar: "خلال يوم عمل لنفهم نشاطك ونؤكد التفاصيل.", en: "Within a business day to understand your business and confirm details." } },
-    { icon: "ClipboardList", title: { ar: "عرض وفاتورة", en: "Quote & invoice" }, text: { ar: "نرسل لك عرضاً مكتوباً بالنطاق والسعر، ثم الفاتورة الضريبية للدفعة الأولى.", en: "We send a written quote with the scope and price, then the tax invoice for the first payment." } },
-    { icon: "Rocket", title: { ar: "نبدأ التنفيذ", en: "We start" }, text: { ar: "مدير مشروع يتابع معك حتى التسليم في الموعد المكتوب.", en: "A project manager stays with you until delivery on the written date." } }
+    { icon: "Send", title: t("أرسل طلبك", "Send your request"), text: t("عبر النموذج أو واتساب، ويصلنا اسم الباقة وسعرها المرجعي.", "Through the form or WhatsApp; we receive the package and its reference price.") },
+    { icon: "PhoneCall", title: t("نتواصل معك", "We contact you"), text: t("خلال يوم عمل لفهم نشاطك وتأكيد التفاصيل.", "Within one business day to understand your business and confirm the details.") },
+    { icon: "ClipboardList", title: t("عرض السعر والفاتورة", "Quote and invoice"), text: t("نرسل عرضاً مكتوباً بالنطاق والسعر، ثم فاتورة ضريبية للدفعة الأولى.", "We send a written quote with the scope and price, then a tax invoice for the first payment.") },
+    { icon: "Rocket", title: t("نبدأ التنفيذ", "We start"), text: t("مدير مشروع يتابع معك حتى التسليم في الموعد المكتوب.", "A project manager follows up with you until delivery on the written date.") }
   ],
-  quickFacts: { ar: "باختصار", en: "At a glance" } as L,
-  yearly: { ar: "أو سنوياً", en: "or yearly" } as L,
-  compareTitle: { ar: "قارن *الباقات*", en: "Compare *packages*" } as L,
-  compareSub: { ar: "اختر ما يناسب مرحلة نشاطك — يمكنك الترقية لاحقاً.", en: "Pick what fits your stage — you can upgrade later." } as L,
-  current: { ar: "الباقة الحالية", en: "This package" } as L,
-  view: { ar: "التفاصيل", en: "Details" } as L,
-  allOffers: { ar: "كل الباقات والعروض", en: "All packages & offers" } as L,
-  ended: { ar: "انتهى هذا العرض", en: "This offer has ended" } as L,
-  endedText: { ar: "يسعدنا مساعدتك بعرض جديد يناسب احتياجك.", en: "We'd be happy to prepare a new offer for you." } as L,
-  dealFor: { ar: "عرض خاص مقدَّم إلى", en: "A special offer for" } as L,
-  dealItems: { ar: "ما يشمله العرض", en: "What's included" } as L,
-  dealTotal: { ar: "الإجمالي", en: "Total" } as L,
-  dealOnRequest: { ar: "يُحدد السعر بعد مناقشة التفاصيل معكم", en: "Pricing follows a short discussion with you" } as L,
-  dealValid: { ar: "صالح حتى", en: "Valid until" } as L,
-  seeOffers: { ar: "استعرض العروض", en: "Browse offers" } as L,
-  consult: { ar: "اطلب استشارة", en: "Book a consultation" } as L,
-  quote: { ar: "اطلب عرض سعر", en: "Request a quote" } as L,
-  solutionsTitle: { ar: "حلول *الشركات*", en: "Business *solutions*" } as L,
-  solutionsSub: { ar: "أتمتة بالذكاء الاصطناعي، وأنظمة مخصصة، وفريق تقني متكامل — للشركات المتوسطة والكبيرة. نبدأ بجلسة تحليل، ثم عرض سعر مكتوب بنطاق واضح.", en: "AI automation, custom systems and a complete tech team — for mid-size and large companies. We start with an analysis session, then a written quote with a clear scope." } as L,
-  projectsTitle: { ar: "من *أعمالنا*", en: "From *our work*" } as L,
-  projectsSub: { ar: "مشاريع حقيقية نفذناها لعملائنا.", en: "Real projects we delivered for our clients." } as L,
-  allProjects: { ar: "كل أعمالنا", en: "All our work" } as L,
-  termsTitle: { ar: "الشروط العامة", en: "General terms" } as L,
-  generalTerms: [
-    { ar: "جميع الأسعار بالريال السعودي وقبل ضريبة القيمة المضافة 15%، وتصدر لكل دفعة فاتورة ضريبية.", en: "All prices are in Saudi riyals before 15% VAT, and every payment gets a tax invoice." },
-    { ar: "نطاق كل باقة مكتوب في عرض السعر، وأي عمل خارجه يُسعَّر ويُعتمد منك كتابياً قبل تنفيذه.", en: "Every package's scope is written in the quote; any work outside it is priced and approved by you in writing before it is done." },
-    { ar: "عدد جولات التعديل مذكور في كل باقة، والتعديلات الإضافية تُسعَّر منفصلة.", en: "Each package states its revision rounds; extra revisions are priced separately." },
-    { ar: "تبدأ مدة التنفيذ بعد استلام الدفعة الأولى والمحتوى والصلاحيات المطلوبة واعتماد النطاق، والعميل مسؤول عن توفيرها في وقتها.", en: "Delivery time starts after the first payment, the content and access we need, and scope approval; providing them on time is the client's responsibility." },
-    { ar: "رسوم المنصات والاستضافة والنطاقات والإعلانات ورسائل ميتا واستخدام الذكاء الاصطناعي تُدفع باسم العميل وعلى حسابه.", en: "Platform, hosting, domain, advertising, Meta message and AI usage fees are paid by the client, in the client's name." },
-    { ar: "الدعم الفني محدود بالمدة المذكورة في الباقة وفي أيام وساعات العمل، ويشمل إصلاح الأعطال لا تطوير مميزات جديدة.", en: "Support is limited to the period each package states, on business days and hours, and covers fixing faults, not building new features." },
-    { ar: "يُسلَّم العمل لمراجعتك؛ وإذا لم تصلنا ملاحظات خلال 7 أيام عمل من التسليم يُعد مقبولاً.", en: "Work is delivered for your review; if we receive no comments within 7 business days of delivery, it is considered accepted." },
-    { ar: "الاشتراكات الشهرية تتجدد شهرياً حتى إلغائها بإشعار قبل 30 يوماً، والعقود محددة المدة تنتهي بنهاية مدتها ما لم تُجدَّد كتابياً.", en: "Monthly subscriptions renew each month until cancelled with 30 days' notice; fixed-term contracts end with their term unless renewed in writing." },
-    { ar: "تنتقل لك ملكية الأعمال المسلَّمة عند سداد المستحقات كاملة، وتبقى المكونات والقوالب والإضافات الخارجية خاضعة لتراخيص أصحابها.", en: "Ownership of the delivered work passes to you once paid in full; third-party components, themes and plug-ins stay under their owners' licences." },
-    { ar: "لا نضمن عدد مبيعات أو عملاء أو متابعين أو عائداً إعلانياً أو ترتيباً محدداً في محركات البحث — نلتزم بجودة التنفيذ والقياس الشفاف.", en: "We don't guarantee a number of sales, leads or followers, a return on ad spend or a search ranking — we commit to quality work and transparent measurement." }
-  ],
-  heroPoints: [
-    { ar: "أسعار معلنة بلا رسوم خفية", en: "Published prices, no hidden fees" },
-    { ar: "الدفع على دفعات", en: "Pay in instalments" },
-    { ar: "فاتورة ضريبية معتمدة", en: "A ZATCA-compliant tax invoice" },
-    { ar: "ملكية كاملة لكل ما نبنيه لك", en: "You fully own everything we build" }
-  ],
-  pickService: { ar: "اختر خدمتك", en: "Pick your service" } as L,
-  startsAt: { ar: "يبدأ من", en: "From" } as L,
-  aboutService: { ar: "تعرّف على الخدمة", en: "About this service" } as L,
-  whyTitle: { ar: "لماذا يختار عملاؤنا *باقاتنا*؟", en: "Why clients choose *our packages*" } as L,
-  whySub: { ar: "كل باقة مكتوبة بالتفصيل قبل أن تدفع ريالاً واحداً.", en: "Every package is written in detail before you pay a single riyal." } as L,
+  // private deals (/offers/deal/[token])
+  dealFor: t("عرض خاص مقدَّم إلى", "A special offer for"),
+  dealItems: t("ما يشمله العرض", "What's included"),
+  dealTotal: t("الإجمالي", "Total"),
+  dealOnRequest: t("يُحدَّد السعر بعد مناقشة التفاصيل معكم", "Pricing follows a short discussion with you"),
+  dealValid: t("صالح حتى", "Valid until"),
+  preview: t("مثال للتصميم — يظهر على جهازك فقط", "Design example — visible on your machine only"),
+  // rest of the page
+  projectsTitle: t("من *أعمالنا*", "From *our work*"),
+  projectsSub: t("مشاريع نفّذناها لعملائنا.", "Projects we delivered for our clients."),
+  allProjects: t("كل الأعمال", "All our work"),
+  whyTitle: t("لماذا *DMS Tech*؟", "Why *DMS Tech*?"),
+  whySub: t("كل باقة مكتوبة بالتفصيل قبل أن تدفع.", "Every package is written out in detail before you pay."),
   why: [
-    { icon: "Tag", title: { ar: "سعر واضح من البداية", en: "A clear price from the start" }, text: { ar: "تعرف ما تشمله الباقة وما لا تشمله — لا مفاجآت في الفاتورة.", en: "You know what's included and what isn't — no surprises on the invoice." } },
-    { icon: "ShieldCheck", title: { ar: "ملكية كاملة", en: "Full ownership" }, text: { ar: "المتجر والموقع والحسابات باسمك، ونسلمك كل شيء موثقاً.", en: "The store, site and accounts are in your name, handed over documented." } },
-    { icon: "CalendarClock", title: { ar: "مدة تنفيذ مكتوبة", en: "A written delivery time" }, text: { ar: "لكل باقة مدة محددة، ومدير مشروع يتابع معك حتى التسليم.", en: "Every package has a set time and a project manager until delivery." } },
-    { icon: "ClipboardList", title: { ar: "فاتورة ضريبية", en: "Tax invoice" }, text: { ar: "فواتير متوافقة مع هيئة الزكاة والضريبة والجمارك.", en: "Invoices compliant with ZATCA." } },
-    { icon: "LifeBuoy", title: { ar: "دعم بعد الإطلاق", en: "Support after launch" }, text: { ar: "دعم فني مشمول في كل باقة، ونكمل معك بالتسويق والتطوير.", en: "Support is included in every package, and we keep growing with you." } },
-    { icon: "MessagesSquare", title: { ar: "تواصل بالعربي", en: "We speak your language" }, text: { ar: "فريق يفهم السوق السعودي ويرد عليك على واتساب.", en: "A team that knows the Saudi market and answers you on WhatsApp." } }
+    { icon: "Tag", title: t("سعر واضح من البداية", "A clear price from the start"), text: t("تعرف ما تشمله الباقة وما لا تشمله قبل الطلب.", "You know what's included and what isn't before you order.") },
+    { icon: "ShieldCheck", title: t("ملكية كاملة", "Full ownership"), text: t("الموقع والمتجر والحسابات باسمك، ونسلّمك كل شيء موثّقاً.", "The site, store and accounts are in your name, handed over with documentation.") },
+    { icon: "CalendarClock", title: t("مدة تنفيذ مكتوبة", "A written delivery time"), text: t("لكل باقة مدة محددة، ومدير مشروع يتابع معك حتى التسليم.", "Every package has a set time, and a project manager until delivery.") },
+    { icon: "ClipboardList", title: t("فاتورة ضريبية", "Tax invoice"), text: t("فواتير متوافقة مع متطلبات هيئة الزكاة والضريبة والجمارك.", "Invoices that meet ZATCA requirements.") },
+    { icon: "LifeBuoy", title: t("دعم بعد التسليم", "Support after delivery"), text: t("فترة دعم مكتوبة في كل باقة، ويمكنك الاستمرار معنا بعدها.", "A written support period in every package, and you can continue with us afterwards.") },
+    { icon: "MessagesSquare", title: t("فريق يعرف السوق السعودي", "A team that knows the Saudi market"), text: t("نتواصل معك بالعربية عبر واتساب والبريد والاجتماعات.", "We work with you in Arabic over WhatsApp, e-mail and meetings.") }
   ],
-  faqTitle: { ar: "أسئلة *متكررة*", en: "Frequently asked *questions*" } as L,
+  faqTitle: t("الأسئلة *الشائعة*", "Frequently asked *questions*"),
   faqs: [
-    { q: { ar: "هل اشتراك زد أو سلة مشمول في باقات المتاجر؟", en: "Is the Zid or Salla subscription included?" }, a: { ar: "لا. اشتراك المنصة يُدفع لها مباشرة وباسمك ليبقى المتجر ملكك، ونساعدك في اختيار الباقة المناسبة لحجم مبيعاتك.", en: "No. You pay the platform directly in your name so the store stays yours; we help you pick the right plan." } },
-    { q: { ar: "هل ميزانية الإعلانات ضمن باقات التسويق؟", en: "Is the ad budget part of the marketing plans?" }, a: { ar: "لا. الميزانية تُدفع لمنصات الإعلان من حسابك مباشرة، ونحن ندير الحملات ونحسنها. نوصي بـ 1,500 ريال شهرياً على الأقل للبداية.", en: "No. You pay the ad platforms directly; we run and optimise the campaigns. We recommend at least SAR 1,500 a month to start." } },
-    { q: { ar: "كيف يتم الدفع؟", en: "How do I pay?" }, a: { ar: "المشاريع تُدفع على دفعات (عادة 50% عند البدء و50% عند التسليم)، والباقات الشهرية تُدفع شهرياً. نصدر فاتورة ضريبية لكل دفعة.", en: "Projects are paid in instalments (usually 50% to start, 50% on delivery); monthly plans are paid monthly. Every payment gets a tax invoice." } },
-    { q: { ar: "هل الأسعار تشمل ضريبة القيمة المضافة؟", en: "Do prices include VAT?" }, a: { ar: "الأسعار المعروضة قبل ضريبة القيمة المضافة 15%.", en: "Prices shown exclude 15% VAT." } },
-    { q: { ar: "ما معنى «يبدأ من»؟", en: "What does \"From\" mean?" }, a: { ar: "هو سعر النطاق الأساسي المكتوب في الباقة فقط. بعد جلسة قصيرة لفهم احتياجك نرسل عرض سعر مكتوباً بالنطاق والسعر النهائي قبل أي التزام.", en: "It is the price of the base scope written in the package only. After a short session to understand your needs we send a written quote with the final scope and price before any commitment." } },
-    { q: { ar: "كيف أحصل على سعر عرض محدود؟", en: "How do I get a limited-time offer's price?" }, a: { ar: "لكل عرض تاريخ نهاية معلن على صفحته. أرسل الطلب قبل انتهائه ويُثبَّت لك السعر حتى لو بدأنا التنفيذ بعدها.", en: "Every offer shows its end date on its page. Send the request before then and the price is kept, even if work starts later." } },
-    { q: { ar: "هل يمكن تعديل الباقة لتناسبني؟", en: "Can a package be tailored to me?" }, a: { ar: "نعم. اطلب عرض سعر مخصص وسنبني لك باقة حسب احتياجك وميزانيتك.", en: "Yes. Ask for a custom quote and we'll build a package around your needs and budget." } },
-    { q: { ar: "ماذا يحدث بعد انتهاء الدعم الفني؟", en: "What happens after support ends?" }, a: { ar: "يمكنك الاستمرار معنا بباقة صيانة أو تسويق أو فريق تقني شهري، أو إدارة كل شيء بنفسك — كل شيء باسمك.", en: "Continue with a maintenance, marketing or monthly team plan, or run everything yourself — it's all in your name." } }
+    { q: t("هل الأسعار شاملة ضريبة القيمة المضافة؟", "Do prices include VAT?"), a: t("لا. الأسعار المعلنة قبل ضريبة القيمة المضافة 15%، ويظهر السعر شاملاً الضريبة أسفل كل سعر.", "No. Published prices are before 15% VAT, and the VAT-inclusive price is shown under each price.") },
+    { q: t("ما الفرق بين «يبدأ من» والسعر الثابت؟", "What is the difference between \"From\" and a fixed price?"), a: t("السعر الثابت يشمل النطاق المكتوب كاملاً. أما «يبدأ من» فهو سعر النطاق الأساسي فقط، ونرسل لك عرض سعر مكتوباً بعد فهم متطلباتك وقبل أي التزام.", "A fixed price covers the whole written scope. \"From\" is the price of the base scope only; we send a written quote after understanding your requirements and before any commitment.") },
+    { q: t("هل اشتراك زد أو سلة مشمول في باقات المتاجر؟", "Is the Zid or Salla subscription included?"), a: t("لا. يُدفع اشتراك المنصة لها مباشرة وباسمك ليبقى المتجر ملكك، ونساعدك في اختيار الخطة المناسبة لحجم مبيعاتك.", "No. You pay the platform directly, in your name, so the store stays yours; we help you choose the right plan.") },
+    { q: t("هل الميزانية الإعلانية ضمن باقات الحملات؟", "Is ad spend part of the campaign plans?"), a: t("لا. تُدفع الميزانية للمنصات الإعلانية من حسابك مباشرة، ونحن نُدير الحملات ونحسّنها. ولكل باقة حد إنفاق تغطيه أتعابها.", "No. You pay the ad platforms directly; we run and optimise the campaigns. Each plan states the spend its fee covers.") },
+    { q: t("كيف يتم الدفع؟", "How do I pay?"), a: t("المشاريع على دفعتين عادةً: 50% عند البدء و50% عند التسليم، والاشتراكات تُدفع شهرياً أو مقدماً حسب الباقة، مع فاتورة ضريبية لكل دفعة.", "Projects are usually paid in two parts — 50% to start and 50% on delivery — and subscriptions monthly or upfront depending on the plan, with a tax invoice for every payment.") },
+    { q: t("كيف أحصل على سعر العرض؟", "How do I get an offer price?"), a: t("لكل عرض تاريخ نهاية مكتوب على صفحته. أرسل الطلب قبل انتهائه ويُثبَّت لك السعر حتى لو بدأ التنفيذ بعد ذلك.", "Every offer shows its end date. Send your request before it and the price holds even if work starts later.") },
+    { q: t("هل يمكن تعديل الباقة لتناسبني؟", "Can a package be tailored to me?"), a: t("نعم. اطلب عرض سعر مخصصاً ونبني لك نطاقاً يناسب احتياجك وميزانيتك.", "Yes. Request a custom quote and we'll build a scope around your needs and budget.") },
+    { q: t("ماذا يحدث بعد انتهاء فترة الدعم؟", "What happens after the support period?"), a: t("يمكنك الاستمرار معنا باشتراك صيانة أو تسويق أو فريق تقني، أو إدارة كل شيء بنفسك، فكل شيء باسمك.", "You can continue with a maintenance, marketing or tech team plan, or run everything yourself — it's all in your name.") }
   ],
-  ctaTitle: { ar: "لم تجد ما يناسبك تماماً؟", en: "Didn't find exactly what you need?" } as L,
-  ctaText: { ar: "كلمنا على واتساب أو اطلب عرض سعر مخصص — نرد عليك خلال ساعات العمل.", en: "Message us on WhatsApp or request a custom quote — we reply within working hours." } as L,
-  journeyTitle: { ar: "رحلتك معنا: من التأسيس إلى الطلبات… ونكمل", en: "Your journey with us: from founding to orders… and beyond" } as L,
-  journeySub: { ar: "كل خطوة لها باقة تغطيها — ابدأ من حيث أنت الآن.", en: "Every step has a package that covers it — start wherever you are." } as L,
-  journeyStep: { ar: "الخطوة", en: "Step" } as L,
-  prev: { ar: "السابق", en: "Previous" } as L,
-  next: { ar: "التالي", en: "Next" } as L,
-  vatNote: { ar: "الأسعار بالريال السعودي قبل ضريبة القيمة المضافة 15%، ولا تشمل رسوم المنصات والإعلانات والاستضافة واستخدام الذكاء الاصطناعي ما لم تذكرها الباقة.", en: "Prices are in Saudi riyals before 15% VAT and exclude platform, advertising, hosting and AI usage fees unless the package states them." } as L,
-  preview: { ar: "مثال للتصميم — يظهر على جهازك فقط", en: "Design example — visible on your machine only" } as L
+  termsTitle: t("الشروط العامة", "General terms"),
+  generalTerms: [
+    t("جميع الأسعار بالريال السعودي وقبل ضريبة القيمة المضافة 15%، وتصدر فاتورة ضريبية لكل دفعة.", "All prices are in Saudi riyals before 15% VAT, and every payment gets a tax invoice."),
+    t("يُكتب نطاق كل باقة في عرض السعر، وأي عمل خارجه يُسعَّر ويُعتمد كتابياً قبل تنفيذه.", "Each package's scope is written in the quote; any work outside it is priced and approved in writing before it is done."),
+    t("عدد جولات التعديل مذكور في كل باقة، والتعديلات الإضافية تُسعَّر منفصلة.", "Each package states its revision rounds; extra revisions are priced separately."),
+    t("تبدأ مدة التنفيذ بعد استلام الدفعة الأولى والمحتوى والصلاحيات واعتماد النطاق، والعميل مسؤول عن توفيرها في وقتها.", "Delivery time starts after the first payment, content, access and scope approval are received; providing them on time is the client's responsibility."),
+    t("رسوم المنصات والاستضافة والنطاقات والإعلانات ورسائل ميتا واستخدام الذكاء الاصطناعي تُدفع باسم العميل وعلى حسابه.", "Platform, hosting, domain, advertising, Meta message and AI usage fees are paid by the client, in the client's name."),
+    t("الدعم الفني محدود بالمدة المذكورة في الباقة وبأيام وساعات العمل، ويشمل إصلاح الأعطال دون تطوير مزايا جديدة.", "Support is limited to each package's stated period and to business days and hours; it covers fixing faults, not building new features."),
+    t("يُسلَّم العمل لمراجعتك، وإذا لم تصلنا ملاحظات خلال 7 أيام عمل من التسليم يُعدّ مقبولاً.", "Work is delivered for your review; if we receive no comments within 7 business days of delivery, it is considered accepted."),
+    t("تتجدد الاشتراكات الشهرية تلقائياً حتى إلغائها بإشعار قبل 30 يوماً، وتنتهي العقود محددة المدة بانتهاء مدتها ما لم تُجدَّد كتابياً.", "Monthly subscriptions renew each month until cancelled with 30 days' notice; fixed-term contracts end with their term unless renewed in writing."),
+    t("تنتقل إليك ملكية الأعمال المسلَّمة بعد سداد المستحقات كاملة، وتبقى المكونات والقوالب والإضافات الخارجية خاضعة لتراخيص أصحابها.", "Ownership of the delivered work passes to you once paid in full; third-party components, themes and plug-ins remain under their owners' licences."),
+    t("لا نضمن عدداً محدداً من المبيعات أو العملاء أو المتابعين أو عائداً إعلانياً أو ترتيباً في محركات البحث، ونلتزم بجودة التنفيذ والقياس الشفاف.", "We don't guarantee a number of sales, leads or followers, a return on ad spend or a search ranking; we commit to quality work and transparent measurement.")
+  ],
+  vatNote: t("الأسعار بالريال السعودي قبل ضريبة القيمة المضافة 15%، ولا تشمل رسوم المنصات والإعلانات والاستضافة واستخدام الذكاء الاصطناعي ما لم تنص الباقة على ذلك.", "Prices are in Saudi riyals before 15% VAT and exclude platform, advertising, hosting and AI usage fees unless the package states them."),
+  ctaTitle: t("لم تجد الباقة المناسبة؟", "Didn't find the right package?"),
+  ctaText: t("تواصل معنا عبر واتساب أو اطلب عرض سعر مخصص، ونرد عليك خلال ساعات العمل.", "Message us on WhatsApp or request a custom quote; we reply within working hours.")
 };
+
+/** Everything the dashboard edits: sections with their packages, the limited-time offers and the page texts. */
+export type OffersCopy = typeof offersCopy;
+export type Catalog = { groups: PackageGroup[]; offers: Offer[]; copy: OffersCopy };
+/** The built-in catalog (this file). */
+export const fileCatalog: Catalog = { groups: packageGroups, offers, copy: offersCopy };

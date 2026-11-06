@@ -95,7 +95,7 @@ export default function Header({ services }: { services: NavService[] }) {
       <span aria-hidden className="nav-offer-shine" />
       <Icon name="Zap" size={15} className="nav-offer-icon relative" />
       <span className="relative">{label}</span>
-      <span className="nav-offer-badge">{offersNav.badge[lang]}</span>
+      {offersNav.badge[lang] && <span className="nav-offer-badge">{offersNav.badge[lang]}</span>}
     </Link>
   );
 

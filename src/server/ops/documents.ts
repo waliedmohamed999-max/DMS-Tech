@@ -33,7 +33,7 @@ import { configuredScanner, downloadBlockedBy, effectiveScanStatus, runScan, sca
 export const REQUIRED: Record<DocumentClassification, number> = { PUBLIC_INTERNAL: 0, INTERNAL: 1, CONFIDENTIAL: 2, RESTRICTED: 3 };
 export const DEFAULT_CATEGORY: Record<DocumentEntityType, string> = {
   CLIENT: "CLIENT", QUOTATION: "CONTRACT", CONTRACT: "CONTRACT", PROJECT: "PROJECT", INVOICE: "FINANCE", EXPENSE: "FINANCE", EMPLOYEE: "HR",
-  VENDOR: "VENDOR", PROCUREMENT_REQUEST: "PROCUREMENT", PURCHASE_ORDER: "PROCUREMENT", ASSET: "ASSET", TICKET: "OTHER"
+  VENDOR: "VENDOR", PROCUREMENT_REQUEST: "PROCUREMENT", PURCHASE_ORDER: "PROCUREMENT", ASSET: "ASSET", TICKET: "OTHER", CANDIDATE: "HR"
 };
 
 export type EntityRef = { type: DocumentEntityType; id: string };
@@ -117,6 +117,13 @@ export async function entityAccess(ctx: Ctx, ref: EntityRef): Promise<EntityAcce
       if (!can(ctx, "assets.view") && !holder) return none;
       return { level: can(ctx, "assets.manage") ? 3 : 1, label: `${a.number} · ${a.name}`, href: `/app/assets/${id}` };
     }
+    case "CANDIDATE": {
+      // CVs and candidate files: recruitment staff only (view → 2 so CVs filed CONFIDENTIAL open; manage → 3)
+      if (!can(ctx, "hr.recruitment.view")) return none;
+      const c = await prisma.candidate.findFirst({ where: { id, organizationId: org }, select: { number: true, firstName: true, lastName: true } });
+      if (!c) return none;
+      return { level: can(ctx, "hr.recruitment.manage") ? 3 : 2, label: `${c.number} · ${c.firstName} ${c.lastName}`.trim(), href: `/app/hr/recruitment/candidates/${id}` };
+    }
     case "TICKET": {
       const t = await prisma.supportTicket.findFirst({ where: { AND: [{ id, organizationId: org }, await ticketWhere(ctx)] }, select: { number: true, subject: true, assignedToId: true } });
       if (!t) return none;
@@ -159,7 +166,7 @@ const metaSchema = z.object({
   title: reqText(2, 200),
   description: optText(2000),
   category: z.enum(["COMPANY", "CLIENT", "CONTRACT", "PROJECT", "FINANCE", "HR", "VENDOR", "PROCUREMENT", "ASSET", "LEGAL", "OTHER"]).optional(),
-  entityType: z.preprocess((v) => (v === "" || v == null ? null : v), z.enum(["CLIENT", "QUOTATION", "CONTRACT", "PROJECT", "INVOICE", "EXPENSE", "EMPLOYEE", "VENDOR", "PROCUREMENT_REQUEST", "PURCHASE_ORDER", "ASSET", "TICKET"]).nullable()),
+  entityType: z.preprocess((v) => (v === "" || v == null ? null : v), z.enum(["CLIENT", "QUOTATION", "CONTRACT", "PROJECT", "INVOICE", "EXPENSE", "EMPLOYEE", "VENDOR", "PROCUREMENT_REQUEST", "PURCHASE_ORDER", "ASSET", "TICKET", "CANDIDATE"]).nullable()),
   entityId: optId,
   classification: z.enum(["PUBLIC_INTERNAL", "INTERNAL", "CONFIDENTIAL", "RESTRICTED"]).default("INTERNAL"),
   tags: z.preprocess((v) => (typeof v === "string" ? v.split(",") : v ?? []), z.array(z.string().trim().toLowerCase().max(40)).max(10)).transform((a) => [...new Set(a.filter(Boolean))]),
@@ -169,7 +176,7 @@ const metaSchema = z.object({
 
 export type UploadedFile = { name: string; type: string; data: Buffer };
 
-async function storeFile(organizationId: string, file: UploadedFile) {
+export async function storeFile(organizationId: string, file: UploadedFile) {
   const v = validateUpload(file.name, file.type, file.data);
   if ("error" in v) throw invalid(v.error!);
   // Phase 11 scanning boundary: a short inline attempt when a scanner is configured — INFECTED is refused before the

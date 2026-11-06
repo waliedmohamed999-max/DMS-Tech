@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { isAppError } from "@/server/errors";
 import { isSameOrigin } from "@/server/security/csrf";
 import { apiErrorBody } from "@/server/obs/errors";
+import { cappedFormData } from "@/lib/capped-body";
 import { MAX_DOCUMENT_BYTES, type UploadedFileLike } from "./upload-types";
 
 /**
@@ -13,10 +14,9 @@ import { MAX_DOCUMENT_BYTES, type UploadedFileLike } from "./upload-types";
 export const sameOrigin = (req: NextRequest) => isSameOrigin(req.headers);
 
 export async function readUpload(req: NextRequest): Promise<{ file: UploadedFileLike; fields: Record<string, string> } | { error: string }> {
-  const len = Number(req.headers.get("content-length") ?? 0);
-  if (len > MAX_DOCUMENT_BYTES + 64 * 1024) return { error: "FILE_TOO_LARGE" };
-  const fd = await req.formData().catch(() => null);
-  if (!fd) return { error: "VALIDATION" };
+  const fd = await cappedFormData(req, MAX_DOCUMENT_BYTES + 64 * 1024);
+  if (fd === "too_large") return { error: "FILE_TOO_LARGE" };
+  if (fd === "bad_form") return { error: "VALIDATION" };
   const f = fd.get("file");
   if (!f || typeof f === "string") return { error: "FILE_REQUIRED" };
   if (f.size > MAX_DOCUMENT_BYTES) return { error: "FILE_TOO_LARGE" };

@@ -50,7 +50,10 @@ type Subscriber = (event: StoredEvent) => Promise<void>;
 type Registered = { key: string; fn: Subscriber };
 
 export const MAX_EVENT_ATTEMPTS = 5;
-const subscribers = new Map<string, Registered[]>();
+// on globalThis, like the "registered" flag in subscribers.ts: a second copy of this module (a route handler bundled
+// apart from the pages, or a dev reload) must see the handlers registered by the first, never an empty registry
+const shared = globalThis as unknown as { __dmsBusSubscribers?: Map<string, Registered[]> };
+const subscribers = (shared.__dmsBusSubscribers ??= new Map<string, Registered[]>());
 
 /**
  * Register a handler for an event type ("*" = all events). `name` makes the handler key stable across releases;

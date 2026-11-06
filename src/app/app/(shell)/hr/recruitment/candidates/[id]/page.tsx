@@ -14,6 +14,7 @@ import {
 } from "@/lib/os/hr-actions";
 import { Badge, fmtDate, fmtDateTime, PermissionDenied, SectionCard } from "@/components/os/ui";
 import { ActionForm, RunButton, StageSelect } from "@/components/hr/Forms";
+import { DocumentsPanel } from "@/components/ops/DocumentsPanel";
 
 export const metadata = { title: "Candidate" };
 const LIVE_OFFER = ["DRAFT", "PENDING_APPROVAL", "APPROVED", "SENT", "ACCEPTED"];
@@ -50,6 +51,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
   const m = (v: { toFixed(n: number): string }, cur: string) => formatMoney(v.toFixed(2), locale, cur);
   const canConvert = can(ctx, "hr.employees.create");
   const canComp = can(ctx, "hr.compensation.manage");
+  const ar = locale !== "en";
 
   return (
     <div className="grid gap-5">
@@ -71,6 +73,13 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
                 LinkedIn
               </a>
             )}
+            {c.portfolioUrl && (
+              <a href={c.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-iris-light hover:underline">
+                {ar ? "معرض الأعمال" : "Portfolio"}
+              </a>
+            )}
+            {c.city && <span>{c.city}</span>}
+            {c.experienceYears != null && <span>{ar ? `خبرة ${c.experienceYears} سنة` : `${c.experienceYears} years' experience`}</span>}
           </p>
         </div>
         {manage && openJobs.length > 0 && (
@@ -109,6 +118,12 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
                 <StageSelect action={moveStageAction} applicationId={a.id} stage={a.stage} label={t("moveTo")} reasonPrompt={t("rejectReason")} options={STAGE_TRANSITIONS[a.stage].map((s) => ({ value: s, label: stageLabel(s) }))} />
               )}
             </header>
+            {d.full && (a.notes || a.noticePeriodDays != null) && (
+              <div className="grid gap-1 border-b border-os-line bg-os-panel/40 px-4 py-3 text-sm">
+                {a.noticePeriodDays != null && <p className="text-xs text-os-muted">{t("f.noticeDays")}: {a.noticePeriodDays}</p>}
+                {a.notes && <p className="whitespace-pre-line" dir="auto">{a.notes}</p>}
+              </div>
+            )}
             {a.rejectionReason && <p className="border-b border-os-line px-4 py-2 text-xs text-danger" dir="auto">{t("rejectedBecause", { r: a.rejectionReason })}</p>}
             <div className="grid gap-px bg-os-line lg:grid-cols-3">
               {/* interviews */}
@@ -300,6 +315,9 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
           </section>
         );
       })}
+
+      {/* CV and other candidate files (website applications attach the CV here) */}
+      {d.full && <DocumentsPanel ctx={ctx} entity={{ type: "CANDIDATE", id }} title={ar ? "السيرة الذاتية والملفات" : "CV & files"} />}
     </div>
   );
 }

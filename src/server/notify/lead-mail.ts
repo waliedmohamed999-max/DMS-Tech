@@ -3,8 +3,9 @@ import type { websiteLeadSchema } from "@/server/crm/website";
 import { serviceLabel, SERVICE_KEYS } from "@/lib/crm/services";
 import { services } from "@/content/services";
 import { chatbot } from "@/content/chatbot";
-import { LEAD_DETAIL_LABELS, offerLabel, offerReference, type LeadDetailKey } from "@/content/offers";
+import { fileCatalog, LEAD_DETAIL_LABELS, offerLabel, offerReference, type Catalog, type LeadDetailKey } from "@/content/offers";
 import { site } from "@/content/site";
+import { publishedCatalog } from "../website/catalog";
 import { buildMessage, isEmail, oneLine, sendMail, type MailResult } from "./mailer";
 
 /**
@@ -36,7 +37,7 @@ function serviceName(key: string): string {
   return key;
 }
 
-export function buildLeadMail(d: Lead, meta: { ip?: string | null; leadNumber?: string; saved: boolean }) {
+export function buildLeadMail(d: Lead, meta: { ip?: string | null; leadNumber?: string; saved: boolean }, cat: Catalog = fileCatalog) {
   const who = oneLine(d.name || d.company || d.email || d.phone || d.whatsapp || "زائر", 80);
   const service = serviceName(d.service);
   const subject = oneLine(`طلب جديد من الموقع — ${who}${d.service ? ` (${service})` : ""}`);
@@ -49,8 +50,8 @@ export function buildLeadMail(d: Lead, meta: { ip?: string | null; leadNumber?: 
     ["واتساب", d.whatsapp],
     ["البريد", d.email],
     ["الخدمة", d.service ? service : ""],
-    ["الباقة / العرض", d.offer ? (offerLabel(d.offer) ?? "") : ""],
-    ["السعر المرجعي", d.offer && offerLabel(d.offer) ? (offerReference(d.offer)?.text ?? "") : ""],
+    ["الباقة / العرض", d.offer ? (offerLabel(d.offer, cat) ?? "") : ""],
+    ["السعر المرجعي", d.offer && offerLabel(d.offer, cat) ? (offerReference(d.offer, cat)?.text ?? "") : ""],
     ["الميزانية", d.budget ? (BUDGETS[d.budget] ?? d.budget) : ""],
     ["النموذج", FORMS[d.source] ?? d.source],
     ["لغة الزائر", d.locale === "ar" ? "العربية" : "الإنجليزية"],
@@ -85,6 +86,6 @@ export function rfc822(from: string, to: string, mail: { subject: string; text: 
 export async function emailWebsiteLead(d: Lead, meta: { ip?: string | null; leadNumber?: string; saved: boolean }): Promise<LeadMailResult> {
   const to = process.env.LEAD_NOTIFY_EMAIL?.trim() || site.email;
   if (!isEmail(to)) throw new Error("LEAD_NOTIFY_EMAIL is not a valid address");
-  const m = buildLeadMail(d, meta);
+  const m = buildLeadMail(d, meta, d.offer ? await publishedCatalog() : fileCatalog);
   return sendMail({ to: [to], subject: m.subject, text: m.text, replyTo: m.replyTo, fromName: "موقع DMS Tech" });
 }

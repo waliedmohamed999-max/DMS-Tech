@@ -72,7 +72,7 @@ export const NAV: NavGroup[] = [
     label: { ar: "الخدمات", en: "Services" },
     items: [
       m("catalog", "/app/sales/services", "Package", "كتالوج الخدمات", "Service Catalog", "الخدمات والباقات ونماذج التسعير", "Services, packages and pricing models", 3, true, "services.view"),
-      planned("subscriptions", "CalendarClock", "الاشتراكات", "Subscriptions", "الاشتراكات الشهرية والسنوية والفوترة المتكررة", "Monthly/annual subscriptions and recurring billing", 10, "finance.invoices.view"),
+      m("subscriptions", "/app/subscriptions", "CalendarClock", "الاشتراكات", "Subscriptions", "اشتراكات العملاء في الباقات الشهرية والسنوية: المدة والتجديد والإيقاف والإلغاء والفوترة", "Client subscriptions to monthly and yearly packages: term, renewal, pause, cancellation and billing", 11, true, "subscriptions.view"),
       // external DMS Tech product — the OS only links to it (docs/NOVA-INTEGRATION.md)
       m("nova", "/app/nova", "Sparkles", "NOVA AI", "NOVA AI", "منصة DMS Tech المستقلة للذكاء الاصطناعي — تُفتح كنظام خارجي متكامل", "DMS Tech's separate AI platform — opened as an integrated external system", 2, true, "nova.use")
     ]
@@ -127,6 +127,7 @@ export const NAV: NavGroup[] = [
     label: { ar: "التسويق والتشغيل", en: "Marketing & Ops" },
     items: [
       m("marketing", "/app/marketing", "Megaphone", "التسويق والحملات", "Marketing", "الحملات والجمهور والتسليم والإسناد", "Campaigns, audience, delivery and attribution", 8, true, "marketing.view"),
+      m("website-offers", "/app/website/offers", "Tag", "صفحة الباقات والعروض", "Packages & offers page", "الأقسام والباقات والعروض ونصوص صفحة العروض في الموقع", "Sections, packages, offers and texts of the website's offers page", 11, true, "website.offers.view"),
       m("whatsapp", "/app/whatsapp", "MessagesSquare", "واتساب للأعمال", "WhatsApp", "المحادثات عبر واجهة WhatsApp Business الرسمية", "Conversations via the official WhatsApp Business Platform", 8, true, "whatsapp.view")
     ]
   },
@@ -158,6 +159,7 @@ export const CREATE_ITEMS: { key: string; icon: IconName; label: { ar: string; e
   { key: "opportunity", icon: "Target", label: { ar: "فرصة", en: "Opportunity" }, href: "/app/crm/opportunities?new=1", module: "opportunities", permission: "crm.opportunities.create" },
   { key: "quotation", icon: "FileText", label: { ar: "عرض سعر", en: "Quotation" }, href: "/app/sales/quotations/new", module: "quotations", permission: "sales.quotations.create" },
   { key: "service", icon: "Package", label: { ar: "خدمة", en: "Service" }, href: "/app/sales/services?new=1", module: "catalog", permission: "services.manage" },
+  { key: "subscription", icon: "CalendarClock", label: { ar: "اشتراك", en: "Subscription" }, href: "/app/subscriptions?new=1", module: "subscriptions", permission: "subscriptions.manage" },
   { key: "contract", icon: "Handshake", label: { ar: "عقد", en: "Contract" }, href: "/app/sales/contracts/new", module: "contracts", permission: "sales.contracts.create" },
   { key: "invoice", icon: "FileText", label: { ar: "فاتورة", en: "Invoice" }, href: "/app/finance/invoices/new", module: "invoices", permission: "finance.invoices.create" },
   { key: "payment", icon: "CreditCard", label: { ar: "دفعة", en: "Payment" }, href: "/app/finance/payments?new=1", module: "payments", permission: "finance.payments.create" },

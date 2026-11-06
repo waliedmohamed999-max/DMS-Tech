@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "node:crypto";
 import { runWithObs } from "@/server/obs/context";
 import { reportError } from "@/server/obs/errors";
+import { cappedBody } from "@/lib/capped-body";
 import { MAX_WEBHOOK_BYTES, receiveWebhook, verifySubscription, type WebhookResult } from "@/server/integrations/webhooks";
 
 /**
@@ -27,8 +28,9 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ connec
 
 async function handlePost(request: NextRequest, { params }: { params: Promise<{ connectionId: string }> }) {
   const { connectionId } = await params;
-  if (Number(request.headers.get("content-length") ?? 0) > MAX_WEBHOOK_BYTES) return NextResponse.json({ error: "too_large" }, { status: 413 });
-  const raw = Buffer.from(await request.arrayBuffer());
+  const body = await cappedBody(request, MAX_WEBHOOK_BYTES).catch(() => null);
+  if (!body) return NextResponse.json({ error: "too_large" }, { status: 413 });
+  const raw = Buffer.from(body);
   try {
     return send(await receiveWebhook(connectionId, raw, request.headers));
   } catch (e) {

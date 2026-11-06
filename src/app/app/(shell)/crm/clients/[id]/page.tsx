@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ClientSubscriptions } from "@/components/subscriptions/ClientSubscriptions";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import { pageCtx } from "@/lib/os/dal";
@@ -42,7 +43,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   const { ctx, allowed } = await pageCtx("crm.clients.view");
   if (!allowed) return <PermissionDenied permission="crm.clients.view" />;
   // projects / finance tabs exist only for users with those permissions (finance never follows from CRM access)
-  const visibleTabs = TABS.filter((k) => (k !== "projects" || can(ctx, "projects.view")) && (k !== "finance" || can(ctx, "finance.invoices.view")) && (k !== "support" || can(ctx, "support.tickets.view") || can(ctx, "support.tickets.manage")));
+  const visibleTabs = TABS.filter((k) => (k !== "projects" || can(ctx, "projects.view")) && (k !== "finance" || can(ctx, "finance.invoices.view") || can(ctx, "subscriptions.view")) && (k !== "support" || can(ctx, "support.tickets.view") || can(ctx, "support.tickets.manage")));
   const tab = planned ? raw! : (visibleTabs as readonly string[]).includes(raw ?? "") ? raw! : "overview";
   const locale = await getLocale();
   const t = await getTranslations("os");
@@ -287,7 +288,8 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
       {tab === "quotations" && <QuotationsTab ctx={ctx} where={{ clientId: c.id }} createHref={`/app/sales/quotations/new?client=${c.id}`} />}
       {tab === "contracts" && <ContractsTab ctx={ctx} where={{ clientId: c.id }} />}
       {tab === "projects" && <ClientProjectsTab ctx={ctx} clientId={c.id} />}
-      {tab === "finance" && <ClientFinanceTab ctx={ctx} clientId={c.id} />}
+      {tab === "finance" && can(ctx, "subscriptions.view") && <ClientSubscriptions ctx={ctx} clientId={c.id} />}
+      {tab === "finance" && can(ctx, "finance.invoices.view") && <ClientFinanceTab ctx={ctx} clientId={c.id} />}
       {tab === "support" && <TicketsCard ctx={ctx} client={c.id} />}
       {tab === "files" && <DocumentsPanel ctx={ctx} entity={{ type: "CLIENT", id: c.id }} />}
       {planned && (

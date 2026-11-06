@@ -46,10 +46,10 @@ export function Countdown({ endsAt, labels, dark = false, big = false }: { endsA
 }
 
 export type Billing = "one-time" | "monthly" | "term";
-export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; price: string | null; priceVat: string | null; monthlyAvg: string | null; from: boolean; indicative?: boolean; period: string | null; billing: Billing; delivery: string; featured?: boolean; features: string[]; excludes: string[]; annual?: string | null; annualSave?: string | null };
+export type TierView = { key: string; icon: IconName; name: string; tagline: string; idealFor: string; model: string; about: string; youProvide: string[]; after: string; price: string | null; priceVat: string | null; monthlyAvg: string | null; from: boolean; indicative?: boolean; period: string | null; billing: Billing; delivery: string; revisions?: string | null; featured?: boolean; features: string[]; excludes: string[]; annual?: string | null; annualSave?: string | null };
 export type JourneyView = { icon: IconName; title: string; text: string; tier: string };
-export type GroupView = { id: string; segment: "smb" | "business"; service: string; icon: IconName; title: string; short: string; text: string; highlights: string[]; notice: string; startsAt: { price: string | null; period: string | null } | null; tiers: TierView[]; compare: { label: string; values: string[] }[] | null; journey?: JourneyView[]; draft: boolean };
-export type BrowserLabels = { mostPopular: string; from: string; indicative: string; onRequest: string; choose: string; customQuote: string; delivery: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string; prev: string; next: string; quote: string; yearly: string; save: string; inclVat: string; monthlyAvg: string; billing: Record<Billing, string>; tableTitle: string; tableItem: string; tablePrice: string; tableBilling: string; draft: string };
+export type GroupView = { id: string; segment: "smb" | "business"; service: string; icon: IconName; title: string; short: string; text: string; highlights: string[]; notice: string; startsAt: { price: string | null; period: string | null } | null; tiers: TierView[]; journey?: JourneyView[]; draft: boolean };
+export type BrowserLabels = { mostPopular: string; from: string; indicative: string; onRequest: string; choose: string; customQuote: string; delivery: string; revisions: string; scopeNote: string; youProvide: string; after: string; moreDetails: string; idealFor: string; notIncluded: string; journeyTitle: string; journeySub: string; journeyStep: string; aboutService: string; prev: string; next: string; quote: string; yearly: string; save: string; inclVat: string; monthlyAvg: string; billing: Record<Billing, string>; draft: string };
 
 /** "From" / "Initial indication from" before a starting price. */
 const fromLabel = (t: { from: boolean; indicative?: boolean }, labels: { from: string; indicative: string }) => (t.from ? (t.indicative ? labels.indicative : labels.from) : null);
@@ -80,7 +80,6 @@ export function PriceBlock({ t, labels, size = "md" }: { t: Pick<TierView, "pric
       )}
       {t.priceVat && (
         <span className="text-xs text-graphite">
-          {lead ? `${lead} ` : ""}
           <span dir="ltr">{t.priceVat}</span> {labels.inclVat}
         </span>
       )}
@@ -96,52 +95,6 @@ export function PriceBlock({ t, labels, size = "md" }: { t: Pick<TierView, "pric
         </span>
       )}
     </span>
-  );
-}
-
-/** The group's tiers side by side: price, billing, delivery, then the group's own rows. Scrolls inside its card on phones. */
-function CompareTable({ g, labels }: { g: GroupView; labels: BrowserLabels }) {
-  if (!g.compare?.length) return null;
-  const rows: { label: string; values: string[] }[] = [
-    { label: labels.tablePrice, values: g.tiers.map((t) => (t.price ? `${fromLabel(t, labels) ? `${fromLabel(t, labels)} ` : ""}${t.price}` : labels.onRequest)) },
-    { label: labels.tableBilling, values: g.tiers.map((t) => (t.period && t.period !== labels.billing[t.billing] ? `${labels.billing[t.billing]} · ${t.period}` : labels.billing[t.billing])) },
-    { label: labels.delivery, values: g.tiers.map((t) => t.delivery) },
-    ...g.compare
-  ];
-  return (
-    <div className="grid gap-3 rounded-card border border-mist bg-white p-4 shadow-card md:p-6">
-      <h3 className="text-lg font-bold">{labels.tableTitle}</h3>
-      <div className="overflow-x-auto overscroll-x-contain">
-        <table className="w-full min-w-[560px] border-collapse text-start text-[13.5px]">
-          <thead>
-            <tr>
-              <th scope="col" className="sticky start-0 z-10 bg-white p-2.5 text-start text-xs font-semibold text-graphite">
-                {labels.tableItem}
-              </th>
-              {g.tiers.map((t) => (
-                <th key={t.key} scope="col" className={`p-2.5 text-start align-bottom ${t.featured ? "rounded-t-xl bg-lilac/70 text-iris" : ""}`}>
-                  <b className="text-[14.5px]">{t.name}</b>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.label} className="border-t border-mist">
-                <th scope="row" className="sticky start-0 z-10 bg-white p-2.5 text-start text-xs font-semibold text-iron">
-                  {r.label}
-                </th>
-                {r.values.map((v, i) => (
-                  <td key={g.tiers[i]?.key ?? i} className={`p-2.5 align-top ${g.tiers[i]?.featured ? "bg-lilac/40" : ""}`}>
-                    {v}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
   );
 }
 
@@ -213,28 +166,47 @@ export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }:
       </div>
       <CardSlider key={`tiers-${g.id}`} className={`grid items-stretch gap-5 ${g.tiers.length === 4 ? "md:grid-cols-2 xl:grid-cols-4" : g.tiers.length > 4 ? "md:grid-cols-2 xl:grid-cols-3" : "md:grid-cols-3"}`} labels={{ prev: labels.prev, next: labels.next }} rtl={locale === "ar"}>
         {g.tiers.map((t) => (
-          <div key={t.key} className={`relative grid content-start gap-5 rounded-card border p-7 ${t.featured ? "border-iris bg-white shadow-lg ring-4 ring-iris/10 md:-translate-y-2" : "border-mist bg-white shadow-card"}`}>
+          <div key={t.key} className={`relative flex flex-col gap-5 rounded-card md:row-span-10 md:grid md:grid-rows-subgrid md:content-start border p-7 ${t.featured ? "border-iris bg-white shadow-lg ring-4 ring-iris/10" : "border-mist bg-white shadow-card"}`}>
             {t.featured && <span className="absolute -top-3 start-6 rounded-full bg-iris px-3 py-1 text-xs font-semibold text-white">{labels.mostPopular}</span>}
-            <span className={`grid size-11 place-items-center rounded-xl ${t.featured ? "bg-iris text-white" : "bg-lilac text-iris"}`}>
-              <Icon name={t.icon} size={20} />
-            </span>
-            <div className="grid gap-1">
-              <h3 className="text-xl font-bold">{t.name}</h3>
-              <p className="text-sm text-iron">{t.tagline}</p>
+            <div className="grid content-start gap-3">
+              <span className={`grid size-11 place-items-center rounded-xl ${t.featured ? "bg-iris text-white" : "bg-lilac text-iris"}`}>
+                <Icon name={t.icon} size={20} />
+              </span>
+              <div className="grid gap-1">
+                <h3 className="text-xl font-bold">{t.name}</h3>
+                <p className="text-sm text-iron">{t.tagline}</p>
+              </div>
             </div>
+            {/* what kind of service it is, then what it is in plain words */}
+            <p className="flex items-start gap-2 rounded-lg border border-iris/20 bg-lilac/50 px-3 py-2 text-[12.5px] font-semibold leading-relaxed text-ink">
+              <Icon name={t.billing === "one-time" ? "ShieldCheck" : "CalendarClock"} size={15} className="mt-0.5 shrink-0 text-iris" />
+              {t.model}
+            </p>
+            <p className="text-[14px] leading-relaxed text-iron">{t.about}</p>
             <p className="rounded-lg bg-cloud px-3 py-2 text-[13px] text-iron">
               <b className="font-semibold text-ink">{labels.idealFor}:</b> {t.idealFor}
             </p>
-            <div className="border-y border-mist py-3">
+            <div className="grid content-start gap-2 border-y border-mist py-3">
               <PriceBlock t={t} labels={labels} />
+              {t.from && <p className="text-[12px] leading-relaxed text-iron">{labels.scopeNote}</p>}
             </div>
-            <p className="flex items-start gap-1.5 text-sm text-iron">
-              <Icon name="Clock" size={14} className="mt-0.5 shrink-0 text-iris" />
-              <span>
-                {labels.delivery}: <b className="font-semibold text-ink">{t.delivery}</b>
-              </span>
-            </p>
-            <ul className="grid gap-2.5">
+            <div className="grid content-start gap-2">
+              <p className="flex items-start gap-1.5 text-sm text-iron">
+                <Icon name="Clock" size={14} className="mt-0.5 shrink-0 text-iris" />
+                <span>
+                  {labels.delivery}: <b className="font-semibold text-ink">{t.delivery}</b>
+                </span>
+              </p>
+              {t.revisions && (
+                <p className="flex items-start gap-1.5 text-sm text-iron">
+                  <Icon name="Pencil" size={14} className="mt-0.5 shrink-0 text-iris" />
+                  <span>
+                    {labels.revisions}: <b className="font-semibold text-ink">{t.revisions}</b>
+                  </span>
+                </p>
+              )}
+            </div>
+            <ul className="grid content-start gap-2.5">
               {t.features.map((f) => (
                 <li key={f} className="flex items-start gap-2 text-[15px] text-ink">
                   <Icon name="CircleCheck" size={17} className="mt-0.5 shrink-0 text-iris" />
@@ -242,24 +214,49 @@ export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }:
                 </li>
               ))}
             </ul>
-            {t.excludes.length > 0 && (
-              <div className="grid gap-1.5 border-t border-mist pt-3">
-                <span className="text-xs font-semibold text-graphite">{labels.notIncluded}</span>
-                {t.excludes.map((x) => (
-                  <span key={x} className="flex items-start gap-2 text-[13px] text-iron">
-                    <Icon name="X" size={14} className="mt-0.5 shrink-0 text-graphite" />
-                    {x}
-                  </span>
-                ))}
+            <details className="group self-start rounded-xl border border-mist px-3 py-2.5 open:bg-cloud/60">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-[13px] font-semibold text-iris [&::-webkit-details-marker]:hidden">
+                {labels.moreDetails}
+                <Icon name="ChevronDown" size={15} className="shrink-0 transition group-open:rotate-180" />
+              </summary>
+              <div className="mt-3 grid gap-3 text-[13px] leading-relaxed text-iron">
+                <div className="grid gap-1.5">
+                  <b className="text-ink">{labels.youProvide}</b>
+                  {t.youProvide.map((x) => (
+                    <span key={x} className="flex items-start gap-2">
+                      <Icon name="Check" size={13} className="mt-1 shrink-0 text-iris" />
+                      {x}
+                    </span>
+                  ))}
+                </div>
+                <div className="grid gap-1">
+                  <b className="text-ink">{labels.after}</b>
+                  <p>{t.after}</p>
+                </div>
               </div>
-            )}
-            <Link href={`/offers/${t.key}`} className={`btn mt-auto w-full justify-center ${t.featured ? "btn-primary" : "btn-outline"}`}>
-              {t.from || !t.price ? labels.customQuote : g.segment === "business" ? labels.quote : labels.choose} <Icon name={arrow} size={16} />
-            </Link>
+            </details>
+            {/* exclusions start on the same line in every card, the buttons share the last row */}
+            <div className="grid content-start gap-1.5 border-t border-mist pt-3">
+              {t.excludes.length > 0 && (
+                <>
+                  <span className="text-xs font-semibold text-graphite">{labels.notIncluded}</span>
+                  {t.excludes.map((x) => (
+                    <span key={x} className="flex items-start gap-2 text-[13px] text-iron">
+                      <Icon name="X" size={14} className="mt-0.5 shrink-0 text-graphite" />
+                      {x}
+                    </span>
+                  ))}
+                </>
+              )}
+            </div>
+            <div className="mt-auto md:mt-0 md:self-end">
+              <Link href={`/offers/${t.key}`} className={`btn w-full justify-center ${t.featured ? "btn-primary" : "btn-outline"}`}>
+                {t.from || !t.price ? labels.customQuote : g.segment === "business" ? labels.quote : labels.choose} <Icon name={arrow} size={16} />
+              </Link>
+            </div>
           </div>
         ))}
       </CardSlider>
-      <CompareTable g={g} labels={labels} />
       {g.journey && <Journey steps={g.journey} groups={groups} labels={labels} arrow={arrow} />}
     </div>
   );

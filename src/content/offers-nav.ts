@@ -2,6 +2,7 @@
 export const offersNav = {
   href: "/offers",
   title: { ar: "الباقات والعروض", en: "Packages & offers" },
-  short: { ar: "العروض", en: "Offers" },
-  badge: { ar: "باقات", en: "Plans" }
+  short: { ar: "الباقات", en: "Pricing" },
+  /** the small tag on the header link — empty: no tag */
+  badge: { ar: "", en: "" }
 };

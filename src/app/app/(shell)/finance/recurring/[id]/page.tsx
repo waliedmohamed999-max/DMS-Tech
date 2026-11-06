@@ -5,6 +5,8 @@ import { pageCtx } from "@/lib/os/dal";
 import { can } from "@/server/context";
 import { isAppError } from "@/server/errors";
 import { getRecurring } from "@/server/finance/recurring";
+import { prisma } from "@/server/db";
+import { SUB_T } from "@/lib/os/subscription-labels";
 import { formatMoney } from "@/lib/commercial/calc";
 import { RECURRING_PAGE_T, RECURRING_T } from "@/lib/os/recurring-labels";
 import { Badge, fmtDate, PermissionDenied, SectionCard } from "@/components/os/ui";
@@ -30,6 +32,8 @@ export default async function RecurringDetailPage({ params }: { params: Promise<
     throw e;
   }
   const r = d.schedule;
+  // a subscription's schedule is paused / ended from the subscription only
+  const sub = await prisma.subscription.findFirst({ where: { recurringInvoiceId: r.id, organizationId: ctx.organizationId }, select: { id: true, number: true } });
   const m = (v: string) => formatMoney(v, locale, r.currency);
   const owner = d.owner ? (locale === "ar" && d.owner.nameAr) || d.owner.name : "—";
 
@@ -62,8 +66,21 @@ export default async function RecurringDetailPage({ params }: { params: Promise<
             {m(d.totals.total)}
           </p>
         </div>
-        {can(ctx, "finance.invoices.create") && <RecurringActions id={r.id} status={r.status} />}
+        {can(ctx, "finance.invoices.create") && !sub && <RecurringActions id={r.id} status={r.status} />}
       </div>
+
+      {sub && (
+        <p className="rounded-lg border border-os-line bg-os-raised px-4 py-2.5 text-sm">
+          {SUB_T[locale].scheduleManaged}{" "}
+          {can(ctx, "subscriptions.view") ? (
+            <Link href={`/app/subscriptions/${sub.id}`} className="font-medium text-iris-light" dir="ltr">
+              {sub.number}
+            </Link>
+          ) : (
+            <span dir="ltr">{sub.number}</span>
+          )}
+        </p>
+      )}
 
       {r.status === "PAUSED" && r.pauseReason === "OWNER_NO_PERMISSION" && <p className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-2.5 text-sm text-warning">{t.pausedNoPermission}</p>}
 

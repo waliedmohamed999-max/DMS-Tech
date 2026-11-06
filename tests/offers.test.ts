@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { prisma } from "@/server/db";
 import { captureWebsiteLead, websiteLeadSchema } from "@/server/crm/website";
 import { buildLeadMail } from "@/server/notify/lead-mail";
@@ -23,15 +23,11 @@ const campaign = (over: Partial<Offer> = {}): Offer => ({
   slug: "nov-web",
   service: "web-development",
   icon: "Rocket",
-  badge: { ar: "عرض", en: "Offer" },
-  title: { ar: "موقع الأعمال", en: "Business website" },
-  text: { ar: "نص", en: "Text" },
+  campaign: { ar: "عرض", en: "Offer" },
+  name: { ar: "موقع الأعمال", en: "Business website" },
+  pitch: { ar: "نص", en: "Text" },
   forWho: { ar: "للشركات", en: "Companies" },
-  features: [{ ar: "ميزة", en: "Feature" }],
-  deliverables: [{ title: { ar: "تسليم", en: "Delivery" }, text: { ar: "نص", en: "Text" } }],
-  delivery: { ar: "21 يوم عمل", en: "21 business days" },
   terms: [{ ar: "شرط", en: "Term" }],
-  excludes: [{ ar: "استثناء", en: "Exclusion" }],
   price: 8999,
   basis: [{ key: "web-growth" }],
   startsAt: "2026-11-10",
@@ -105,7 +101,7 @@ describe("packages: the price list (2026-11-05, raised ~10%)", () => {
     expect(store.journey!.every((j) => keys.includes(j.tier))).toBe(true);
     // ads: spend excluded, a spend limit per monthly plan, no promised results
     const ads = packageGroups.find((g) => g.id === "digital-marketing")!;
-    expect(ads.notice.ar).toContain("لا نَعِد");
+    expect(ads.notice.ar).toContain("لا نضمن");
     expect(ads.tiers.every((t) => t.excludes.some((x) => x.ar.includes("الميزانية الإعلانية")))).toBe(true);
     expect(ads.tiers.filter((t) => t.billing === "monthly").every((t) => t.features.some((f) => f.ar.includes("تغطي الأتعاب إنفاقاً حتى")))).toBe(true);
     // AI: usage limits and usage fees stated on every tier
@@ -116,14 +112,13 @@ describe("packages: the price list (2026-11-05, raised ~10%)", () => {
     const team = packageGroups.find((g) => g.id === "dedicated-tech-team")!.tiers.map((t) => t.price!);
     expect(team[0] > team[1] && team[1] > team[2]).toBe(true);
     // comparison tables have one value per tier
-    for (const g of packageGroups.filter((x) => x.compare)) for (const r of g.compare!) expect(r.values.length, `${g.id}: ${r.label.en}`).toBe(g.tiers.length);
     // a yearly price is always below 12 months of the monthly price
     for (const t of tiers().filter((x) => x.annual)) expect(t.annual!, t.key).toBeLessThan(t.price! * 12);
   });
 
   it("3. the 90-day plans are a draft: shown in development, never in production (page, form label, reference)", () => {
     expect(visibleGroups().some((g) => g.id === "integrated-marketing")).toBe(true);
-    expect(offerLabel("pkg:mkt90-growth")).toBe("باقات التسويق المتكامل – 90 يوماً لنمو أعمالك — النمو");
+    expect(offerLabel("pkg:mkt90-growth")).toBe("باقات التسويق المتكامل (90 يوماً) — الاحترافية");
     vi.stubEnv("NODE_ENV", "production");
     expect(visibleGroups().some((g) => g.id === "integrated-marketing")).toBe(false);
     expect(offerLabel("pkg:mkt90-growth")).toBeNull();
@@ -194,7 +189,7 @@ describe("limited-time campaigns: dated, approved, never renewing", () => {
       expect([o.approved !== null, offerStatus(o, during)], o.slug).toEqual([true, "live"]);
       expect(off, o.slug).toBeGreaterThan(0.13);
       expect(off, o.slug).toBeLessThan(0.18);
-      expect(o.deliverables.length > 0 && o.terms.length > 0 && o.excludes.length > 0, o.slug).toBe(true);
+      expect(o.terms.length > 0 && o.name.ar && o.pitch.ar && o.forWho.ar, o.slug).toBeTruthy();
     }
     expect(basisPrice(offers.find((o) => o.slug === "ramadan-store")!)).toBe(6599 + 2199);
     // the last minute of 14 Dec (Riyadh) still runs; then nothing — no renewal
@@ -207,7 +202,8 @@ describe("limited-time campaigns: dated, approved, never renewing", () => {
     const monthly = (k: string) => tier(k).price!;
     // a campaign is never dearer per month than a permanent plan for the same thing
     const wa = offers.find((o) => o.slug === "whatsapp-season")!;
-    expect(wa.price / 3).toBeLessThan(tier("wa-pro").annual! / 12);
+    expect(wa.basis).toEqual([{ key: "wa-pro", months: 1 }]);
+    expect(wa.price).toBeLessThan(tier("wa-pro").annual! / 12);
     // ads + social together is a permanent 90-day plan, so no campaign sells that pair
     for (const o of offers) expect(o.basis.some((b) => b.key.startsWith("mkt-")) && o.basis.some((b) => b.key.startsWith("social-")), o.slug).toBe(false);
     // the 90-day plans: a fixed commitment discount of 15–18% on the matching separate packages, never deeper than the campaigns
@@ -218,9 +214,7 @@ describe("limited-time campaigns: dated, approved, never renewing", () => {
       expect(ratio, bundle).toBeLessThan(0.85);
     }
     // the 14-day trial gives less than a month of the Starter plan: one campaign, two creatives
-    const ads = packageGroups.find((g) => g.id === "digital-marketing")!;
-    const row = (label: string) => ads.compare!.find((r) => r.label.en === label)!.values.map((v) => v.en);
-    expect(row("Active campaigns").slice(0, 2)).toEqual(["1", "1"]);
+    expect(tier("mkt-start").features.some((f) => f.ar === "حملة نشطة واحدة")).toBe(true);
     expect(tier("ads-launch").price!).toBeLessThan(tier("mkt-start").price!);
     expect(tier("ads-launch").features.some((f) => f.ar.includes("حملة واحدة"))).toBe(true);
     // prices rise with each tier inside a group
@@ -228,6 +222,55 @@ describe("limited-time campaigns: dated, approved, never renewing", () => {
       const p = g.tiers.map((t) => t.price!);
       expect(p, g.id).toEqual([...p].sort((x, y) => x - y));
     }
+  });
+
+  it("7c. an offer page is built from its packages: same contents, prices and exclusions; previews only in development", async () => {
+    const { getActiveOffers, getOfferItem } = await import("@/lib/content");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-20T12:00:00Z"));
+    onTestFinished(() => {
+      vi.useRealTimers();
+    });
+    // before 1 December the offers are an approved preview in development…
+    const shown = await getActiveOffers("ar");
+    expect(shown.map((o) => o.slug).sort()).toEqual(offers.map((o) => o.slug).sort());
+    expect(shown.every((o) => o.upcoming)).toBe(true);
+    const store = shown.find((o) => o.slug === "ramadan-store")!;
+    expect(store.parts.map((p) => [p.key, p.price, p.term])).toEqual([["store-growth", "6,599 ر.س", null], ["mkt-start", "2,199 ر.س", "لمدة شهر"]]);
+    expect(store.parts[0].features).toEqual(tier("store-growth").features.map((f) => f.ar));
+    expect([store.oldPrice, store.price, store.saving, store.percent]).toEqual(["8,798 ر.س", "7,499 ر.س", "1,299 ر.س", 15]);
+    expect(store.dates).toBe("من 1 ديسمبر 2026 إلى 14 ديسمبر 2026");
+    expect(store.excludes).toContain("الميزانية الإعلانية");
+    expect(new Set(store.excludes).size).toBe(store.excludes.length);
+    const item = (await getOfferItem("whatsapp-season", "en"))!;
+    expect(item.details!.parts[0]).toMatchObject({ key: "wa-pro", name: "Professional", term: "for one month", price: "SAR 1,299" });
+    // …and hidden in production until it starts
+    vi.stubEnv("NODE_ENV", "production");
+    expect(await getActiveOffers("ar")).toEqual([]);
+    expect(await getOfferItem("ramadan-store", "ar")).toBeNull();
+  });
+
+  it("7e. every package explains itself: what kind of service, what you get, what we need, what happens after", () => {
+    for (const x of tiers()) {
+      expect([x.model.ar, x.about.ar, x.after.ar].every((v) => v.length > 20), x.key).toBe(true);
+      expect(x.youProvide.length, x.key).toBeGreaterThanOrEqual(2);
+    }
+    // AI and systems are built for the client and owned — not a subscription; monthly plans say how they renew
+    for (const id of ["ai-automation", "software-development"]) for (const x of packageGroups.find((g) => g.id === id)!.tiers) expect(x.model.ar, x.key).toMatch(/تملك/);
+    for (const x of packageGroups.find((g) => g.id === "ai-automation")!.tiers) expect(x.model.ar).toContain("ليس اشتراكاً");
+    for (const x of tiers().filter((y) => y.billing === "monthly" && !y.key.startsWith("wa-") && !y.key.startsWith("team-"))) expect(x.model.ar, x.key).toContain("تتجدد");
+  });
+
+  it("7d. names are consistent and unambiguous", () => {
+    // every package has its own CRM label; tiers climb Essential → Professional → Advanced inside a section
+    const labels = tiers().map((x) => offerLabel(`pkg:${x.key}`));
+    expect(new Set(labels).size).toBe(labels.length);
+    for (const id of ["social-media", "whatsapp-automation"]) expect(packageGroups.find((g) => g.id === id)!.tiers.slice(0, 2).map((x) => x.name.ar)).toEqual(["الأساسية", "الاحترافية"]);
+    expect(packageGroups.find((g) => g.id === "digital-marketing")!.tiers.slice(1).map((x) => x.name.ar)).toEqual(["الأساسية", "الاحترافية", "المتقدمة"]);
+    expect(packageGroups.find((g) => g.id === "ecommerce")!.tiers.map((x) => x.name.ar)).toEqual(["المتجر الأساسي", "المتجر الاحترافي", "المتجر المتقدم"]);
+    // no colloquial wording or result claims in the page copy
+    const all = JSON.stringify(packageGroups) + JSON.stringify(offers);
+    for (const word of ["خلّ ", "بكرة", "4.2x", "الأول في جوجل", "نَعِد"]) expect(all.includes(word), word).toBe(false);
   });
 
   it("8. a campaign shows only between its approved dates (Riyadh days, end day included) and then ends — no renewal", () => {
@@ -245,7 +288,7 @@ describe("limited-time campaigns: dated, approved, never renewing", () => {
   it("9. no made-up 'was' price: the struck price is the current package price, and a campaign that isn't cheaper never shows", () => {
     expect(basisPrice(campaign())).toBe(10999);
     expect(basisPrice(campaign({ basis: [{ key: "mkt-growth", months: 3 }, { key: "social-engage" }] }))).toBe(4399 * 3 + 3899);
-    expect(basisPrice(campaign({ basis: [{ key: "wa-pro", annual: true }] }))).toBe(12990);
+    expect(basisPrice(campaign({ basis: [{ key: "wa-pro", months: 3 }] }))).toBe(1299 * 3);
     const now = at("2026-11-15T12:00:00Z");
     // not approved, priced at or above its packages, built on a "from" price or an unknown package, or bad dates → never shown
     expect(offerStatus(campaign({ approved: null }), now)).toBe("invalid");
@@ -261,7 +304,7 @@ describe("limited-time campaigns: dated, approved, never renewing", () => {
 
   it("10. old deal / offer links open the package they were built on; ad and section links still work", () => {
     const keys = new Set(tiers().map((t) => t.key));
-    expect(Object.keys(retiredOffers).length).toBe(19);
+    expect(Object.keys(retiredOffers).length).toBe(20);
     for (const [slug, to] of Object.entries(retiredOffers)) expect(to === null || keys.has(to), slug).toBe(true);
     expect(retiredOffers.today).toBeNull();
     expect(retiredOffers["web-week"]).toBe("web-growth");
@@ -278,8 +321,8 @@ describe("requests from the offers pages", () => {
     vi.stubEnv("OS_ORG_SLUG", "test-org");
     await captureWebsiteLead(lead({ offer: "pkg:store-growth" }));
     const l = await prisma.lead.findFirstOrThrow();
-    expect(l.message).toBe("[باقات المتاجر الإلكترونية — متجر النمو]\n• السعر المرجعي: 6,599 ر.س — دفعة واحدة، قبل ضريبة القيمة المضافة 15%\nنحتاج موقع");
-    expect((l.captureMeta as { offer: unknown }).offer).toEqual({ key: "pkg:store-growth", label: "باقات المتاجر الإلكترونية — متجر النمو", price: 6599, from: false, billing: "one-time", termMonths: null, reference: "6,599 ر.س — دفعة واحدة، قبل ضريبة القيمة المضافة 15%" });
+    expect(l.message).toBe("[باقات المتاجر الإلكترونية — المتجر الاحترافي]\n• السعر المرجعي: 6,599 ر.س — دفعة واحدة، قبل ضريبة القيمة المضافة 15%\nنحتاج موقع");
+    expect((l.captureMeta as { offer: unknown }).offer).toEqual({ key: "pkg:store-growth", label: "باقات المتاجر الإلكترونية — المتجر الاحترافي", price: 6599, from: false, billing: "one-time", termMonths: null, reference: "6,599 ر.س — دفعة واحدة، قبل ضريبة القيمة المضافة 15%" });
     // a made-up key adds nothing
     await captureWebsiteLead(lead({ phone: "0550000004", offer: "pkg:made-up<script>" }));
     const l2 = await prisma.lead.findFirstOrThrow({ where: { phone: "0550000004" } });
@@ -290,7 +333,7 @@ describe("requests from the offers pages", () => {
     vi.stubEnv("OS_ORG_SLUG", "test-org");
     await captureWebsiteLead(lead({ offer: "pkg:mkt-start", details: { adBudget: "1,500 – 5,000", platforms: "سناب" }, utm: { utm_source: "snapchat", utm_campaign: "ads-nov", gclid: "abc123" } }));
     const l = await prisma.lead.findFirstOrThrow();
-    expect(l.message).toBe("[باقات إدارة الحملات الإعلانية — البداية]\n• السعر المرجعي: 2,199 ر.س — شهرياً، قبل ضريبة القيمة المضافة 15%\nنحتاج موقع\n• الميزانية الإعلانية الشهرية: 1,500 – 5,000\n• المنصات: سناب");
+    expect(l.message).toBe("[باقات إدارة الحملات الإعلانية — الأساسية]\n• السعر المرجعي: 2,199 ر.س — شهرياً، قبل ضريبة القيمة المضافة 15%\nنحتاج موقع\n• الميزانية الإعلانية الشهرية: 1,500 – 5,000\n• المنصات: سناب");
     const meta = l.captureMeta as { details: Record<string, string>; utm: Record<string, string>; offer: { billing: string } };
     expect(meta.offer.billing).toBe("monthly");
     expect(meta.utm).toEqual({ utm_source: "snapchat", utm_campaign: "ads-nov", gclid: "abc123" });

@@ -26,6 +26,7 @@ import {
 } from "@/components/offers/OfferWidgets";
 import { ServiceVisual } from "@/components/offers/ServiceVisual";
 import { alternatesFor } from "@/lib/seo";
+import { requestCatalog } from "@/lib/catalog-request";
 import { TrackView } from "@/components/offers/TrackView";
 
 type Props = { params: Promise<{ locale: string; slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -108,9 +109,10 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
     const to = retiredOffers[slug];
     permanentRedirect(getPathname({ href: to ? `/offers/${to}` : "/offers", locale }) + qs);
   }
+  const { cat, preview } = await requestCatalog(sp.preview);
   const [c, item, services, nav, projects] = await Promise.all([
-    getOffersCopy(locale),
-    getOfferItem(slug, locale),
+    getOffersCopy(locale, cat),
+    getOfferItem(slug, locale, cat),
     getServices(locale),
     getTranslations("nav"),
     getProjects(locale),
@@ -119,7 +121,7 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
 
   if (!item) {
     // a campaign outside its dates gets a friendly page instead of a 404
-    if (!offerUnavailable(slug)) notFound();
+    if (!(await offerUnavailable(slug, cat))) notFound();
     return (
       <section className="section">
         <div className="container-site grid max-w-xl justify-items-center gap-4 text-center">
@@ -162,10 +164,6 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
     : c.onRequest;
   const waLines = [c.waHello, label, `${c.waPrice}: ${priceText}`];
   const priceLabels = { from: c.from, indicative: c.indicative, onRequest: c.onRequest, inclVat: c.inclVat, monthlyAvg: c.monthlyAvg, billing: c.billing, yearly: c.yearly, save: c.save };
-  // packages have no deliverables list: their features become the "what you get" cards
-  const deliverables = d
-    ? d.deliverables
-    : item.features.map((f) => ({ title: f, text: "" }));
 
   const priceCard = (
     <div className="grid gap-4 rounded-card bg-white p-6 text-ink shadow-lg">
@@ -219,6 +217,11 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
 
   return (
     <>
+      {preview && (
+        <p className="sticky top-16 z-30 flex items-center justify-center gap-2 bg-[#fffbeb] px-4 py-2 text-center text-sm font-semibold text-[#92400e] shadow-sm">
+          <Icon name="Pencil" size={15} /> {locale === "ar" ? "معاينة المسودة من لوحة التحكم — لا يراها الزوار حتى تُنشر" : "Previewing the dashboard draft — visitors won't see it until it is published"}
+        </p>
+      )}
       <TrackView offer={item.key} service={item.service} price={item.price} />
       <section className="on-dark relative overflow-hidden">
         <TechBackdrop />
@@ -241,11 +244,18 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
               <Icon name={item.icon} size={15} /> {item.group}
             </span>
             {item.draft && (
-              <span className="w-fit rounded-xl bg-[#fffbeb] px-3 py-2 text-sm font-semibold text-[#92400e]">{c.draft}</span>
+              <span className="w-fit rounded-xl bg-[#fffbeb] px-3 py-2 text-sm font-semibold text-[#92400e]">
+                {d?.upcoming ? c.upcoming.replace("{date}", d.startLabel) : c.draft}
+              </span>
             )}
             <h1 className="h-display">{item.name}</h1>
             <p className="lead">{item.tagline}</p>
-            {item.endsAtInstant && (
+            {d && (
+              <span className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-white/85">
+                <Icon name="Calendar" size={15} /> {d.dates}
+              </span>
+            )}
+            {item.endsAtInstant && !d?.upcoming && (
               <Countdown
                 endsAt={item.endsAtInstant}
                 labels={{
@@ -306,60 +316,113 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
         </div>
       </section>
 
-      {/* the details in one compact section: who it suits + delivery beside what's included / not included */}
+      {/* the details: who it suits and delivery beside what's included — an offer shows each of its packages in full */}
       <section className="bg-cloud py-12 md:py-16">
         <div className="container-site grid items-start gap-6 lg:grid-cols-3">
           <div className="grid content-start gap-6">
             <Block icon="Users" title={d ? c.forWho : c.idealFor}>
-              <p className="leading-relaxed text-iron">
-                {d ? d.forWho : item.kind === "package" ? item.idealFor : ""}
-              </p>
+              <p className="leading-relaxed text-iron">{d ? d.forWho : item.kind === "package" ? item.idealFor : ""}</p>
             </Block>
             <Block icon="Clock" title={c.delivery}>
-              <p className="text-lg font-semibold">{item.delivery}</p>
+              <p className="text-[15px] font-semibold leading-relaxed">{item.delivery}</p>
             </Block>
-          </div>
-          <div className="grid content-start gap-6 lg:col-span-2">
-            <Block icon="CircleCheck" title={c.included}>
-              <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
-                {item.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-[15px]">
-                    <Icon
-                      name="CircleCheck"
-                      size={17}
-                      className="mt-0.5 shrink-0 text-iris"
-                    />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </Block>
-            {item.kind === "package" && (
-              <Block icon="CircleX" title={c.notIncluded} tone="muted">
-                <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
-                  {item.excludes.map((t) => (
-                    <li
-                      key={t}
-                      className="flex items-start gap-2 text-[15px] text-iron"
-                    >
-                      <Icon
-                        name="X"
-                        size={16}
-                        className="mt-0.5 shrink-0 text-graphite"
-                      />
-                      {t}
+            {item.kind === "package" && item.revisions && (
+              <Block icon="Pencil" title={c.revisions}>
+                <p className="text-[15px] font-semibold">{item.revisions}</p>
+              </Block>
+            )}
+            {item.youProvide.length > 0 && (
+              <Block icon="ClipboardList" title={c.youProvide}>
+                <ul className="grid gap-2">
+                  {item.youProvide.map((x) => (
+                    <li key={x} className="flex items-start gap-2 text-[14.5px] text-iron">
+                      <Icon name="Check" size={15} className="mt-0.5 shrink-0 text-iris" />
+                      {x}
                     </li>
                   ))}
                 </ul>
-                <p className="flex items-start gap-2 rounded-xl border border-iris/20 bg-lilac/60 px-3 py-2.5 text-[13px] leading-relaxed text-ink">
-                  <Icon
-                    name="Lightbulb"
-                    size={15}
-                    className="mt-0.5 shrink-0 text-iris"
-                  />
-                  {item.notice}
-                </p>
               </Block>
+            )}
+            {item.after && (
+              <Block icon="LifeBuoy" title={c.after}>
+                <p className="text-[14.5px] leading-relaxed text-iron">{item.after}</p>
+              </Block>
+            )}
+          </div>
+          <div className="grid content-start gap-6 lg:col-span-2">
+            {d ? (
+              d.parts.map((p) => (
+                <div key={p.key} className="card grid content-start gap-4 p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <span className="grid gap-0.5">
+                      <span className="text-xs font-semibold text-iris">{p.group}</span>
+                      <b className="text-lg">
+                        {p.name}
+                        {p.term && <span className="text-sm font-medium text-iron"> — {p.term}</span>}
+                      </b>
+                      <span className="text-sm text-iron">{p.tagline}</span>
+                    </span>
+                    <span className="text-lg font-bold" dir="ltr">
+                      {p.price}
+                    </span>
+                  </div>
+                  <p className="flex items-start gap-2 rounded-lg border border-iris/20 bg-lilac/50 px-3 py-2 text-[13px] font-semibold text-ink">
+                    <Icon name={p.term ? "CalendarClock" : "ShieldCheck"} size={15} className="mt-0.5 shrink-0 text-iris" />
+                    {p.model}
+                  </p>
+                  <p className="text-[14.5px] leading-relaxed text-iron">{p.about}</p>
+                  <ul className="grid gap-x-6 gap-y-2.5 border-t border-mist pt-4 sm:grid-cols-2">
+                    {p.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-[14.5px]">
+                        <Icon name="CircleCheck" size={16} className="mt-0.5 shrink-0 text-iris" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={`/offers/${p.key}`} className="link-arrow w-fit text-sm">
+                    {c.packageDetails} <Icon name={arrow} size={14} />
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <>
+                {item.about && (
+                  <Block icon="Lightbulb" title={c.aboutPackage}>
+                    <p className="flex items-start gap-2 rounded-lg border border-iris/20 bg-lilac/50 px-3 py-2 text-[13.5px] font-semibold text-ink">
+                      <Icon name={item.billing === "one-time" ? "ShieldCheck" : "CalendarClock"} size={16} className="mt-0.5 shrink-0 text-iris" />
+                      {item.model}
+                    </p>
+                    <p className="leading-relaxed text-iron">{item.about}</p>
+                  </Block>
+                )}
+                <Block icon="CircleCheck" title={c.included}>
+                  <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                    {item.features.map((f) => (
+                      <li key={f} className="flex items-start gap-2 text-[15px]">
+                        <Icon name="CircleCheck" size={17} className="mt-0.5 shrink-0 text-iris" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  {item.from && <p className="text-[13px] text-iron">{c.scopeNote}</p>}
+                </Block>
+                {item.kind === "package" && (
+                  <Block icon="CircleX" title={c.notIncluded} tone="muted">
+                    <ul className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                      {item.excludes.map((t) => (
+                        <li key={t} className="flex items-start gap-2 text-[15px] text-iron">
+                          <Icon name="X" size={16} className="mt-0.5 shrink-0 text-graphite" />
+                          {t}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="flex items-start gap-2 rounded-xl border border-iris/20 bg-lilac/60 px-3 py-2.5 text-[13px] leading-relaxed text-ink">
+                      <Icon name="Lightbulb" size={15} className="mt-0.5 shrink-0 text-iris" />
+                      {item.notice}
+                    </p>
+                  </Block>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -416,37 +479,11 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
       )}
 
       {d && (
-        <section className="py-12 md:py-16">
-          <div className="container-site grid gap-8">
-            <h2 className="text-center text-3xl font-bold">{c.deliverables}</h2>
-            <ol className="grid gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-              {deliverables.map((x, i) => (
-                <li
-                  key={x.title}
-                  className="card relative grid content-start gap-2 p-6 pt-7"
-                >
-                  <span className="absolute -top-3 start-6 grid size-8 place-items-center rounded-full bg-iris text-sm font-bold text-white shadow">
-                    {i + 1}
-                  </span>
-                  <b className="text-lg">{x.title}</b>
-                  {x.text && (
-                    <p className="text-[14.5px] leading-relaxed text-iron">
-                      {x.text}
-                    </p>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-      )}
-
-      {d && (
         <section className="bg-cloud py-12 md:py-16">
           <div className="container-site grid items-start gap-6 md:grid-cols-2">
-            <Block icon="ClipboardList" title={c.terms}>
+            <Block icon="ClipboardList" title={c.offerTerms}>
               <ul className="grid gap-2.5">
-                {d.terms.map((t) => (
+                {[...d.terms, c.scopeFromPackages].map((t) => (
                   <li key={t} className="flex items-start gap-2 text-[15px]">
                     <Icon
                       name="Check"
@@ -458,7 +495,7 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
                 ))}
               </ul>
             </Block>
-            <Block icon="CircleX" title={c.excludes} tone="muted">
+            <Block icon="CircleX" title={c.offerExcludes} tone="muted">
               <ul className="grid gap-2.5">
                 {d.excludes.map((t) => (
                   <li

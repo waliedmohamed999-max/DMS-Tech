@@ -96,6 +96,12 @@ export type Job = {
   niceToHave: L[];
   /** tools / skills, shown as written in both languages */
   skills: string[];
+  /** "closed" = applications ended: hidden from the list and the sitemap; the page stays (old links) without the form */
+  status?: "open" | "closed";
+  /** the day applications closed (YYYY-MM-DD) */
+  closedAt?: string;
+  /** several openings for the same role */
+  openings?: number;
 };
 
 export type Value = { icon: IconName; title: L; description: L };
