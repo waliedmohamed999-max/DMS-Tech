@@ -42,7 +42,7 @@ That is exactly how the Node.js Selector lays out an application. `next.config.m
 1. **PostgreSQL database.** The app uses PostgreSQL only; MySQL/MariaDB will not work. Use either a PostgreSQL database created in cPanel (if your host offers it) or a managed PostgreSQL service. Have the `postgresql://…` connection string ready. A remote database needs TLS (`?sslmode=require`).
 2. **Private data directory** outside `public_html` and outside the repository, for uploaded documents. In File Manager, create:
    - `/home/dmstechc/dms-data/documents`
-   - `/home/dmstechc/dms-data/backups` (optional)
+   - `/home/dmstechc/dms-data/backups` (nightly database backups, §13)
 3. **Two different 32-byte keys** (base64). Generate each one on any trusted machine with `openssl rand -base64 32`:
    - `HR_FIELD_KEY` (required)
    - `INTEGRATION_MASTER_KEY` (recommended)
@@ -86,7 +86,11 @@ Add these under **Environment variables** in the same screen, then **Save**. The
 - With `DOCUMENT_STORAGE=s3`, also set `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`. In that case `DOCUMENT_STORAGE_DIR` is not needed.
 - `NODE_ENV=production` is set by "Application mode: Production".
 
+**Required once the worker cron runs (§11):**
+- `REQUIRE_WORKER=1`: `/api/ready` then fails when the worker heartbeat is older than 5 minutes.
+
 **Recommended:**
+- `DB_POOL_MAX`, `DB_POOL_IDLE_TIMEOUT_MS`, `DB_CONNECTION_TIMEOUT_MS`: database connection limits (§12).
 - `INTEGRATION_MASTER_KEY`: must be different from `HR_FIELD_KEY`.
 - `SENTRY_DSN` or `ERROR_REPORT_WEBHOOK_URL`: error reporting.
 - `LOG_LEVEL=info`
@@ -122,7 +126,7 @@ Next.js reads that file during the build. The file is git-ignored. Do not put se
 8. **First deployment only:** create the organization and the first Super Admin (§7).
 9. **Start App** (or **Restart**).
 10. Open **https://dmstech.sa/api/health**. Expect `{"status":"ok", …, "environment":"production"}`.
-11. Open **https://dmstech.sa/api/ready**. `"ready": true` means the database, migrations, configuration and storage are all OK.
+11. Open **https://dmstech.sa/api/ready**. `"ready": true` means the database, migrations, configuration, storage and (with `REQUIRE_WORKER=1`) the worker heartbeat are all OK.
 12. Open **https://dmstech.sa** and **https://dmstech.sa/app/login**.
 13. If anything fails, read `/home/dmstechc/logs/dms-tech-passenger.log` (§8).
 
@@ -209,17 +213,9 @@ The response lists each check by name. Common failures:
 - `demo_accounts`: demo users exist in a production database.
 - `environment`: the database belongs to a different deployment.
 
-### Optional: background worker (automation, retries, scheduled sweeps)
+### `worker` check fails or "Background worker is not heart-beating"
 
-The app works without the worker. To run it, use cPanel → **Cron Jobs**, every 5 minutes:
-
-```
-cd /home/dmstechc/repositories/DMS-Tech && set -a && . /home/dmstechc/dms-data/worker.env && set +a && /home/dmstechc/nodevenv/repositories/DMS-Tech/20/bin/npm run worker >> /home/dmstechc/logs/dms-tech-worker.log 2>&1
-```
-
-Cron jobs do not get the Node.js app's environment variables. `worker.env` must therefore repeat at least these variables as `KEY=value` lines: `NODE_ENV=production`, `APP_ENV`, `DATABASE_URL`, `HR_FIELD_KEY`, `DOCUMENT_STORAGE`, `DOCUMENT_STORAGE_DIR` and `INTEGRATION_MASTER_KEY`. Keep the file outside `public_html` with permissions `600`.
-
-Set `REQUIRE_WORKER=1` only once the cron job is running. After that, `/api/ready` reports a stale worker.
+The background worker is **required** (§11). Check `/home/dmstechc/logs/dms-tech-worker.log` for the last `worker_pass` line, and that the cron job from §11 exists and points at the right paths. A `startup_refused` line there means `worker.env` is missing a variable (§11).
 
 ---
 
@@ -369,3 +365,108 @@ If it did add migrations, the older code may not match the newer schema. In that
 - Restore the Supabase backup taken in step 12. Data written since that backup is lost.
 
 Never run `db:migrate` (`migrate dev`), `db:seed` or any reset against production.
+
+---
+
+## 11. Background worker (required)
+
+The worker runs everything that is not a page request: the integration outbox (webhooks, WhatsApp, ZATCA submission), campaign sends, domain-event recovery, automation retries, the commercial / projects / finance / HR / operations sweeps (including future-dated offboarding), document malware scanning, system alerts and the daily retention purge. Without it those jobs silently stop. It is a **go-live BLOCKER** ([GO-LIVE.md](GO-LIVE.md#checklist)).
+
+**How it runs on cPanel.** There is no always-on service here, so cron runs one pass (`npm run worker`) **every minute** (`src/server/system/worker.ts` → `systemTick`):
+- Each step runs under its own database lease, so two passes can never double-execute a job, and one failing step never stops the others.
+- Retention runs at most once every 24 hours; the job registry decides, so this survives restarts.
+- Every pass writes the `worker:loop` heartbeat before and after its work (`scripts/worker.ts`). `/api/ready` and the `worker_down` alert read that heartbeat. If a pass dies, the heartbeat stays `RUNNING` and stops, and System Health reports the job as `STUCK`.
+- A pass normally takes seconds. `flock -n` skips a tick while the previous pass is still running, so passes never overlap and slow passes never pile up. `timeout` ends a hung pass after 20 minutes so the lock is released.
+
+cPanel → **Cron Jobs** → *Add New Cron Job*, *Common Settings: Once Per Minute* (`* * * * *`), command on **one line**:
+
+```
+/usr/bin/flock -n /home/dmstechc/dms-data/worker.lock /usr/bin/timeout -k 30 20m /bin/sh -c 'cd /home/dmstechc/repositories/DMS-Tech && set -a && . /home/dmstechc/dms-data/worker.env && set +a && exec /home/dmstechc/nodevenv/repositories/DMS-Tech/20/bin/npm run worker' >> /home/dmstechc/logs/dms-tech-worker.log 2>&1
+```
+
+**`worker.env`.** Cron jobs do not get the Node.js app's environment variables. Create `/home/dmstechc/dms-data/worker.env` (outside `public_html`, permissions `600`) with `KEY=value` lines for at least:
+`NODE_ENV=production`, `APP_ENV`, `DATABASE_URL`, `HR_FIELD_KEY`, `DOCUMENT_STORAGE`, `DOCUMENT_STORAGE_DIR` (or the `S3_*` set), `INTEGRATION_MASTER_KEY`, `NEXT_PUBLIC_SITE_URL`, the error-reporting variables (`SENTRY_DSN` or `ERROR_REPORT_WEBHOOK_*`), the worker's pool limits (§12), and the backup variables (§13). The worker refuses to start on the same configuration errors as the app, and logs `config_issue` lines naming only the variable.
+
+**Turning it on, in order:**
+1. Create `worker.env` and the cron job.
+2. Wait two minutes, then check the log: each pass writes one `worker_pass` line. System Health → *Jobs* shows `worker:loop` as HEALTHY.
+3. Add `REQUIRE_WORKER=1` to the **Node.js app's** environment variables (§3), because readiness is evaluated by the web app. Then **Restart**.
+4. `/api/ready` must still show `"ready": true`, with the `worker` check `ok`. From now on, a worker that has not finished a pass for 5 minutes makes readiness fail and raises the `worker_down` alert.
+
+After every release the next cron tick runs the new code automatically. No restart is needed.
+
+---
+
+## 12. Database connection limits
+
+Every Node.js process (each Passenger web process, each worker pass, each script) opens its **own** `pg` pool through Prisma (`src/server/db.ts`). Three optional variables limit that pool. When they are unset, `pg`'s defaults apply, as before: up to 10 connections per process, idle connections closed after 10 seconds, and **no** connection timeout. They are validated at startup (`src/server/system/config.ts`): a value that is not a whole number (or `DB_POOL_MAX` below 1) refuses startup with `KEY:INVALID`.
+
+| Variable | `pg` setting | Meaning |
+| --- | --- | --- |
+| `DB_POOL_MAX` | `max` | Most connections one process may hold |
+| `DB_POOL_IDLE_TIMEOUT_MS` | `idleTimeoutMillis` | Close a connection after it has been idle this long (`0` = never) |
+| `DB_CONNECTION_TIMEOUT_MS` | `connectionTimeoutMillis` | Give up when no connection is available within this time (`0` = wait forever) |
+
+**Why it matters with the Supabase session pooler** (port 5432 on `*.pooler.supabase.com`). In session mode, each client connection holds one real database connection until it disconnects. Once the project's *Pool Size* is used up, new clients wait in a queue for up to a minute ([Supavisor FAQ](https://supabase.com/docs/guides/troubleshooting/supavisor-faq-YyP5tI)). With `pg`'s defaults, a few web processes can take the whole pool, and requests then hang instead of failing.
+
+**Recommended values:**
+
+| Where | `DB_POOL_MAX` | `DB_POOL_IDLE_TIMEOUT_MS` | `DB_CONNECTION_TIMEOUT_MS` |
+| --- | --- | --- | --- |
+| Node.js app (web, per Passenger process) | `5` | `10000` | `10000` |
+| `worker.env` (worker pass, backup and other scripts) | `3` | `10000` | `10000` |
+
+**Check the budget before go-live.** The total must stay below the *Pool Size* shown in Supabase → *Database settings*, with headroom for one-off scripts (each `db:backup` uses one more connection for `pg_dump`) and for Supabase's own services:
+
+```
+(Passenger processes × web DB_POOL_MAX) + worker DB_POOL_MAX + 2  <  Supabase Pool Size
+```
+
+Ask the host for the Passenger process limit of the account. If the budget does not fit, lower the web `DB_POOL_MAX` first, then raise *Pool Size* within the compute size's limits ([Supabase: Compute and Disk](https://supabase.com/docs/guides/platform/compute-and-disk)). A request that cannot get a connection within 10 seconds then fails visibly, as a logged error and a failed `/api/ready` database check, instead of hanging for a minute.
+
+---
+
+## 13. Nightly database backups
+
+Supabase's own backups / point-in-time recovery stay on. In addition, the app keeps its own provider-independent `pg_dump` exports ([DISASTER-RECOVERY.md](DISASTER-RECOVERY.md#database-backups)). The nightly routine uses the existing npm scripts, in this order. Each step must succeed before the next one runs:
+
+1. `npm run db:backup`: writes `dms-<db>-<timestamp>.dump` plus `.sha256` and `.json` into `BACKUP_DIR`, and records a `BackupRecord`.
+2. `npm run db:verify-backup`: restores the newest backup into a temporary database on `VERIFY_DATABASE_URL`, checks migrations and row counts, then drops it. The record becomes `VERIFIED`.
+3. **Off-server copy** of the verified file and its two sidecars, to encrypted storage that the cPanel account cannot delete from.
+4. `npm run backup:prune -- --apply`: deletes local files beyond `BACKUP_KEEP_DAILY` / `WEEKLY` / `MONTHLY`. It never deletes the newest verified backup. Off-server copies follow the bucket's own lifecycle rules.
+
+**Prerequisites** (add them to `worker.env`, §11):
+- `BACKUP_DIR=/home/dmstechc/dms-data/backups`
+- `VERIFY_DATABASE_URL`: a **separate, non-production** PostgreSQL server. It is required in production, and the script refuses to verify against production.
+- `BACKUP_KEEP_DAILY=7`, `BACKUP_KEEP_WEEKLY=4`, `BACKUP_KEEP_MONTHLY=12`. There are no defaults; `backup:prune` refuses without them.
+- `pg_dump` / `pg_restore` with the **same major version** as the Supabase server, on the `PATH` or set with `PG_DUMP_PATH` / `PG_RESTORE_PATH`. Production refuses the `logical` engine unless `BACKUP_ENGINE=logical` is set explicitly.
+- An off-server copy tool. The example below uses [`rclone`](https://rclone.org) with a remote named `offsite` (an S3-compatible bucket with versioning and server-side encryption, or an `rclone crypt` remote). Any equivalent tool works.
+
+Save this as `/home/dmstechc/dms-data/nightly-backup.sh` (permissions `700`):
+
+```sh
+#!/bin/sh
+# Nightly: backup → verify → off-server copy → prune. Stops at the first failure (set -e).
+set -eu
+cd /home/dmstechc/repositories/DMS-Tech
+set -a; . /home/dmstechc/dms-data/worker.env; set +a
+NPM=/home/dmstechc/nodevenv/repositories/DMS-Tech/20/bin/npm
+
+"$NPM" run db:backup
+"$NPM" run db:verify-backup
+LATEST=$(ls -1t "$BACKUP_DIR"/dms-*.dump | head -n 1)
+for f in "$LATEST" "$LATEST.sha256" "$LATEST.json"; do
+  rclone copy "$f" offsite:dms-tech-backups/db/
+done
+"$NPM" run backup:prune -- --apply
+```
+
+cPanel → **Cron Jobs**, once a day at 02:30 server time (`30 2 * * *`), with its own lock so two runs never overlap:
+
+```
+/usr/bin/flock -n /home/dmstechc/dms-data/backup.lock /usr/bin/timeout 2h /home/dmstechc/dms-data/nightly-backup.sh >> /home/dmstechc/logs/dms-tech-backup.log 2>&1
+```
+
+**How a failure shows up.** Backup and verification failures are recorded in `BackupRecord` and raise the `backup_failed` alert. A backup older than `BACKUP_MAX_AGE_HOURS` (default 26) raises `backup_stale`. A failed off-server copy or prune only appears in `dms-tech-backup.log`, so read that log weekly. Once a month, run the restore drill in [DISASTER-RECOVERY.md](DISASTER-RECOVERY.md).
+
+With `DOCUMENT_STORAGE=local`, also add `"$NPM" run storage:backup` and copy its output off the server ([DISASTER-RECOVERY.md](DISASTER-RECOVERY.md#document-storage)). With S3, bucket versioning covers documents.

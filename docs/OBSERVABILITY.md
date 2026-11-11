@@ -119,7 +119,7 @@ consecutive failure streak, holder and **heartbeat**.
 
 | Job | Every | Runner |
 |---|---|---|
-| `worker:loop` (heartbeat) | 30 s | `npm run worker -- --loop` |
+| `worker:loop` (heartbeat) | 30 s (loop) / 1 min (cron) | `npm run worker -- --loop`, or `npm run worker` every minute under `flock -n` (before and after each pass) |
 | `sweep:commercial / projects / finance / ops` | 15 min | worker (or the individual `*:sweep` scripts) |
 | `sweep:hr` | 1 h | worker / `hr:sweep` |
 | `integrations:outbox / campaigns / health` | 1 min / 1 min / 30 min | worker / `integrations:worker` |
