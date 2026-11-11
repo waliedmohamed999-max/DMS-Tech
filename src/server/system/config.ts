@@ -4,7 +4,8 @@
  *  REQUIRED (production)   DATABASE_URL, NEXT_PUBLIC_SITE_URL (https), DOCUMENT_STORAGE (+ its settings)
  *  OPTIONAL                INTEGRATION_MASTER_KEY, NOVA_URL, LOG_LEVEL, ERROR_REPORTER, DOCUMENT_SCANNER (+ CLAMD_* /
  *                          DOCUMENT_SCANNER_URL), DOCUMENT_SCAN_POLICY (REQUIRE_SCAN_BEFORE_DOWNLOAD = legacy alias),
- *                          REQUIRE_WORKER, BACKUP_DIR, BACKUP_MAX_AGE_HOURS, RETENTION_* overrides
+ *                          REQUIRE_WORKER, BACKUP_DIR, BACKUP_MAX_AGE_HOURS, RETENTION_* overrides,
+ *                          DB_POOL_MAX, DB_POOL_IDLE_TIMEOUT_MS, DB_CONNECTION_TIMEOUT_MS (pg pool — unset = pg defaults)
  *  DEVELOPMENT ONLY        ALLOW_DEMO_SEED, TEST_DATABASE_URL, OS_LOCAL_PROD_TEST — forbidden in production
  *
  * Sessions are random 256-bit tokens stored hashed in the database, so there is no SESSION_SECRET to configure.
@@ -15,6 +16,31 @@ export type ConfigIssue = { key: string; level: "critical" | "warning"; code: st
 export type ConfigReport = { ok: boolean; production: boolean; localProdTest: boolean; issues: ConfigIssue[] };
 
 type Env = Record<string, string | undefined>;
+
+/**
+ * Optional pg pool limits for the Prisma adapter (src/server/db.ts, docs/CPANEL_DEPLOYMENT.md#database-connection-limits).
+ * Unset or empty → the key is omitted, so pg's own defaults apply exactly as before (max 10, idle 10 s, no connect timeout).
+ * An invalid value is reported by validateConfig and ignored here (never half-applied).
+ */
+const DB_POOL_VARS = [
+  ["DB_POOL_MAX", "max", 1],
+  ["DB_POOL_IDLE_TIMEOUT_MS", "idleTimeoutMillis", 0],
+  ["DB_CONNECTION_TIMEOUT_MS", "connectionTimeoutMillis", 0]
+] as const;
+export type DbPoolConfig = { max?: number; idleTimeoutMillis?: number; connectionTimeoutMillis?: number };
+
+export function dbPoolConfig(env: Env = process.env): { config: DbPoolConfig; invalid: string[] } {
+  const config: DbPoolConfig = {};
+  const invalid: string[] = [];
+  for (const [key, field, min] of DB_POOL_VARS) {
+    const raw = env[key]?.trim();
+    if (!raw) continue;
+    const n = Number(raw);
+    if (!/^\d+$/.test(raw) || !Number.isSafeInteger(n) || n < min) invalid.push(key);
+    else config[field] = n;
+  }
+  return { config, invalid };
+}
 
 export function validateConfig(env: Env = process.env): ConfigReport {
   const production = env.NODE_ENV === "production";
@@ -81,6 +107,7 @@ export function validateConfig(env: Env = process.env): ConfigReport {
   const policy = (env.DOCUMENT_SCAN_POLICY ?? "").trim().toLowerCase();
   if (policy && policy !== "required" && policy !== "optional") critical("DOCUMENT_SCAN_POLICY", "INVALID");
   if ((policy === "required" || env.REQUIRE_SCAN_BEFORE_DOWNLOAD === "true") && (!scanner || scanner === "none")) warn("DOCUMENT_SCAN_POLICY", "NO_SCANNER_ALL_DOWNLOADS_BLOCKED");
+  for (const k of dbPoolConfig(env).invalid) critical(k, "INVALID");
   if (env.SENTRY_DSN && !/^https:\/\/[^@\s]+@[^/\s]+\/\S+$/.test(env.SENTRY_DSN)) critical("SENTRY_DSN", "INVALID");
   if (env.ERROR_REPORT_WEBHOOK_URL && !/^https:\/\//.test(env.ERROR_REPORT_WEBHOOK_URL) && production) critical("ERROR_REPORT_WEBHOOK_URL", "HTTPS_REQUIRED");
   if (env.ERROR_REPORT_SAMPLE_RATE !== undefined) {
