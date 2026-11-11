@@ -82,6 +82,21 @@ async function sentQuote(u: U) {
 
 const version = (quotationId: string) => prisma.quotationVersion.findFirstOrThrow({ where: { quotation: { id: quotationId }, currentOf: { isNot: null } }, include: { items: true } });
 
+// pdfjs-dist (used only here, to read PDFs back) needs Promise.withResolvers, which Node 20 — the production and CI
+// runtime — lacks (it arrived in Node 22). Polyfill it for this test helper only; the app itself never loads pdfjs.
+if (typeof (Promise as unknown as { withResolvers?: unknown }).withResolvers !== "function") {
+  Object.defineProperty(Promise, "withResolvers", {
+    configurable: true,
+    writable: true,
+    value: function withResolvers<T>() {
+      let resolve!: (value: T | PromiseLike<T>) => void;
+      let reject!: (reason?: unknown) => void;
+      const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+      return { promise, resolve, reject };
+    },
+  });
+}
+
 async function pdfText(data: Buffer) {
   const doc = await getDocument({ data: new Uint8Array(data), useSystemFonts: false }).promise;
   let text = "";
