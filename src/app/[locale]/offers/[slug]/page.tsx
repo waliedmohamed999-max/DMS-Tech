@@ -28,6 +28,7 @@ import { ServiceVisual } from "@/components/offers/ServiceVisual";
 import { alternatesFor } from "@/lib/seo";
 import { requestCatalog } from "@/lib/catalog-request";
 import { TrackView } from "@/components/offers/TrackView";
+import { priceValue } from "@/lib/track";
 
 type Props = { params: Promise<{ locale: string; slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -203,6 +204,7 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
           phone={site.whatsapp}
           lines={waLines}
           label={c.orderWa}
+          offer={item.key}
           className="w-full"
         />
       </div>
@@ -284,6 +286,7 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
             <div className="rounded-card border border-mist bg-cloud p-5">
               <ShareLink
                 title={label}
+                offer={item.key}
                 labels={{
                   share: c.share,
                   copy: c.copy,
@@ -310,7 +313,7 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
               }
               source="offer"
               questions={item.questions}
-              offer={{ key: item.key, label: `${label} — ${priceText}`, caption: c.chosen }}
+              offer={{ key: item.key, label: `${label} — ${priceText}`, caption: c.chosen, value: priceValue(item.price) }}
             />
           </div>
         </div>
@@ -608,6 +611,7 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
           phone={site.whatsapp}
           lines={waLines}
           label={c.orderWa}
+          offer={item.key}
           className="!px-3 text-sm"
         />
         <a href="#order" className="btn btn-primary !px-3 text-sm">
