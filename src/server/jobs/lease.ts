@@ -24,10 +24,11 @@ export const jobName = (key: string) => key.replace(/:c[a-z0-9]{20,32}$/, "").re
 export async function withLease<T>(key: string, ttlMs: number, fn: () => Promise<T>, opts: { timeoutMs?: number } = {}): Promise<T | null> {
   const holder = randomUUID();
   const until = new Date(Date.now() + ttlMs);
+  // columns are `timestamp without time zone` in UTC: compare with the database clock in UTC, not the session timezone
   const rows = await prisma.$queryRaw<{ holder: string }[]>`
-    INSERT INTO "JobLease" ("key", "holder", "lockedUntil", "updatedAt") VALUES (${key}, ${holder}, ${until}, now())
-    ON CONFLICT ("key") DO UPDATE SET "holder" = ${holder}, "lockedUntil" = ${until}, "updatedAt" = now()
-      WHERE "JobLease"."lockedUntil" < now()
+    INSERT INTO "JobLease" ("key", "holder", "lockedUntil", "updatedAt") VALUES (${key}, ${holder}, ${until}, (now() AT TIME ZONE 'UTC'))
+    ON CONFLICT ("key") DO UPDATE SET "holder" = ${holder}, "lockedUntil" = ${until}, "updatedAt" = (now() AT TIME ZONE 'UTC')
+      WHERE "JobLease"."lockedUntil" < (now() AT TIME ZONE 'UTC')
     RETURNING "holder"`;
   if (rows[0]?.holder !== holder) return null; // someone else holds a live lease
 

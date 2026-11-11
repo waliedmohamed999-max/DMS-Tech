@@ -297,6 +297,7 @@ User documents are never in the release: they live in `DOCUMENT_STORAGE_DIR`, ou
   - `src/server/system/config.ts` is enforced only when the **server starts**, not during the build.
 - **Runtime:** every other variable stays in **cPanel → Setup Node.js App → Environment variables**, exactly as in §3. The release does not contain or replace any of them.
 - **Database connection:** use Supabase's **Session pooler** connection string (with `?sslmode=require`) as `DATABASE_URL`. Prisma migrations require a session-mode connection.
+- **Database timezone:** DateTime columns hold UTC. Raw SQL in the app compares with `now() AT TIME ZONE 'UTC'`, so a server or role timezone other than UTC is safe; keep it that way in any new raw SQL. Do not add `options=` to `DATABASE_URL` unless your pooler is known to accept that startup parameter.
 
 ### Installing a release (cPanel only, no SSH)
 
