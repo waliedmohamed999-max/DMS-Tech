@@ -7,6 +7,7 @@ import { reportError } from "@/server/obs/errors";
 import { spamReason } from "@/server/crm/website";
 import { emailWebsiteLead } from "@/server/notify/lead-mail";
 import { cappedBody } from "@/lib/capped-body";
+import { clientIp } from "@/lib/client-ip";
 
 const MAX_BODY = 16_000;
 
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function handle(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? "unknown";
+  const ip = clientIp(request.headers) ?? "unknown";
   const userAgent = request.headers.get("user-agent");
 
   const len = Number(request.headers.get("content-length") ?? 0);

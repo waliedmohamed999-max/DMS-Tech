@@ -7,6 +7,7 @@ import { resolveSession, type SessionUser } from "@/server/auth/service";
 import type { Ctx } from "@/server/context";
 import type { Permission } from "@/server/rbac/permissions";
 import { SESSION_COOKIE } from "./constants";
+import { clientIp } from "@/lib/client-ip";
 
 /**
  * Data Access Layer for the Business OS (Next docs: "Creating a Data Access Layer").
@@ -20,7 +21,7 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
 
 async function requestMeta() {
   const h = await headers();
-  return { ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? null, userAgent: h.get("user-agent") };
+  return { ip: clientIp(h), userAgent: h.get("user-agent") };
 }
 
 export function toCtx(s: SessionUser, meta?: Ctx["meta"]): Ctx {

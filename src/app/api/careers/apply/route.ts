@@ -8,6 +8,7 @@ import { applicationSchema, applicationSpam, captureJobApplication, CV_MAX_BYTES
 import { emailJobApplication } from "@/server/notify/careers-mail";
 import type { UploadedFile } from "@/server/ops/documents";
 import { cappedFormData } from "@/lib/capped-body";
+import { clientIp } from "@/lib/client-ip";
 
 /** A whole request: the CV (5 MB) plus the form fields. */
 const MAX_BODY = CV_MAX_BYTES + 64 * 1024;
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
 }
 
 async function handle(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? "unknown";
+  const ip = clientIp(request.headers) ?? "unknown";
   const userAgent = request.headers.get("user-agent");
   const len = Number(request.headers.get("content-length") ?? 0);
   if (len > MAX_BODY) return NextResponse.json({ ok: false, error: "too_large" }, { status: 413 });

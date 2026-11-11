@@ -7,6 +7,7 @@ import { getSession, toCtx } from "./dal";
 import { headers } from "next/headers";
 import { runWithObs } from "@/server/obs/context";
 import { classifyError, reportError, type ErrorCategory } from "@/server/obs/errors";
+import { clientIp } from "@/lib/client-ip";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data?: T }
@@ -24,7 +25,7 @@ export async function runAction<T>(fn: (ctx: Ctx) => Promise<T>, opts: { revalid
   // a temporary password must be replaced before anything else is allowed
   if (session.user.mustChangePassword && !opts.allowMustChange) return { ok: false, error: "FORBIDDEN" };
   const h = await headers();
-  const ctx = toCtx(session, { ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null, userAgent: h.get("user-agent") });
+  const ctx = toCtx(session, { ip: clientIp(h), userAgent: h.get("user-agent") });
   const rid = h.get("x-request-id");
   const requestId = rid && /^[A-Za-z0-9-]{8,64}$/.test(rid) ? rid : undefined;
   return runWithObs({ requestId, correlationId: requestId, actorId: ctx.userId, organizationId: ctx.organizationId, module: "action" }, () => execute(ctx, fn, opts));

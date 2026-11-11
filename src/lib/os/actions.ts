@@ -14,6 +14,7 @@ import { OS_LOCALE_COOKIE } from "@/i18n/request";
 import { SESSION_COOKIE, sessionCookieOptions } from "./constants";
 import { formToObject, runAction, type ActionResult } from "./action";
 import { getSession } from "./dal";
+import { clientIp } from "@/lib/client-ip";
 
 const secure = process.env.NODE_ENV === "production";
 
@@ -26,7 +27,7 @@ export async function loginAction(_: unknown, fd: FormData): Promise<{ error?: s
   const r = await login({
     email: String(fd.get("email") ?? ""),
     password: String(fd.get("password") ?? ""),
-    ip: h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "local",
+    ip: clientIp(h) ?? "local",
     userAgent: h.get("user-agent")
   });
   // return the email so the form can keep it (React resets form fields after an action)
