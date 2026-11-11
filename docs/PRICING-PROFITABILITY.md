@@ -4,7 +4,7 @@ The package prices were raised by about 10% on 2026-11-05 and rounded to …99. 
 
 Four offers run 1–14 Dec 2026, after the raised prices are live, priced 13–18% below the current packages. Each offer's contents, exclusions and struck price come from its packages; the struck price is computed, never typed. Approved offers that haven't started yet show as a preview in development only. Tests check that an offer is never dearer than a permanent plan for the same thing.
 
-Prices live in `src/content/offers.ts` (SAR, before 15% VAT). The profitability model is `src/lib/commercial/profitability.ts`; it is a design, not an admin screen. A screen can be added once finance approves the cost inputs.
+Prices live in `src/content/offers/packages.ts` (offers: `src/content/offers/campaigns.ts`) (SAR, before 15% VAT). The profitability model is `src/lib/commercial/profitability.ts`; it is a design, not an admin screen. A screen can be added once finance approves the cost inputs.
 
 ## Rules the code enforces
 

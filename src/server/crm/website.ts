@@ -95,7 +95,7 @@ export async function captureWebsiteLead(raw: unknown, meta: { ip?: string | nul
   const wa = normPhone(d.whatsapp || null);
   const service = (SERVICE_KEYS as readonly string[]).includes(d.service) ? d.service : d.service ? "other" : null;
   const budget = WEBSITE_BUDGET_KEYS.includes(d.budget) ? WEBSITE_BUDGETS[d.budget] : null;
-  // only keys that exist on the site are kept (the label comes from src/content/offers.ts, never from the visitor)
+  // only keys that exist on the site are kept (the label comes from src/content/offers/, never from the visitor)
   const catalog = d.offer ? await publishedCatalog() : undefined;
   const offer = d.offer ? offerLabel(d.offer, catalog) : null;
   // its reference price at the moment of the request (amount, billing, before VAT) — also resolved here, not sent

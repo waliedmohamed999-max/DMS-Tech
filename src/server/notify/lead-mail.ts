@@ -58,7 +58,7 @@ export function buildLeadMail(d: Lead, meta: { ip?: string | null; leadNumber?: 
     ["الصفحة", d.page],
     ["جاء من", d.referrer],
     ["الحملة", utm],
-    // the offer page answers (whitelisted keys, labels from src/content/offers.ts)
+    // the offer page answers (whitelisted keys, labels from src/content/offers/)
     ...Object.entries(d.details ?? {}).filter(([, v]) => v).map(([k, v]): [string, string] => [LEAD_DETAIL_LABELS[k as LeadDetailKey] ?? k, v ?? ""]),
     ["رقم العميل في النظام", meta.leadNumber ?? ""],
     ["الوقت", time],
