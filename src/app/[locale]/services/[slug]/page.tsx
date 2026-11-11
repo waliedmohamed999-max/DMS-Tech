@@ -9,7 +9,9 @@ import TechBackdrop from "@/components/ui/TechBackdrop";
 import { Icon } from "@/components/ui/Icon";
 import { FinalCta } from "@/components/home/Sections";
 import { Faq } from "@/components/ui/ProductBlocks";
-import { alternatesFor } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbLd, serviceLd } from "@/lib/structured-data";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -22,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const s = await getService(slug, locale as Locale);
   if (!s) return {};
-  return { ...alternatesFor(locale, `/services/${slug}`), title: s.title, description: s.description, openGraph: { images: [{ url: s.image }] } };
+  return pageMetadata({ locale, path: `/services/${slug}`, title: s.title, description: s.summary || s.description, image: s.image });
 }
 
 export default async function ServicePage({ params }: Props) {
@@ -33,13 +35,14 @@ export default async function ServicePage({ params }: Props) {
   const service = await getService(slug, locale);
   if (!service) notFound();
 
-  const [t, home, common, all, company, x] = await Promise.all([
+  const [t, home, common, all, company, x, nav] = await Promise.all([
     getTranslations("pages"),
     getTranslations("home"),
     getTranslations("common"),
     getServices(locale),
     getCompany(locale),
-    getServiceExtrasCopy(locale)
+    getServiceExtrasCopy(locale),
+    getTranslations("nav")
   ]);
   const quote = `/quote?service=${service.slug}`;
   const related = all.filter((s) => s.slug !== slug).slice(0, 3);
@@ -47,6 +50,16 @@ export default async function ServicePage({ params }: Props) {
 
   return (
     <>
+      <JsonLd
+        data={[
+          serviceLd(locale, { slug: service.slug, title: service.title, description: service.description, image: service.image, eyebrow: service.eyebrow }),
+          breadcrumbLd(locale, [
+            { name: nav("home"), path: "/" },
+            { name: nav("services"), path: "/services" },
+            { name: service.title, path: `/services/${service.slug}` }
+          ])
+        ]}
+      />
       {/* Hero — two-column like Wrike product pages */}
       <section className="on-dark relative overflow-hidden">
         <TechBackdrop />

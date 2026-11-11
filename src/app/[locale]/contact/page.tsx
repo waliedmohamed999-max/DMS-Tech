@@ -8,12 +8,12 @@ import { Icon } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import { LeadForm } from "@/components/forms/LeadForm";
 import { SocialLinks } from "@/components/layout/Footer";
-import { alternatesFor } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "pages" });
-  return { ...alternatesFor(locale, "/contact"), title: t("contactTitle").replace(/\*/g, ""), description: t("contactSub") };
+  return pageMetadata({ locale, path: "/contact", title: t("contactTitle"), description: t("contactSub"), image: "/images/photos/support.jpg" });
 }
 
 export default async function ContactPage({ params }: { params: Promise<{ locale: string }> }) {

@@ -4,6 +4,9 @@ import type { Job } from "./types";
  * Open roles (from 6 Nov 2026). Listed first on /careers; each has its own page with the application form.
  * Salaries are not published (agreed at the offer stage); locations follow how each role works.
  */
+/** the day these roles were published (structured data: JobPosting.datePosted) */
+export const OPEN_JOBS_POSTED_AT = "2026-11-06";
+
 export const openJobs: Job[] = [
   {
     slug: "ai-engineer",

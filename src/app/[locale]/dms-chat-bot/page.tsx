@@ -11,12 +11,12 @@ import { DarkSteps, Faq, SectionNav } from "@/components/ui/ProductBlocks";
 import { ChatbotHeroMockup } from "@/components/ui/ProductMockups";
 import ToolExplorer from "@/components/ui/ToolExplorer";
 import { FinalCta } from "@/components/home/Sections";
-import { alternatesFor } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const c = await getChatbot(locale as Locale);
-  return { ...alternatesFor(locale, "/dms-chat-bot"), title: `${c.title} — ${c.tagline.replace(/\*/g, "")}`, description: c.description, openGraph: { images: [{ url: c.image }] } };
+  return pageMetadata({ locale, path: "/dms-chat-bot", title: `${c.title} — ${c.tagline}`, description: c.description, image: c.image });
 }
 
 /**

@@ -11,7 +11,9 @@ import TechBackdrop from "@/components/ui/TechBackdrop";
 import { Icon } from "@/components/ui/Icon";
 import { FinalCta } from "@/components/home/Sections";
 import { ProjectCard, hostOf } from "@/components/clients/ProjectCard";
-import { alternatesFor } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbLd } from "@/lib/structured-data";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -24,7 +26,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const p = await getProject(slug, locale as Locale);
   if (!p) return {};
-  return { ...alternatesFor(locale, `/clients/${slug}`), title: p.name, description: p.description?.split("\n")[0] ?? undefined, openGraph: { images: [{ url: p.cover }] } };
+  // projects without a published description fall back to their category, then to the clients page intro
+  const t = await getTranslations({ locale, namespace: "pages" });
+  const description = p.description?.split("\n")[0] || (p.category ? `${p.name} — ${p.category}` : t("clientsSub"));
+  return pageMetadata({ locale, path: `/clients/${slug}`, title: p.name, description, image: p.cover });
 }
 
 export default async function ClientProjectPage({ params }: Props) {
@@ -45,6 +50,13 @@ export default async function ClientProjectPage({ params }: Props) {
 
   return (
     <>
+      <JsonLd
+        data={breadcrumbLd(locale, [
+          { name: nav("home"), path: "/" },
+          { name: nav("clients"), path: "/clients" },
+          { name: project.name, path: `/clients/${project.slug}` }
+        ])}
+      />
       <section className="on-dark relative overflow-hidden">
         <TechBackdrop />
         <div className="container-site relative grid items-center gap-12 py-16 md:py-24 lg:grid-cols-2">

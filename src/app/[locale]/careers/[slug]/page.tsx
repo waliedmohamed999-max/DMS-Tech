@@ -6,7 +6,11 @@ import { Link } from "@/i18n/navigation";
 import { getCareersCopy, getJob, getJobSlugs, getJobs } from "@/lib/content";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import TechBackdrop from "@/components/ui/TechBackdrop";
-import { alternatesFor } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbLd, jobPostingLd } from "@/lib/structured-data";
+import { jobs as rawJobs } from "@/content/careers";
+import { OPEN_JOBS_POSTED_AT, openJobs } from "@/content/careers-open";
 import JobApplyForm from "@/components/careers/JobApplyForm";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
@@ -21,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const j = await getJob(slug, locale as Locale);
   if (!j) return {};
   // a closed role keeps its page for old links but leaves search results
-  return { ...alternatesFor(locale, `/careers/${slug}`), title: `${j.title} — ${j.team}`, description: j.about, ...(j.status === "closed" ? { robots: { index: false, follow: true } } : {}) };
+  return { ...pageMetadata({ locale, path: `/careers/${slug}`, title: `${j.title} — ${j.team}`, description: j.description || j.about, image: "/images/photos/careers-office.jpg" }), ...(j.status === "closed" ? { robots: { index: false, follow: true } } : {}) };
 }
 
 /** A titled section of the job page with a bullet list. */
@@ -73,6 +77,19 @@ export default async function JobPage({ params }: Props) {
   const closed = job.status === "closed";
   const closedOn = job.closedAt ? new Intl.DateTimeFormat(locale === "ar" ? "ar-SA-u-nu-latn-ca-gregory" : "en-GB", { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${job.closedAt}T00:00:00Z`)) : "";
 
+  const source = rawJobs.find((j) => j.slug === slug);
+  const posting = source
+    ? jobPostingLd(locale, source, {
+        datePosted: openJobs.some((j) => j.slug === slug) ? OPEN_JOBS_POSTED_AT : undefined,
+        labels: { about: c.about, responsibilities: c.responsibilities, requirements: c.requirements, niceToHave: c.niceToHave }
+      })
+    : null;
+  const crumbs = breadcrumbLd(locale, [
+    { name: nav("home"), path: "/" },
+    { name: nav("careers"), path: "/careers" },
+    { name: job.title, path: `/careers/${job.slug}` }
+  ]);
+
   const facts: [IconName, string, string][] = [
     ["Layers", job.team, ""],
     ["Clock", job.type, ""],
@@ -83,6 +100,7 @@ export default async function JobPage({ params }: Props) {
 
   return (
     <>
+      <JsonLd data={posting ? [posting, crumbs] : [crumbs]} />
       <section className="on-dark relative overflow-hidden">
         <TechBackdrop />
         <div className="container-site relative grid gap-6 py-14 md:py-20">

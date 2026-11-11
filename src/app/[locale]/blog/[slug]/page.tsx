@@ -7,7 +7,9 @@ import { Link } from "@/i18n/navigation";
 import { getPost, getPostSlugs, getPosts } from "@/lib/content";
 import { Icon } from "@/components/ui/Icon";
 import { formatDate } from "@/lib/format";
-import { alternatesFor } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { blogPostingLd, breadcrumbLd } from "@/lib/structured-data";
 
 type Props = { params: Promise<{ locale: string; slug: string }> };
 
@@ -20,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const p = await getPost(slug, locale as Locale);
   if (!p) return {};
-  return { ...alternatesFor(locale, `/blog/${slug}`), title: p.title, description: p.excerpt, openGraph: { type: "article", images: [{ url: p.image }] } };
+  return pageMetadata({ locale, path: `/blog/${slug}`, title: p.title, description: p.excerpt, image: p.image, type: "article", publishedTime: p.date });
 }
 
 export default async function PostPage({ params }: Props) {
@@ -34,6 +36,16 @@ export default async function PostPage({ params }: Props) {
 
   return (
     <article>
+      <JsonLd
+        data={[
+          blogPostingLd(locale, post),
+          breadcrumbLd(locale, [
+            { name: nav("home"), path: "/" },
+            { name: nav("blog"), path: "/blog" },
+            { name: post.title, path: `/blog/${post.slug}` }
+          ])
+        ]}
+      />
       <header className="bg-cloud">
         <div className="container-site grid max-w-4xl gap-5 py-16 text-center md:py-20">
           <Link href="/blog" className="link-arrow justify-center">
