@@ -1,0 +1,129 @@
+# End-to-end smoke (Playwright + axe-core) against a production build of the app.
+# TEST ONLY — never deploys, never connects to a production database, uses no repository secrets, sends no e-mail.
+# Throwaway PostgreSQL service → migrate → bootstrap a throwaway admin → next build → next start → Playwright (chromium).
+name: E2E (Playwright)
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main, "deploy/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Playwright smoke + a11y (chromium)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      CI: "true"
+      # build time: compiled into the bundles (canonical URLs only — the tests run against localhost)
+      NEXT_PUBLIC_SITE_URL: https://dmstech.sa
+      # throwaway database for this job only
+      E2E_DATABASE_URL: postgresql://ci:ci-throwaway@localhost:5432/dms_e2e
+      # localhost (not 127.0.0.1): the Secure "__Host-" session cookie is accepted on http://localhost
+      E2E_BASE_URL: http://localhost:3000
+      E2E_ADMIN_EMAIL: e2e.admin@example.com
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-throwaway
+          POSTGRES_DB: dms_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci -d dms_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.20.2   # same as cpanel-build.yml / the cPanel Node.js Selector
+          cache: npm
+
+      - name: Install (clean, from the lockfile)
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Playwright Chromium (+ OS deps)
+        run: npx playwright install --with-deps chromium
+
+      - name: Migrate the throwaway database
+        run: DATABASE_URL="$E2E_DATABASE_URL" npx prisma migrate deploy
+
+      - name: Per-run throwaway secrets + admin password
+        run: |
+          set -euo pipefail
+          HR=$(openssl rand -base64 32); IM=$(openssl rand -base64 32); PW="E2e-$(openssl rand -hex 16)!"
+          echo "::add-mask::$HR"; echo "::add-mask::$IM"; echo "::add-mask::$PW"
+          {
+            echo "HR_FIELD_KEY=$HR"
+            echo "INTEGRATION_MASTER_KEY=$IM"
+            echo "E2E_ADMIN_PASSWORD=$PW"
+          } >> "$GITHUB_ENV"
+
+      - name: Bootstrap organization + throwaway admin (scripts/bootstrap.ts)
+        env:
+          DATABASE_URL: ${{ env.E2E_DATABASE_URL }}
+          APP_ENV: test
+        run: OS_ADMIN_EMAIL="$E2E_ADMIN_EMAIL" OS_ADMIN_NAME="E2E Admin" OS_ADMIN_PASSWORD="$E2E_ADMIN_PASSWORD" npm run os:bootstrap
+
+      - name: Production build
+        env:
+          # `next build` only needs DATABASE_URL to be SET (route config collection) — it never connects
+          DATABASE_URL: postgresql://build:build@127.0.0.1:1/build
+          NEXT_BUILD_CPUS: "4"
+        # one retry: next/font downloads the Google fonts during the build (transient network errors)
+        run: |
+          npm run build || {
+            echo "::warning title=Build retried::first attempt failed (often a transient font download) — retrying once"
+            sleep 20
+            npm run build
+          }
+
+      - name: Start the app (next start, production mode)
+        env:
+          NODE_ENV: production
+          APP_ENV: test
+          DATABASE_URL: ${{ env.E2E_DATABASE_URL }}
+          DOCUMENT_STORAGE: local
+          # no mail transport at all: no SMTP_*, and a sendmail path that does not exist
+          SENDMAIL_PATH: /nonexistent/sendmail
+        run: |
+          set -euo pipefail
+          export DOCUMENT_STORAGE_DIR="$RUNNER_TEMP/documents"; mkdir -p "$DOCUMENT_STORAGE_DIR"
+          nohup npx next start -p 3000 > "$RUNNER_TEMP/app.log" 2>&1 &
+          for _ in $(seq 1 60); do curl -fsS -o /dev/null "$E2E_BASE_URL/api/health" && exit 0; sleep 1; done
+          cat "$RUNNER_TEMP/app.log"; exit 1
+
+      - name: Playwright
+        run: npm run test:e2e
+
+      - name: Accessibility findings (soft — annotated, not failing)
+        if: always()
+        run: node e2e/a11y-summary.mjs >> "$GITHUB_STEP_SUMMARY"
+
+      - name: App log
+        if: failure()
+        run: tail -200 "$RUNNER_TEMP/app.log" || true
+
+      - name: Upload HTML report + traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.sha }}
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          if-no-files-found: ignore
+          retention-days: 14

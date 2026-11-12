@@ -124,6 +124,8 @@ jobs:
       - name: Remove devDependencies
         run: |
           npm prune --omit=dev --no-audit --no-fund
+          # next lists @playwright/test as an optional peer, so prune keeps it; it is test-only and must not ship
+          rm -rf node_modules/@playwright node_modules/playwright node_modules/playwright-core node_modules/.bin/playwright
           git diff --exit-code package-lock.json
 
       - name: Package release (two archives + manifest, sensitive-file scan)

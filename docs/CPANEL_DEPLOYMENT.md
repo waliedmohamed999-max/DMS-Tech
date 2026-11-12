@@ -244,7 +244,7 @@ The workflow [`.github/workflows/cpanel-build.yml`](../.github/workflows/cpanel-
 3. `typecheck`
 4. `lint`
 5. `npm run cpanel:build`, with `NEXT_PUBLIC_SITE_URL=https://dmstech.sa` and `GIT_COMMIT=<sha>`
-6. `npm prune --omit=dev`
+6. `npm prune --omit=dev`, then `rm -rf node_modules/@playwright node_modules/playwright node_modules/playwright-core` (Next.js lists Playwright as an optional peer, so prune keeps it; the packaging script refuses to ship it)
 7. `npm run cpanel:package`
 8. **Rehearsal of the release:**
    - Extract it into a clean CloudLinux-style layout, with `node_modules` as a symlink into a virtual environment.

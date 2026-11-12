@@ -28,3 +28,8 @@ id_ed25519*
 
 # prebuilt cPanel release archives (scripts/cpanel-artifact.mjs)
 /dist/
+
+# Playwright (e2e/)
+/e2e/test-results/
+/e2e/playwright-report/
+/e2e/.cache/
