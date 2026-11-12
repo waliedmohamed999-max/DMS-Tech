@@ -7,13 +7,13 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import JobsBrowser from "@/components/careers/JobsBrowser";
 import TechBackdrop from "@/components/ui/TechBackdrop";
 import { DarkSteps } from "@/components/ui/ProductBlocks";
-import { alternatesFor } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
 import JobApplyForm from "@/components/careers/JobApplyForm";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "pages" });
-  return { ...alternatesFor(locale, "/careers"), title: t("careersTitle").replace(/\*/g, ""), description: t("careersSub") };
+  return pageMetadata({ locale, path: "/careers", title: t("careersTitle"), description: t("careersSub"), image: "/images/photos/careers-office.jpg" });
 }
 
 /** Careers: open roles filtered by department (each links to its full page), why work with us, the hiring process, and a general CV call. */

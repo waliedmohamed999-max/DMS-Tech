@@ -13,6 +13,8 @@ import { PauseOffscreenMotion } from "@/components/layout/PauseOffscreenMotion";
 import { ScrollToTop } from "@/components/layout/ScrollToTop";
 import { AttributionCapture } from "@/components/layout/AttributionCapture";
 import { Splash } from "@/components/layout/Splash";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { organizationLd } from "@/lib/structured-data";
 import "../globals.css";
 
 
@@ -46,7 +48,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       type: "website",
       images: [{ url: "/images/photos/about-team.jpg" }]
     },
-    twitter: { card: "summary_large_image", title: t("title"), description: t("description") },
+    twitter: { card: "summary_large_image", title: t("title"), description: t("description"), images: ["/images/photos/about-team.jpg"] },
     icons: { icon: "/images/logo.png" }
   };
 }
@@ -62,13 +64,14 @@ export default async function LocaleLayout({
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale as Locale);
 
-  const services = await getServices(locale as Locale);
+  const [services, meta] = await Promise.all([getServices(locale as Locale), getTranslations({ locale, namespace: "metadata" })]);
   const navServices = services.map(({ slug, icon, title, summary }) => ({ slug, icon, title, summary }));
 
   // data-scroll-behavior: Next.js turns smooth scrolling off while it jumps to the top of a new page
   return (
     <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={fontVars} data-scroll-behavior="smooth">
       <body>
+        <JsonLd data={organizationLd(locale, meta("description"))} />
         <Splash locale={locale} />
         <NextIntlClientProvider>
           <Header services={navServices} />
