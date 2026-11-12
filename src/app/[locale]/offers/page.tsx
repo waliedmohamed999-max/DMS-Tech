@@ -84,7 +84,7 @@ export default async function OffersPage({ params, searchParams }: { params: Pro
                   {c.customQuote}
                 </Link>
               )}
-              <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost text-white">
+              <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer" data-track-cta="offers_hero_whatsapp" className="btn btn-ghost text-white">
                 <BrandIcon slug="whatsapp" size={17} /> {c.whatsapp}
               </a>
             </div>
@@ -335,7 +335,7 @@ export default async function OffersPage({ params, searchParams }: { params: Pro
               <p className="text-white/75">{c.ctaText}</p>
             </div>
             <div className="relative flex flex-wrap gap-3 md:justify-end">
-              <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+              <a href={`https://wa.me/${site.whatsapp}`} target="_blank" rel="noopener noreferrer" data-track-cta="offers_cta_whatsapp" className="btn btn-primary">
                 <BrandIcon slug="whatsapp" size={17} /> {c.whatsapp}
               </a>
               <Link href="/quote" className="btn btn-outline">

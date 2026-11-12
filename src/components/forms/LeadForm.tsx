@@ -6,7 +6,7 @@ import { Icon } from "@/components/ui/Icon";
 import { BrandIcon } from "@/components/ui/Brand";
 import { site } from "@/content/site";
 import { ATTRIBUTION_KEY, readAttribution } from "@/components/layout/AttributionCapture";
-import { track } from "@/lib/track";
+import { newEventId, track } from "@/lib/track";
 
 type Status = "idle" | "sending" | "success" | "error";
 
@@ -58,7 +58,8 @@ export function LeadForm({
   services: { slug: string; title: string }[];
   defaultService?: string;
   source?: "quote" | "contact" | "career" | "offer";
-  offer?: { key: string; label: string; caption: string };
+  /** `value`: the package's SAR price before VAT when known (sent as the generate_lead value) */
+  offer?: { key: string; label: string; caption: string; value?: number };
   /** extra questions for this offer (answers go to the CRM as details) */
   questions?: FormQuestion[];
 }) {
@@ -89,10 +90,13 @@ export function LeadForm({
     setSummary(
       [`DMS Tech — ${offer?.label ?? serviceTitle}`, data.name, data.phone, data.email, data.company, data.message].filter(Boolean).join("\n")
     );
+    // one id for this request: the dataLayer event and the CRM lead (captureMeta.eventId) carry the same value
+    const eventId = newEventId();
     try {
-      await submitLead({ ...data, ...(Object.keys(details).length ? { details } : {}), source, locale, ...attribution(), elapsed: Date.now() - shownAt.current });
+      await submitLead({ ...data, ...(Object.keys(details).length ? { details } : {}), source, locale, ...attribution(), elapsed: Date.now() - shownAt.current, eventId });
       setStatus("success");
-      track("generate_lead", { form: source, offer: offer?.key, service: data.service }, `lead:${shownAt.current}`);
+      const value = offer?.value && offer.value > 0 ? offer.value : undefined;
+      track("generate_lead", { form: source, offer: offer?.key, service: data.service, event_id: eventId, value, currency: value ? "SAR" : undefined }, `lead:${shownAt.current}`);
       form.reset();
     } catch {
       setStatus("error");
@@ -106,7 +110,7 @@ export function LeadForm({
           <Icon name="CircleCheck" size={30} />
         </span>
         <p className="text-xl font-bold">{t("success")}</p>
-        <a href={waLink(summary)} target="_blank" rel="noopener noreferrer" className="btn btn-dark">
+        <a href={waLink(summary)} target="_blank" rel="noopener noreferrer" className="btn btn-dark" data-track-cta="lead_success_whatsapp" data-track-offer={offer?.key}>
           <BrandIcon slug="whatsapp" size={18} /> {t("successWa")}
         </a>
       </div>
@@ -235,9 +239,11 @@ export function QuickLead({
     if (!isEmail && !phoneRe.test(value)) return setError(t("invalidContact"));
     setError("");
     setStatus("sending");
+    const eventId = newEventId();
     try {
-      await submitLead({ [isEmail ? "email" : "phone"]: value, source, locale, ...attribution() });
+      await submitLead({ [isEmail ? "email" : "phone"]: value, source, locale, ...attribution(), eventId });
       setStatus("success");
+      track("generate_lead", { form: source, event_id: eventId }, `lead:${eventId}`);
     } catch {
       setStatus("error");
     }
@@ -248,6 +254,7 @@ export function QuickLead({
       href={waLink(locale === "ar" ? "مرحباً DMS Tech، أرغب في الحصول على عرض سعر." : "Hi DMS Tech, I'd like to get a quote.")}
       target="_blank"
       rel="noopener noreferrer"
+      data-track-cta="quick_lead_whatsapp"
       className={`inline-flex items-center gap-2 text-sm underline-offset-4 hover:underline ${dark ? "text-[#c4c6c8]" : "text-iron"}`}
     >
       <BrandIcon slug="whatsapp" size={16} /> {alt}

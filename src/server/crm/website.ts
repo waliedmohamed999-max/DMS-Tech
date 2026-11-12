@@ -20,6 +20,8 @@ import { publishedCatalog } from "../website/catalog";
 
 const phoneRe = /^\+?[0-9\s()-]{8,20}$/;
 const t = (max: number) => z.string().trim().max(max).optional().default("");
+/** attribution keys accepted from the browser: utm_* and the ad platforms' click ids (same list as ATTRIBUTION_PARAMS) */
+export const ATTRIBUTION_KEY_RE = /^(utm_(source|medium|campaign|term|content)|gclid|gbraid|wbraid|fbclid|ttclid|sccid|li_fat_id)$/;
 
 export const websiteLeadSchema = z
   .object({
@@ -36,7 +38,9 @@ export const websiteLeadSchema = z
     source: z.enum(["quote", "contact", "hero", "cta", "career", "offer"]).default("quote"),
     locale: z.enum(["ar", "en"]).default("ar"),
     /** campaign attribution: utm_* plus the ad platforms' click ids (first touch of the visit) */
-    utm: z.record(z.string().regex(/^(utm_(source|medium|campaign|term|content)|gclid|fbclid|ttclid|sccid)$/), z.string().max(150)).optional(),
+    utm: z.record(z.string().regex(ATTRIBUTION_KEY_RE), z.string().max(150)).optional(),
+    /** client-generated UUID of the browser generate_lead event, kept in captureMeta for later browser/server dedup */
+    eventId: z.uuid().optional(),
     /** answers to the offer page's extra questions (whitelisted keys, see LEAD_DETAIL_LABELS) */
     details: z.partialRecord(z.enum(Object.keys(LEAD_DETAIL_LABELS) as [LeadDetailKey, ...LeadDetailKey[]]), z.string().trim().max(200)).optional(),
     referrer: z.string().max(300).optional().default(""),
@@ -105,7 +109,7 @@ export async function captureWebsiteLead(raw: unknown, meta: { ip?: string | nul
   const details = Object.fromEntries(Object.entries(d.details ?? {}).filter(([, v]) => v)) as Partial<Record<LeadDetailKey, string>>;
   const detailLines = Object.entries(details).map(([k, v]) => `• ${LEAD_DETAIL_LABELS[k as LeadDetailKey]}: ${v}`);
   if (detailLines.length) d.message = [d.message, ...detailLines].filter(Boolean).join("\n");
-  const captureMeta = { form: d.source, offer: offer ? { key: d.offer, label: offer, ...(reference ? { price: reference.price, from: reference.from, billing: reference.billing, termMonths: reference.termMonths, reference: reference.text } : {}) } : null, utm: d.utm ?? {}, referrer: d.referrer || null, page: d.page || null, ip: meta.ip ?? null, userAgent: meta.userAgent?.slice(0, 200) ?? null, budgetOption: d.budget || null, rawService: d.service || null, details };
+  const captureMeta = { form: d.source, offer: offer ? { key: d.offer, label: offer, ...(reference ? { price: reference.price, from: reference.from, billing: reference.billing, termMonths: reference.termMonths, reference: reference.text } : {}) } : null, utm: d.utm ?? {}, referrer: d.referrer || null, page: d.page || null, ip: meta.ip ?? null, userAgent: meta.userAgent?.slice(0, 200) ?? null, budgetOption: d.budget || null, rawService: d.service || null, details, eventId: d.eventId ?? null };
 
   const matchOr = [
     ...(email ? [{ emailNormalized: email }] : []),

@@ -301,13 +301,13 @@ function Journey({ steps, groups, labels, arrow }: { steps: JourneyView[]; group
 }
 
 /** Opens a chat with the company WhatsApp number, pre-filled with what the client wants, its price and this page link. */
-export function WhatsAppOrder({ phone, lines, label, className = "" }: { phone: string; lines: string[]; label: string; className?: string }) {
+export function WhatsAppOrder({ phone, lines, label, offer, className = "" }: { phone: string; lines: string[]; label: string; offer?: string; className?: string }) {
   return (
     <button
       type="button"
       className={`btn justify-center bg-[#25d366] text-white hover:bg-[#1ebe5b] ${className}`}
       onClick={() => {
-        track("click_cta", { cta: "whatsapp_order", page: window.location.pathname });
+        track("click_cta", { cta: "whatsapp_order", channel: "whatsapp", offer, page: window.location.pathname });
         const text = [...lines, window.location.href.split("#")[0]].join("\n");
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
       }}
@@ -318,7 +318,7 @@ export function WhatsAppOrder({ phone, lines, label, className = "" }: { phone: 
 }
 
 /** Copy the page link / send it on WhatsApp (for the team sharing an offer with a client). */
-export function ShareLink({ title, labels }: { title: string; labels: { share: string; copy: string; copied: string; shareWa: string } }) {
+export function ShareLink({ title, offer, labels }: { title: string; offer?: string; labels: { share: string; copy: string; copied: string; shareWa: string } }) {
   const [copied, setCopied] = useState(false);
   // read the address at click time (no state to sync with the browser)
   const url = () => window.location.href.split("#")[0];
@@ -338,7 +338,14 @@ export function ShareLink({ title, labels }: { title: string; labels: { share: s
       >
         <Icon name="Link" size={15} /> {copied ? labels.copied : labels.copy}
       </button>
-      <button type="button" className="btn-ghost" onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(`${title}\n${url()}`)}`, "_blank", "noopener,noreferrer")}>
+      <button
+        type="button"
+        className="btn-ghost"
+        onClick={() => {
+          track("click_cta", { cta: "whatsapp_share", channel: "whatsapp", offer, page: window.location.pathname });
+          window.open(`https://wa.me/?text=${encodeURIComponent(`${title}\n${url()}`)}`, "_blank", "noopener,noreferrer");
+        }}
+      >
         <BrandIcon slug="whatsapp" size={15} colored /> {labels.shareWa}
       </button>
     </div>
