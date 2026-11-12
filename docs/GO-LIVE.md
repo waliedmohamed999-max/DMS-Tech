@@ -35,7 +35,8 @@ Exit code:
 | `DOCUMENT_STORAGE` | yes | `local` (+ `DOCUMENT_STORAGE_DIR` on a persistent, backed-up volume) or `s3` (+ `S3_*`) |
 | `INTEGRATION_MASTER_KEY` | if secrets are stored | `openssl rand -base64 32`, in the platform secret manager, backed up separately from database backups |
 | `BACKUP_DIR`, `VERIFY_DATABASE_URL` | for backups | off-server, access-controlled; verification server ≠ production |
-| `REQUIRE_WORKER=1` | recommended | readiness then requires the worker heartbeat |
+| `REQUIRE_WORKER=1` | yes, once the worker runs | readiness then fails when the worker heartbeat is older than 5 min; `go-live:check` warns while it is unset. Set it in the **web** app's environment, after the first worker pass ([CPANEL_DEPLOYMENT.md §11](CPANEL_DEPLOYMENT.md#11-background-worker-required)) |
+| `DB_POOL_MAX`, `DB_POOL_IDLE_TIMEOUT_MS`, `DB_CONNECTION_TIMEOUT_MS` | recommended (Supabase session pooler) | Per-process `pg` pool limits; unset = `pg` defaults (10 connections, no connect timeout). Values for web vs worker: [CPANEL_DEPLOYMENT.md §12](CPANEL_DEPLOYMENT.md#12-database-connection-limits) |
 | `LOG_LEVEL`, `ERROR_REPORTER` / `SENTRY_DSN` | optional | error tracking is "not configured" until an adapter is installed |
 | `ALLOW_DEMO_SEED`, `TEST_DATABASE_URL`, `OS_LOCAL_PROD_TEST` | **must be absent** | critical config error in production |
 | `APP_ENV=production` | yes (Phase 10) | Deployment environment, separate from `NODE_ENV`. It must match the database's immutable `DeploymentMarker` and the storage marker file |
@@ -59,10 +60,10 @@ Verify: `npm run config:check` → `"ok": true` with no critical issue. The serv
 - [ ] **BLOCKER** Domain + HTTPS (valid certificate); HSTS header present (`npm run smoke` against the URL).
 - [ ] **BLOCKER** Database provisioned, encrypted at rest, automated snapshots / PITR enabled.
 - [ ] **BLOCKER** `npm run deploy:preflight` passes; `npm run db:deploy` applied; `npm run deploy:verify` passes.
-- [ ] **BLOCKER** First `npm run db:backup` + `npm run db:verify-backup` succeeded; nightly schedule configured; backups stored off-server and encrypted.
+- [ ] **BLOCKER** First `npm run db:backup` + `npm run db:verify-backup` succeeded; nightly schedule configured (`db:backup` → `db:verify-backup` → off-server copy → `backup:prune -- --apply`: [CPANEL_DEPLOYMENT.md §13](CPANEL_DEPLOYMENT.md#13-nightly-database-backups)); backups stored off-server and encrypted.
 - [ ] **BLOCKER** Document storage persistent and backed up (`storage:backup` / S3 versioning); `npm run storage:verify` passes.
 - [ ] **BLOCKER** Secrets in the platform secret manager (never in the repository); `INTEGRATION_MASTER_KEY` backed up separately.
-- [ ] **BLOCKER** Worker running (`npm run worker -- --loop` as a service, or `npm run worker` every minute); system-health shows the jobs HEALTHY.
+- [ ] **BLOCKER** Worker running (`npm run worker -- --loop` as a service, or `npm run worker` every minute from cron wrapped in `flock -n` so passes never overlap: [CPANEL_DEPLOYMENT.md §11](CPANEL_DEPLOYMENT.md#11-background-worker-required)); `REQUIRE_WORKER=1` set; system-health shows the jobs HEALTHY and `/api/ready` reports the `worker` check `ok`.
 - [ ] **BLOCKER** Demo data absent: no `@dms.test` users (readiness fails otherwise), demo seed never run on this database.
 - [ ] **BLOCKER** First Super Admin created with `npm run os:bootstrap` (strong, temporary password → changed at first sign-in); no shared accounts; second admin for break-glass.
 - [ ] **BLOCKER** Company data in Settings: legal name (AR/EN), VAT number, address, logo, currency, timezone, invoice / quotation numbering, approval thresholds.

@@ -2,8 +2,11 @@
  * Unified operational worker (Phase 9) — sweeps, integrations, domain-event recovery, automation retries,
  * system alerts and daily retention, each under its own lease (safe with several instances).
  *
- *   npm run worker              # one pass (cron every 1–5 min)
+ *   npm run worker              # one pass (cron every minute, wrapped in `flock -n` — docs/CPANEL_DEPLOYMENT.md)
  *   npm run worker -- --loop    # long-running; heartbeat "worker:loop" every pass (30 s)
+ * Both modes write the "worker:loop" heartbeat (before and after the pass), so `REQUIRE_WORKER=1` readiness and the
+ * `worker_down` alert work with the cron as well. A one-shot pass leaves it SUCCEEDED; a pass that dies leaves it
+ * RUNNING with a stopped heartbeat, which the job registry reports as STUCK.
  */
 import "dotenv/config";
 import { randomUUID } from "node:crypto";
@@ -36,9 +39,9 @@ async function main() {
   do {
     const started = Date.now();
     // heartbeat BEFORE the pass too: the alert step of this very pass must not see the worker as "never ran / down"
-    if (loop) await heartbeat("worker:loop", holder);
+    await heartbeat("worker:loop", holder);
     const r = await systemTick();
-    if (loop) await heartbeat("worker:loop", holder);
+    await heartbeat("worker:loop", holder, loop ? "RUNNING" : "SUCCEEDED");
     console.log(JSON.stringify({ ts: new Date().toISOString(), level: "info", msg: "worker_pass", ms: Date.now() - started, result: r }));
     if (loop && !stop)
       await new Promise<void>((res) => {
