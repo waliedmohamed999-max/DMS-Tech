@@ -14,7 +14,7 @@ import { basisPrice, fileCatalog, groupAliases, offerAliases, offersCopy, retire
  * Publishing is refused while the catalog has a problem a visitor would see (a duplicate link, an offer that costs more
  * than its packages, a package that doesn't exist…), so the page can never contradict itself.
  * Until the first publish, and whenever the database can't be read, the site shows the built-in catalog
- * (src/content/offers.ts) — the page never goes blank.
+ * (src/content/offers/) — the page never goes blank.
  */
 
 export const CATALOG_KEY = "offers";

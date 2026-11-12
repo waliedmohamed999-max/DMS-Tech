@@ -373,7 +373,7 @@ async function lockZatcaChains(targetUrl: string, file: string) {
   const c = await client(targetUrl);
   try {
     const exists = Number((await c.query(`SELECT count(*)::int AS n FROM pg_tables WHERE schemaname = 'public' AND tablename = 'ZatcaEgsUnit'`)).rows[0].n);
-    if (exists) await c.query(`UPDATE "ZatcaEgsUnit" SET "status" = 'LOCKED_AFTER_RESTORE', "lockedReason" = $1, "updatedAt" = now() WHERE "status" = 'ACTIVE'`, [`restored from ${path.basename(file)} at ${new Date().toISOString()}`]);
+    if (exists) await c.query(`UPDATE "ZatcaEgsUnit" SET "status" = 'LOCKED_AFTER_RESTORE', "lockedReason" = $1, "updatedAt" = (now() AT TIME ZONE 'UTC') WHERE "status" = 'ACTIVE'`, [`restored from ${path.basename(file)} at ${new Date().toISOString()}`]);
   } finally {
     await c.end();
   }

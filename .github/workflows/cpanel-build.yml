@@ -8,6 +8,8 @@ on:
   workflow_dispatch:
   push:
     branches: [main, "deploy/**"]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -17,8 +19,47 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    name: Test suite (Vitest)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      # the suite refuses any database whose name lacks "_test"
+      TEST_DATABASE_URL: postgresql://ci:ci-throwaway@localhost:5432/dms_os_test
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci-throwaway
+          POSTGRES_DB: dms_os_test
+          # a non-UTC server timezone on purpose: catches SQL that mixes now() with the UTC timestamp columns
+          TZ: Asia/Riyadh
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci -d dms_os_test"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.20.2
+          cache: npm
+      - name: Install (clean, from the lockfile)
+        run: npm ci --no-audit --no-fund
+      - name: Migrate the throwaway test database
+        run: DATABASE_URL="$TEST_DATABASE_URL" npx prisma migrate deploy
+      - name: Assert the database really runs on a non-UTC timezone
+        run: test "$(PGPASSWORD=ci-throwaway psql -h localhost -U ci -d dms_os_test -Atc 'show timezone')" = "Asia/Riyadh"
+      - name: Vitest
+        run: npm test
+
   build:
     name: Build, package and rehearse
+    needs: test
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
