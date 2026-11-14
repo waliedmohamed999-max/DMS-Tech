@@ -8,7 +8,9 @@ for (const { path, label } of [
   { path: "/", label: "home-ar" },
   { path: "/en", label: "home-en" },
   { path: "/quote", label: "quote-ar" },
-  { path: "/en/quote", label: "quote-en" }
+  { path: "/en/quote", label: "quote-en" },
+  { path: "/offers", label: "offers-ar" },
+  { path: "/en/offers", label: "offers-en" }
 ]) {
   test(`a11y: ${label} (${path})`, async ({ page }, testInfo) => {
     await page.goto(path);
