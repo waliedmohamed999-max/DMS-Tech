@@ -530,6 +530,9 @@
       "kpi": {
         "collected": "المحصّل",
         "receivables": "الذمم المستحقة",
+        "overdueInvoices": "فواتير متأخرة",
+        "overdueAmount": "مبلغ الفواتير المتأخرة",
+        "mrr": "الإيراد الشهري المتكرر (MRR)",
         "expenses": "المصروفات",
         "pipeline": "قيمة خط المبيعات",
         "activeClients": "العملاء النشطون",

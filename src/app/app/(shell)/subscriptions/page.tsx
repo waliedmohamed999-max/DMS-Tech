@@ -56,7 +56,19 @@ export default async function SubscriptionsPage({ searchParams }: { searchParams
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {stat(t.mrr, <span dir="ltr">{m(k.mrr)}</span>, t.mrrSub)}
+        {stat(
+          t.mrr,
+          <span dir="ltr">{m(k.mrr)}</span>,
+          <>
+            {t.mrrSub}
+            {/* other currencies are never added into the headline — listed on their own */}
+            {k.otherCurrencies.map((c) => (
+              <span key={c.currency} dir="ltr" className="ms-1 tabular">
+                + {m(c.mrr, c.currency)}
+              </span>
+            ))}
+          </>
+        )}
         {stat(t.arr, <span dir="ltr">{m(k.arr)}</span>)}
         {stat(t.active, k.counts.ACTIVE, `${t.paused}: ${k.counts.PAUSED} · ${t.ending}: ${k.counts.ENDING}`, "?status=ACTIVE")}
         {stat(t.renewing, k.renewing, undefined, "?status=renewing")}

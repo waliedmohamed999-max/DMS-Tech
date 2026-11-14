@@ -34,9 +34,13 @@ async function orgOf(ctx: Ctx) {
   return prisma.organization.findUniqueOrThrow({ where: { id: ctx.organizationId }, select: { timezone: true, currency: true, invoiceDueSoonDays: true, largeOutstandingThreshold: true } });
 }
 
-export async function financeKpis(ctx: Ctx, p: Period) {
+/**
+ * `p` bounds DATE columns (issueDate / paymentDate / expense date), so pass org-local business
+ * dates — `orgMonth(tz).dateFrom / dateTo` for "this month" — not UTC or server-local instants.
+ */
+export async function financeKpis(ctx: Ctx, p: Period, now = new Date()) {
   const org = await orgOf(ctx);
-  const today = todayIn(org.timezone);
+  const today = todayIn(org.timezone, now);
   const iw = and<Prisma.InvoiceWhereInput>({ organizationId: ctx.organizationId, currency: org.currency }, await invoiceWhere(ctx));
   const inPeriod = { gte: p.from, lte: p.to };
   const canPay = can(ctx, "finance.payments.view") && financeAll(ctx);
