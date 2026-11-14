@@ -308,7 +308,7 @@
 
   .input {
     @apply w-full rounded-input border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink shadow-card transition
-      placeholder:text-sm placeholder:text-graphite focus:border-iris focus:outline-none focus:ring-4 focus:ring-iris/15;
+      placeholder:text-sm placeholder:text-iron focus:border-iris focus:outline-none focus:ring-4 focus:ring-iris/15;
   }
 
   /* a field that failed validation (aria-invalid is set next to its inline message) */

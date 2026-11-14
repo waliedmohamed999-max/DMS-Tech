@@ -148,7 +148,7 @@ export default async function OffersPage({ params, searchParams }: { params: Pro
                     <p className="relative text-[14.5px] leading-relaxed text-white/85">{o.pitch}</p>
                   </div>
                   <div className="grid content-start gap-3 p-6">
-                    <span className="text-xs font-semibold text-graphite">{c.components}</span>
+                    <span className="text-xs font-semibold text-iron">{c.components}</span>
                     <ul className="grid gap-2.5">
                       {o.parts.map((p) => (
                         <li key={p.key} className="flex items-start justify-between gap-3 text-[14.5px]">
@@ -173,19 +173,19 @@ export default async function OffersPage({ params, searchParams }: { params: Pro
                   </div>
                   <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-mist bg-cloud/60 px-6 py-5">
                     <span className="grid gap-0.5">
-                      <span className="text-xs text-graphite">{c.offerPrice}</span>
+                      <span className="text-xs text-iron">{c.offerPrice}</span>
                       <span className="flex flex-wrap items-baseline gap-2">
                         <span className="text-3xl font-bold" dir="ltr">
                           {o.price}
                         </span>
-                        <span className="text-sm text-graphite">
+                        <span className="text-sm text-iron">
                           {c.partsTotal}{" "}
                           <s className="decoration-2" dir="ltr">
                             {o.oldPrice}
                           </s>
                         </span>
                       </span>
-                      <span className="text-xs text-graphite">
+                      <span className="text-xs text-iron">
                         <span dir="ltr">{o.priceVat}</span> {c.inclVat}
                       </span>
                       <span className="mt-1 w-fit rounded-full bg-mint px-2.5 py-0.5 text-xs font-bold text-fern">
@@ -216,7 +216,7 @@ export default async function OffersPage({ params, searchParams }: { params: Pro
             ))}
           </dl>
           <PackagesBrowser groups={smb} labels={browserLabels} locale={locale} />
-          <p className="mt-6 text-center text-xs text-graphite">{c.vatNote}</p>
+          <p className="mt-6 text-center text-xs text-iron">{c.vatNote}</p>
         </div>
       </section>
 
@@ -229,7 +229,7 @@ export default async function OffersPage({ params, searchParams }: { params: Pro
             </Link>
           </SectionHeading>
           <PackagesBrowser groups={business} labels={browserLabels} locale={locale} anchor="solutions" />
-          <p className="mt-6 text-center text-xs text-graphite">{c.vatNote}</p>
+          <p className="mt-6 text-center text-xs text-iron">{c.vatNote}</p>
         </div>
       </section>
 

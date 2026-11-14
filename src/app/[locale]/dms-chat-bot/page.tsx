@@ -147,7 +147,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
               </ul>
             </div>
           </div>
-          <p className="mt-8 flex items-center justify-center gap-2 text-sm font-semibold text-graphite">
+          <p className="mt-8 flex items-center justify-center gap-2 text-sm font-semibold text-iron">
             <BrandIcon slug="whatsapp" size={16} colored /> {c.hubLabel}
           </p>
         </div>
@@ -163,7 +163,7 @@ export default async function ChatbotPage({ params }: { params: Promise<{ locale
               { label: c.byTeam, items: c.teams, cols: "sm:grid-cols-3" }
             ].map((group) => (
               <div key={group.label} className="grid gap-4">
-                <h3 className="text-center text-sm font-semibold uppercase tracking-wider text-graphite">{group.label}</h3>
+                <h3 className="text-center text-sm font-semibold uppercase tracking-wider text-iron">{group.label}</h3>
                 <div className={`grid gap-4 ${group.cols}`}>
                   {group.items.map((it) => (
                     <div key={it.title} className="card card-hover flex items-center gap-4 p-5">

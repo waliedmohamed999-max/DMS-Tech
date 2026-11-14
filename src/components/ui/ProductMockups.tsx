@@ -74,7 +74,7 @@ export function ChatbotHeroMockup({ locale: l }: { locale: Lc }) {
       <div className="grid min-h-[360px] bg-cloud md:grid-cols-[190px_1fr_170px]">
         {/* chats */}
         <ul className="hidden content-start gap-1 border-e border-mist bg-white p-2 md:grid">
-          <li className="mb-1 flex items-center gap-2 rounded-lg bg-cloud px-2 py-1.5 text-[12px] text-graphite">
+          <li className="mb-1 flex items-center gap-2 rounded-lg bg-cloud px-2 py-1.5 text-[12px] text-iron">
             <Icon name="Search" size={13} /> {pick(l, "بحث في المحادثات", "Search chats")}
           </li>
           {chats.map((c) => (
@@ -92,7 +92,7 @@ export function ChatbotHeroMockup({ locale: l }: { locale: Lc }) {
         {/* conversation */}
         <div className="grid content-between gap-3 p-4">
           <div className="grid gap-2.5">
-            <span className="mx-auto rounded-full bg-white px-3 py-0.5 text-[11px] text-graphite shadow-card">{pick(l, "اليوم", "Today")}</span>
+            <span className="mx-auto rounded-full bg-white px-3 py-0.5 text-[11px] text-iron shadow-card">{pick(l, "اليوم", "Today")}</span>
             <span className="w-fit max-w-[80%] rounded-2xl rounded-ss-sm bg-white px-3 py-2 text-ink shadow-card">{pick(l, "السلام عليكم، أبغى أعرف أسعار الباقات", "Hi, I'd like to know your plan prices")}</span>
             <div className="ms-auto grid max-w-[85%] gap-1.5">
               <span className="rounded-2xl rounded-se-sm bg-[#d9fdd3] px-3 py-2 text-ink shadow-card">
@@ -113,7 +113,7 @@ export function ChatbotHeroMockup({ locale: l }: { locale: Lc }) {
               <Icon name="Headset" size={12} /> {pick(l, "تم تحويل المحادثة إلى نورة — المبيعات", "Handed over to Noura — Sales")}
             </span>
           </div>
-          <div className="flex items-center gap-2 rounded-xl border border-mist bg-white px-3 py-2 text-graphite">
+          <div className="flex items-center gap-2 rounded-xl border border-mist bg-white px-3 py-2 text-iron">
             <Icon name="Sparkles" size={14} className="text-iris" />
             <span className="flex-1 truncate text-[12px]">{pick(l, "اكتب رداً أو اختر رداً سريعاً…", "Type a reply or pick a quick reply…")}</span>
             <span className="grid size-7 place-items-center rounded-lg bg-iris text-white">
@@ -127,7 +127,7 @@ export function ChatbotHeroMockup({ locale: l }: { locale: Lc }) {
           <span className="grid justify-items-center gap-1 text-center">
             <span className="grid size-11 place-items-center rounded-full bg-lilac text-base font-bold text-iris">{chats[0].n.charAt(0)}</span>
             <span className="font-semibold text-ink">{chats[0].n}</span>
-            <span className="text-[11px] text-graphite" dir="ltr">+966 5• ••• ••12</span>
+            <span className="text-[11px] text-iron" dir="ltr">+966 5• ••• ••12</span>
           </span>
           {[
             [pick(l, "المرحلة", "Stage"), pick(l, "مهتم", "Interested")],
@@ -135,7 +135,7 @@ export function ChatbotHeroMockup({ locale: l }: { locale: Lc }) {
             [pick(l, "المصدر", "Source"), pick(l, "حملة رمضان", "Ramadan campaign")]
           ].map(([k, v]) => (
             <span key={k} className="flex items-center justify-between gap-2 border-b border-mist pb-2 text-[11.5px] last:border-0">
-              <span className="text-graphite">{k}</span>
+              <span className="text-iron">{k}</span>
               <span className="font-semibold text-ink">{v}</span>
             </span>
           ))}
@@ -171,7 +171,7 @@ function CbCampaigns({ l }: { l: Lc }) {
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {stats.map(([k, v], i) => (
             <span key={k} className={`grid gap-0.5 rounded-xl border p-3 ${i === 3 ? "border-iris bg-iris text-white" : "border-mist bg-white"}`}>
-              <span className={`text-[11px] ${i === 3 ? "text-white/80" : "text-graphite"}`}>
+              <span className={`text-[11px] ${i === 3 ? "text-white/80" : "text-iron"}`}>
                 {k}
                 {i === 3 && " (SAR)"}
               </span>
@@ -259,7 +259,7 @@ function CbCrm({ l }: { l: Lc }) {
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-lilac text-base font-bold text-iris">{pick(l, "س", "S")}</span>
           <span className="grid min-w-0 flex-1">
             <span className="font-semibold text-ink">{pick(l, "سارة القحطاني", "Sara Alqahtani")}</span>
-            <span className="text-[11.5px] text-graphite">{pick(l, "عميلة منذ مارس · 4 طلبات", "Customer since March · 4 orders")}</span>
+            <span className="text-[11.5px] text-iron">{pick(l, "عميلة منذ مارس · 4 طلبات", "Customer since March · 4 orders")}</span>
           </span>
           <BrandIcon slug="whatsapp" size={18} colored />
         </div>
@@ -267,7 +267,7 @@ function CbCrm({ l }: { l: Lc }) {
           {stages.map((s, i) => (
             <span key={s} className="grid gap-1 text-center text-[10.5px] font-medium">
               <span className={`h-1.5 rounded-full ${i <= 2 ? "bg-iris" : "bg-mist"}`} />
-              <span className={i === 2 ? "text-iris" : "text-graphite"}>{s}</span>
+              <span className={i === 2 ? "text-iris" : "text-iron"}>{s}</span>
             </span>
           ))}
         </div>
@@ -280,7 +280,7 @@ function CbCrm({ l }: { l: Lc }) {
             <li key={t} className="flex items-center gap-2">
               <Icon name={icon as IconName} size={13} className="shrink-0 text-iris" />
               <span className="flex-1 truncate text-ink">{t}</span>
-              <span className="shrink-0 text-[11px] text-graphite">{d}</span>
+              <span className="shrink-0 text-[11px] text-iron">{d}</span>
             </li>
           ))}
         </ul>
@@ -325,7 +325,7 @@ function CbStore({ l }: { l: Lc }) {
                 SAR {amount}
               </span>
               <span className="rounded-full bg-lilac px-2 py-0.5 text-[10.5px] font-medium text-iris">{st}</span>
-              <span className="ms-auto flex items-center gap-1 truncate text-[11px] text-graphite">
+              <span className="ms-auto flex items-center gap-1 truncate text-[11px] text-iron">
                 <BrandIcon slug="whatsapp" size={12} colored /> {note}
               </span>
             </li>
@@ -351,8 +351,8 @@ function CbOfficial({ l }: { l: Lc }) {
                 {name}
               </span>
               <span className="flex items-center justify-between text-[11px]">
-                <span className="text-graphite">{cat}</span>
-                <span className={on ? "flex items-center gap-1 font-semibold text-fern" : "text-graphite"}>
+                <span className="text-iron">{cat}</span>
+                <span className={on ? "flex items-center gap-1 font-semibold text-fern" : "text-iron"}>
                   {on ? <Icon name="BadgeCheck" size={12} /> : null}
                   {on ? pick(l, "معتمد", "Approved") : pick(l, "قيد المراجعة", "In review")}
                 </span>
@@ -406,7 +406,7 @@ function NovaStudio({ l }: { l: Lc }) {
             const p = posts[i];
             return (
               <span key={d} className="grid min-h-[132px] content-start gap-1.5 rounded-xl border border-mist bg-white p-1.5">
-                <span className="text-center text-[10.5px] font-semibold text-graphite">{d}</span>
+                <span className="text-center text-[10.5px] font-semibold text-iron">{d}</span>
                 {p && (
                   <span className="grid gap-1 rounded-lg border border-mist p-1.5">
                     <span className="aspect-[4/3] rounded-md bg-gradient-to-br from-lilac to-[#d9d2ff]" />
@@ -450,7 +450,7 @@ function NovaSales({ l }: { l: Lc }) {
               {c.cards.map(([n, v]) => (
                 <span key={n} className={`grid gap-1 rounded-lg border bg-white p-2 shadow-card ${ci === 2 ? "border-fern/40" : "border-mist"}`}>
                   <span className="truncate text-[11.5px] font-semibold text-ink">{n}</span>
-                  <span className="truncate text-[10.5px] text-graphite" dir="ltr">
+                  <span className="truncate text-[10.5px] text-iron" dir="ltr">
                     {v}
                   </span>
                 </span>
@@ -483,13 +483,13 @@ function NovaBrain({ l }: { l: Lc }) {
           {rows.map(([icon, k, v]) => (
             <li key={k} className="flex items-center gap-3 rounded-xl border border-mist bg-white px-3 py-2">
               <Tile icon={icon} size={13} />
-              <span className="text-[11.5px] text-graphite">{k}</span>
+              <span className="text-[11.5px] text-iron">{k}</span>
               <span className="ms-auto truncate font-semibold text-ink">{v}</span>
             </li>
           ))}
         </ul>
         <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-dashed border-line bg-white p-2.5">
-          <span className="text-[11px] text-graphite">{pick(l, "يتعلّم من:", "Learns from:")}</span>
+          <span className="text-[11px] text-iron">{pick(l, "يتعلّم من:", "Learns from:")}</span>
           {["instagram", "tiktok", "whatsapp", "gmail"].map((s) => (
             <span key={s} className="grid size-6 place-items-center rounded-md bg-cloud">
               <BrandIcon slug={s} size={13} colored />

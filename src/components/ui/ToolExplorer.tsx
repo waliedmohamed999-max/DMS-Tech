@@ -41,7 +41,7 @@ export default function ToolExplorer({ tools }: { tools: ExplorerTool[] }) {
                   <Icon name={t.icon} size={18} />
                 </span>
                 <span className="text-[16.5px] font-bold text-ink">{t.title}</span>
-                <span className="font-mono text-xs text-graphite">{String(i + 1).padStart(2, "0")}</span>
+                <span className="font-mono text-xs text-iron">{String(i + 1).padStart(2, "0")}</span>
               </button>
               {on && (
                 <div role="tabpanel" className={`grid min-w-0 gap-3 px-4 pb-4 ${fade}`}>

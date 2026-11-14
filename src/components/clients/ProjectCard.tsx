@@ -52,7 +52,7 @@ export function ProjectCard({ project, details, rtl }: { project: ProjectCardDat
             {details} <Icon name={rtl ? "ArrowLeft" : "ArrowRight"} size={15} />
           </span>
           {host && (
-            <span className="inline-flex min-w-0 items-center gap-1.5 text-graphite" dir="ltr">
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-iron" dir="ltr">
               <Icon name="Globe" size={14} className="shrink-0" />
               <span className="truncate">{host}</span>
             </span>
