@@ -65,7 +65,7 @@ export async function campaignFunnel(organizationId: string, campaignIds: string
       out[cid] = { leads: 0, qualified: 0, opportunities: 0, won: 0, billed: "0.00", collected: "0.00", currency: "SAR" };
       continue;
     }
-    const leads = await prisma.lead.findMany({ where: { id: { in: ids } }, select: { id: true, status: true, opportunity: { select: { id: true, status: true } } } });
+    const leads = await prisma.lead.findMany({ where: { id: { in: ids } }, select: { id: true, status: true, qualifiedAt: true, opportunity: { select: { id: true, status: true } } } });
     const opps = leads.map((l) => l.opportunity).filter(Boolean) as { id: string; status: string }[];
     const oppIds = opps.map((o) => o.id);
     // invoices traceable to these opportunities: via quotation.opportunityId or contract → quotation.opportunityId
@@ -81,7 +81,7 @@ export async function campaignFunnel(organizationId: string, campaignIds: string
       : [{ _sum: { total: null } }, { _sum: { amount: null } }];
     out[cid] = {
       leads: ids.length,
-      qualified: leads.filter((l) => l.status === "QUALIFIED" || l.status === "CONVERTED").length,
+      qualified: leads.filter((l) => l.qualifiedAt !== null || l.status === "QUALIFIED" || l.status === "CONVERTED").length,
       opportunities: opps.length,
       won: opps.filter((o) => o.status === "WON").length,
       billed: (billed._sum.total ?? 0).toFixed(2),
