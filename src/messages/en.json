@@ -389,7 +389,10 @@
       "noNotifications": "No notifications",
       "profile": "Profile & security",
       "logout": "Sign out",
-      "createPlanned": "Available in phase {n}"
+      "createPlanned": "Available in phase {n}",
+      "skipToContent": "Skip to content",
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
     },
     "palette": {
       "placeholder": "Type to search or navigate…",

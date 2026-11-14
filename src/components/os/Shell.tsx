@@ -42,6 +42,8 @@ const isActive = (pathname: string, href: string) => (href === "/app" ? pathname
 function Sidebar({ groups, collapsed, onCollapse, mobileOpen, onNavigate }: { groups: ShellNavGroup[]; collapsed: boolean; onCollapse: (v: boolean) => void; mobileOpen: boolean; onNavigate: () => void }) {
   const pathname = usePathname();
   const t = useTranslations("os.nav");
+  // Arabic has no letter case and must not be letter-spaced: keep the uppercase/tracked label style for Latin only
+  const groupLabelCase = useLocale() === "ar" ? "" : "uppercase tracking-[0.08em]";
   const [closed, setClosed] = useState<Record<string, boolean>>({});
 
   return (
@@ -69,7 +71,7 @@ function Sidebar({ groups, collapsed, onCollapse, mobileOpen, onNavigate }: { gr
                 <button
                   type="button"
                   onClick={() => setClosed((c) => ({ ...c, [g.key]: !c[g.key] }))}
-                  className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-os-faint hover:text-os-muted"
+                  className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[11px] font-semibold text-os-faint hover:text-os-muted ${groupLabelCase}`}
                   aria-expanded={!isClosed}
                 >
                   {g.label}
@@ -87,6 +89,7 @@ function Sidebar({ groups, collapsed, onCollapse, mobileOpen, onNavigate }: { gr
                         <Link
                           href={it.href}
                           onClick={onNavigate}
+                          aria-current={active ? "page" : undefined}
                           title={collapsed ? it.label : undefined}
                           className={`group flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] transition ${
                             active ? "bg-os-raised text-os-text shadow-[inset_2px_0_0_var(--color-iris)] rtl:shadow-[inset_-2px_0_0_var(--color-iris)]" : "text-os-muted hover:bg-os-surface hover:text-os-text"
@@ -318,7 +321,14 @@ function CommandPalette({ open, onClose, nav }: { open: boolean; onClose: () => 
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 10);
+    if (!open) return;
+    // move focus into the dialog, and hand it back to whatever opened it when the dialog closes
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const id = setTimeout(() => inputRef.current?.focus(), 10);
+    return () => {
+      clearTimeout(id);
+      if (opener?.isConnected) opener.focus();
+    };
   }, [open]);
 
   const navEntries = useMemo<PaletteEntry[]>(
@@ -366,7 +376,21 @@ function CommandPalette({ open, onClose, nav }: { open: boolean; onClose: () => 
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[60] grid items-start justify-items-center bg-black/60 px-4 pt-[12vh]" onClick={onClose}>
-      <div className="w-full max-w-xl overflow-hidden rounded-xl border border-os-line-strong bg-os-surface shadow-sm2" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal>
+      <div className="w-full max-w-xl overflow-hidden rounded-xl border border-os-line-strong bg-os-surface shadow-sm2" onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          // Escape closes from anywhere inside; Tab stays inside the dialog
+          if (e.key === "Escape") return onClose();
+          if (e.key !== "Tab") return;
+          const f = e.currentTarget.querySelectorAll<HTMLElement>("input, button");
+          const first = f[0];
+          const last = f[f.length - 1];
+          if (e.shiftKey && document.activeElement === first) (e.preventDefault(), last.focus());
+          else if (!e.shiftKey && document.activeElement === last) (e.preventDefault(), first.focus());
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("placeholder")}
+      >
         <div className="flex items-center gap-3 border-b border-os-line px-4">
           <Icon name="Search" size={17} className="text-os-faint" />
           <input
@@ -377,9 +401,9 @@ function CommandPalette({ open, onClose, nav }: { open: boolean; onClose: () => 
               if (e.key === "ArrowDown") (e.preventDefault(), setIdx((i) => Math.min(i + 1, entries.length - 1)));
               if (e.key === "ArrowUp") (e.preventDefault(), setIdx((i) => Math.max(i - 1, 0)));
               if (e.key === "Enter") go(entries[idx]);
-              if (e.key === "Escape") onClose();
             }}
             placeholder={t("placeholder")}
+            aria-label={t("placeholder")}
             className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-os-faint"
           />
           <kbd className="rounded border border-os-line px-1.5 text-[10px] text-os-faint">Esc</kbd>
@@ -447,19 +471,31 @@ export default function Shell({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // mobile drawer: Escape closes it
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMobileOpen(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
+
   return (
     <div className="flex min-h-dvh">
-      {mobileOpen && <div className="fixed inset-0 z-30 bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />}
+      <a href="#os-main" className="sr-only focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:z-[70] focus:rounded-md focus:bg-iris focus:px-3 focus:py-2 focus:text-sm focus:text-white">
+        {t("skipToContent")}
+      </a>
+      {mobileOpen && <button type="button" aria-label={t("closeMenu")} className="fixed inset-0 z-30 cursor-default bg-black/50 lg:hidden" onClick={() => setMobileOpen(false)} />}
       <Sidebar groups={groups} collapsed={collapsed} onCollapse={setCollapsed} mobileOpen={mobileOpen} onNavigate={() => setMobileOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-2 border-b border-os-line bg-os-bg/90 px-3 backdrop-blur sm:px-5">
-          <button type="button" onClick={() => setMobileOpen(true)} className="os-btn-ghost size-9 px-0 lg:hidden" aria-label="menu">
+          <button type="button" onClick={() => setMobileOpen(true)} className="os-btn-ghost size-9 px-0 lg:hidden" aria-label={t("openMenu")} aria-expanded={mobileOpen}>
             <Icon name="Menu" size={18} />
           </button>
           <button
             type="button"
             onClick={() => setPalette(true)}
+            aria-haspopup="dialog"
             className="flex h-9 min-w-0 flex-1 items-center gap-2.5 rounded-md border border-os-line bg-os-surface px-3 text-sm text-os-faint transition hover:border-os-line-strong sm:max-w-md"
           >
             <Icon name="Search" size={15} />
@@ -488,7 +524,7 @@ export default function Shell({
             <UserMenu user={user} />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-[1440px] flex-1 px-3 py-6 sm:px-6">{children}</main>
+        <main id="os-main" tabIndex={-1} className="mx-auto w-full max-w-[1440px] flex-1 px-3 py-6 outline-none sm:px-6">{children}</main>
       </div>
 
       <CommandPalette open={palette} onClose={() => setPalette(false)} nav={allItems} />
