@@ -389,7 +389,10 @@
       "noNotifications": "لا توجد إشعارات",
       "profile": "ملفي وأماني الحساب",
       "logout": "تسجيل الخروج",
-      "createPlanned": "متاح في المرحلة {n}"
+      "createPlanned": "متاح في المرحلة {n}",
+      "skipToContent": "تخطَّ إلى المحتوى",
+      "openMenu": "فتح القائمة",
+      "closeMenu": "إغلاق القائمة"
     },
     "palette": {
       "placeholder": "اكتب للبحث أو للتنقل…",
