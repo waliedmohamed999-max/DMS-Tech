@@ -383,6 +383,9 @@
       "back": "Back to website"
     },
     "nav": {
+      "pinned": "Pinned",
+      "pin": "Pin {name}",
+      "unpin": "Unpin {name}",
       "collapse": "Collapse menu",
       "expand": "Expand menu",
       "planned": "Soon"
@@ -469,6 +472,8 @@
       "evening": "Good evening",
       "subtitle": "Here is what needs your attention today.",
       "quick": "Quick actions",
+      "allKpis": "All indicators ({n} more)",
+      "openMyWork": "Open my work",
       "kpis": "This month",
       "vsPrev": "vs. same period last month",
       "attention": "Needs your attention",
