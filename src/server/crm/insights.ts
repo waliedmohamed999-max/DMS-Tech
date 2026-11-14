@@ -1,9 +1,9 @@
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "../db";
 import { can, requirePermission, type Ctx } from "../context";
+import { uncontactedLeads } from "./response";
 import { ownedWhere } from "./scope";
 import { followUpWindow } from "./leads";
-import { uncontactedLeads } from "./response";
 
 /**
  * CRM aggregates for /app/crm, the Command Center and follow-ups.
