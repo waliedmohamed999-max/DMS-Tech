@@ -93,6 +93,7 @@
     "heroTitle": "Your Digital Growth Engine",
     "heroPrimary": "Get a quote",
     "heroSecondary": "Explore services",
+    "heroWhatsapp": "Talk to us on WhatsApp",
     "logosLabel": "We build on and connect the platforms your customers use",
     "coreTitle": "Taking your business to the *next level*",
     "coreSub": "AI, automation and integrations working together to save your team time and accelerate growth.",
@@ -166,6 +167,11 @@
     "error": "We couldn't send your request. Please try again or reach us on WhatsApp.",
     "required": "Please enter your name and a phone number or email.",
     "invalidContact": "Please enter a valid phone number or email.",
+    "contactHint": "Enter a phone number or an email — one is enough.",
+    "nameRequired": "Please enter your name.",
+    "contactRequired": "Please enter a phone number or an email.",
+    "invalidPhone": "Please enter a valid phone number.",
+    "invalidEmail": "Please enter a valid email address.",
     "privacy": "Your details are only used to contact you about this request."
   },
   "footer": {

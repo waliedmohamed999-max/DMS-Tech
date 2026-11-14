@@ -152,7 +152,7 @@ export default function FeatureShowcase({ features }: { features: Feature[] }) {
                   </span>
                   <span className="truncate text-[12px] text-iron">{r.text}</span>
                 </span>
-                <span className="grid shrink-0 justify-items-end gap-1 text-[10.5px] text-graphite">
+                <span className="grid shrink-0 justify-items-end gap-1 text-[10.5px] text-iron">
                   {r.time}
                   {r.unread && <span className="size-2 rounded-full bg-iris" />}
                 </span>
@@ -183,7 +183,7 @@ export default function FeatureShowcase({ features }: { features: Feature[] }) {
                   {r.done && <Icon name="Check" size={12} strokeWidth={2.5} />}
                 </span>
                 <span className="grid min-w-0 flex-1 gap-0.5">
-                  <span className={`truncate font-medium ${r.done ? "text-graphite line-through" : "text-ink"}`}>{r.task}</span>
+                  <span className={`truncate font-medium ${r.done ? "text-iron line-through" : "text-ink"}`}>{r.task}</span>
                   <span className="flex items-center gap-1 text-[11px] text-iron">
                     <Icon name="Clock" size={11} />
                     {r.due}
@@ -308,7 +308,7 @@ export default function FeatureShowcase({ features }: { features: Feature[] }) {
               ))}
               <span className="my-2 h-px bg-mist" />
               {c.navMore.map((n) => (
-                <span key={n.label} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-graphite">
+                <span key={n.label} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-iron">
                   <Icon name={n.icon} size={14} />
                   {n.label}
                 </span>

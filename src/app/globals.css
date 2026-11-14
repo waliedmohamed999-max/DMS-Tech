@@ -12,7 +12,7 @@
   --color-iris-dark: #4f3bc9;    /* hover */
   --color-iris-light: #a99bff;   /* accent on dark surfaces */
   --color-cobalt: #1d58c0;
-  --color-fern: #009639;
+  --color-fern: #007a2f;         /* 5.5:1 on white, 5:1 on mint — small status text stays AA */
 
   /* Neutrals */
   --color-obsidian: #151718;     /* dark hero / bands */
@@ -255,6 +255,16 @@
   }
 }
 
+/*
+ * Arabic typography: Arabic is a connected script, so letter-spacing — the tight negative tracking of the Latin
+ * headlines as much as the wide tracking of uppercase labels — overlaps the joins or pulls them apart. Elements whose
+ * language is Arabic drop it; Latin islands (lang="en") and monospace keep theirs. Unlayered on purpose: it has to win
+ * over the tracking utilities whatever their order.
+ */
+:is(h1, h2, h3, h4, h5, h6, .h-hero, .h-display, .h-lg, .uppercase, [class*="tracking-"]):lang(ar):not(.font-mono) {
+  letter-spacing: 0;
+}
+
 @layer components {
   .container-site { @apply mx-auto w-full max-w-(--container-site) px-4 sm:px-6; }
   .section { @apply py-20 md:py-28; }
@@ -300,6 +310,9 @@
     @apply w-full rounded-input border border-line bg-white px-3.5 py-2.5 text-[15px] text-ink shadow-card transition
       placeholder:text-sm placeholder:text-graphite focus:border-iris focus:outline-none focus:ring-4 focus:ring-iris/15;
   }
+
+  /* a field that failed validation (aria-invalid is set next to its inline message) */
+  .input[aria-invalid="true"] { @apply border-red-600 focus:border-red-600 focus:ring-red-600/15; }
 
   .card { @apply rounded-card border border-mist bg-white shadow-card; }
   .card-hover { @apply transition duration-300 hover:-translate-y-1 hover:shadow-lg; }

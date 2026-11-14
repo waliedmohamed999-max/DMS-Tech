@@ -33,7 +33,7 @@ function Card({ item, tint, label, cta, rtl, faded }: { item: Item; tint: number
             ))}
           </div>
         </div>
-        <Link href="/clients" tabIndex={faded ? -1 : 0} className="inline-flex items-center gap-2 rounded-full bg-ink py-2 pe-2 ps-5 text-sm font-semibold text-white">
+        <Link href="/clients" className="inline-flex items-center gap-2 rounded-full bg-ink py-2 pe-2 ps-5 text-sm font-semibold text-white">
           {cta}
           <span className="grid size-5 place-items-center rounded-full bg-white text-ink">
             <Icon name={rtl ? "ArrowLeft" : "ArrowRight"} size={12} strokeWidth={2.5} />
@@ -42,10 +42,25 @@ function Card({ item, tint, label, cta, rtl, faded }: { item: Item; tint: number
       </div>
       <div className="grid content-start gap-1 p-7">
         <p className="text-lg font-semibold text-ink">{item.title}</p>
-        <p className="text-base text-graphite">{item.description}</p>
+        <p className="text-base text-iron">{item.description}</p>
         <p className="mt-5 text-lg leading-relaxed text-ink">“{item.quote}”</p>
       </div>
     </article>
+  );
+}
+
+/**
+ * A neighbouring card shown as a faded preview. The card itself is inert (its link is not reachable) and the
+ * prev / next button is a sibling laid over it, so no interactive element is nested inside another.
+ */
+function Peek({ label, onClick, children }: { label: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <div className="relative shrink-0">
+      <div aria-hidden="true" inert>
+        {children}
+      </div>
+      <button type="button" onClick={onClick} aria-label={label} className="absolute inset-0 rounded-card" />
+    </div>
   );
 }
 
@@ -66,9 +81,9 @@ export default function CaseCarousel({ items, label, cta }: { items: Item[]; lab
     <div>
       <div className="relative flex justify-center gap-8 overflow-hidden py-2 [mask-image:linear-gradient(to_right,transparent,black_18%,black_82%,transparent)]">
         <div className="hidden justify-end lg:flex lg:w-0 lg:flex-1">
-          <button type="button" onClick={() => setI(at(i - 1))} aria-label="previous" className="shrink-0">
+          <Peek label={rtl ? "السابق" : "Previous"} onClick={() => setI(at(i - 1))}>
             <Card item={items[at(i - 1)]} tint={at(i - 1)} label={label} cta={cta} rtl={rtl} faded />
-          </button>
+          </Peek>
         </div>
         {/* all cases share one grid cell and only the current one is visible: the carousel keeps the height of the
             tallest card, so the auto-advance never resizes the section (no page jump on mobile, where cards stack) */}
@@ -83,9 +98,9 @@ export default function CaseCarousel({ items, label, cta }: { items: Item[]; lab
           })}
         </div>
         <div className="hidden lg:flex lg:w-0 lg:flex-1">
-          <button type="button" onClick={() => setI(at(i + 1))} aria-label="next" className="shrink-0">
+          <Peek label={rtl ? "التالي" : "Next"} onClick={() => setI(at(i + 1))}>
             <Card item={items[at(i + 1)]} tint={at(i + 1)} label={label} cta={cta} rtl={rtl} faded />
-          </button>
+          </Peek>
         </div>
       </div>
       <div className="mt-6 flex justify-center gap-2">

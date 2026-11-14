@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import type { Integration } from "@/content/types";
+import { whatsappLink } from "@/content/site";
 import { BrandIcon, hasBrand } from "@/components/ui/Brand";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import CodeTabs from "./CodeTabs";
@@ -7,10 +8,11 @@ import WorkflowScene from "./WorkflowScene";
 
 const arrow = (locale: string) => (locale === "ar" ? "ArrowLeft" : "ArrowRight");
 
-/** Black pill with a white arrow disc — Specify's primary CTA shape */
-export function ArrowPill({ href, children, locale }: { href: string; children: React.ReactNode; locale: string }) {
+/** Pill with an arrow disc — Specify's primary CTA shape. `tone="accent"` is the iris variant for dark bands. */
+export function ArrowPill({ href, children, locale, tone = "ink" }: { href: string; children: React.ReactNode; locale: string; tone?: "ink" | "accent" }) {
+  const fill = tone === "accent" ? "bg-iris hover:bg-iris-dark" : "bg-ink shadow-btn hover:bg-black";
   return (
-    <Link href={href} className="inline-flex items-center gap-2.5 rounded-full bg-ink py-2 pe-2 ps-5 text-sm font-semibold text-white shadow-btn transition hover:bg-black">
+    <Link href={href} className={`inline-flex items-center gap-2.5 rounded-full py-2 pe-2 ps-5 text-sm font-semibold text-white transition ${fill}`}>
       {children}
       <span className="grid size-6 place-items-center rounded-full bg-white text-ink">
         <Icon name={arrow(locale)} size={13} strokeWidth={2.5} />
@@ -30,7 +32,23 @@ export function Heading({ title, sub, children }: { title: string; sub?: string;
   );
 }
 
-export function Hero({ pill, title, sub, locale }: { pill: string; title: string; sub: string; locale: string }) {
+export function Hero({
+  pill,
+  title,
+  sub,
+  cta,
+  whatsapp,
+  locale
+}: {
+  pill: string;
+  title: string;
+  sub: string;
+  /** primary action: the quote page */
+  cta: string;
+  /** secondary action: a WhatsApp chat with the company number (tracked by the global WhatsApp click listener) */
+  whatsapp: string;
+  locale: string;
+}) {
   return (
     <section className="bg-obsidian text-white">
       <div className="container-site pb-10 pt-12 text-center md:pt-16">
@@ -44,6 +62,20 @@ export function Hero({ pill, title, sub, locale }: { pill: string; title: string
           {title}
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-[#c4c6c8]">{sub}</p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <ArrowPill href="/quote" locale={locale} tone="accent">
+            {cta}
+          </ArrowPill>
+          <a
+            href={whatsappLink()}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-track-cta="hero_whatsapp"
+            className="btn border border-white/40 text-white hover:bg-white/10"
+          >
+            <BrandIcon slug="whatsapp" size={16} /> {whatsapp}
+          </a>
+        </div>
         <WorkflowScene />
       </div>
     </section>

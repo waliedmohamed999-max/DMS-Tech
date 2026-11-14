@@ -34,6 +34,9 @@ function attribution() {
   return { utm, referrer: document.referrer.slice(0, 300), page: window.location.pathname.slice(0, 200) };
 }
 
+type FieldErrors = Partial<Record<"name" | "phone" | "email", string>>;
+const ids = (...list: (string | false | undefined)[]) => list.filter(Boolean).join(" ") || undefined;
+
 export type FormQuestion = { key: string; label: string; options?: string[]; placeholder?: string };
 
 async function submitLead(payload: Record<string, unknown>) {
@@ -67,6 +70,7 @@ export function LeadForm({
   const locale = useLocale();
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [summary, setSummary] = useState("");
   const budgets = t("budgetOptions").split("|");
   const shownAt = useRef(0);
@@ -81,9 +85,26 @@ export function LeadForm({
     // q_<key> fields answer the offer page questions; everything else is the standard form
     const details = Object.fromEntries(Object.entries(all).filter(([k, v]) => k.startsWith("q_") && v.trim()).map(([k, v]) => [k.slice(2), v.trim()]));
     const data = Object.fromEntries(Object.entries(all).filter(([k]) => !k.startsWith("q_")));
-    if (!data.name?.trim() || (!data.phone?.trim() && !data.email?.trim())) return setError(t("required"));
-    if ((data.phone && !phoneRe.test(data.phone)) || (data.email && !emailRe.test(data.email))) return setError(t("invalidContact"));
+    // the summary alert keeps its wording; each failing field also gets its own message and aria-invalid
+    const noContact = !data.phone?.trim() && !data.email?.trim();
+    const missing: FieldErrors = {
+      ...(data.name?.trim() ? {} : { name: t("nameRequired") }),
+      ...(noContact ? { phone: t("contactRequired"), email: t("contactRequired") } : {})
+    };
+    const invalid: FieldErrors = {
+      ...(data.phone && !phoneRe.test(data.phone) ? { phone: t("invalidPhone") } : {}),
+      ...(data.email && !emailRe.test(data.email) ? { email: t("invalidEmail") } : {})
+    };
+    const failed = Object.keys(missing).length ? missing : invalid;
+    const first = (["name", "phone", "email"] as const).find((k) => failed[k]);
+    if (first) {
+      setFieldErrors(failed);
+      setError(t(failed === missing ? "required" : "invalidContact"));
+      (form.elements.namedItem(first) as HTMLElement | null)?.focus();
+      return;
+    }
 
+    setFieldErrors({});
     setError("");
     setStatus("sending");
     const serviceTitle = services.find((s) => s.slug === data.service)?.title ?? data.service;
@@ -118,7 +139,25 @@ export function LeadForm({
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="card grid gap-5 border border-mist p-6 shadow-lg sm:grid-cols-2 sm:p-10">
+    <form
+      onSubmit={onSubmit}
+      // editing a flagged field clears its message (phone and email share the "one of them" rule)
+      onInput={(e) => {
+        const name = (e.target as HTMLInputElement).name;
+        if (name !== "name" && name !== "phone" && name !== "email") return;
+        setFieldErrors((prev) => {
+          if (!prev[name]) return prev;
+          const next = { ...prev };
+          delete next[name];
+          if (name !== "name" && prev.phone === prev.email) {
+            delete next.phone;
+            delete next.email;
+          }
+          return next;
+        });
+      }}
+      noValidate
+      className="card grid gap-5 border border-mist p-6 shadow-lg sm:grid-cols-2 sm:p-10">
       {offer && (
         <div className="flex items-center gap-3 rounded-2xl bg-lilac px-4 py-3 sm:col-span-2">
           <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-iris text-white">
@@ -131,18 +170,50 @@ export function LeadForm({
           <input type="hidden" name="offer" value={offer.key} />
         </div>
       )}
-      <Field label={t("name")} htmlFor="lf-name">
-        <input id="lf-name" name="name" className="input" placeholder={t("namePh")} autoComplete="name" required />
-      </Field>
-      <Field label={t("phone")} htmlFor="lf-phone">
-        <input id="lf-phone" name="phone" type="tel" dir="ltr" className="input rtl:text-right" placeholder={t("phonePh")} autoComplete="tel" />
-      </Field>
-      <Field label={t("email")} htmlFor="lf-email">
-        <input id="lf-email" name="email" type="email" dir="ltr" className="input rtl:text-right" placeholder={t("emailPh")} autoComplete="email" />
+      <Field label={`${t("name")} *`} htmlFor="lf-name" error={fieldErrors.name}>
+        <input
+          id="lf-name"
+          name="name"
+          className="input"
+          placeholder={t("namePh")}
+          autoComplete="name"
+          required
+          aria-invalid={fieldErrors.name ? true : undefined}
+          aria-describedby={ids(fieldErrors.name && "lf-name-error")}
+        />
       </Field>
       <Field label={t("company")} htmlFor="lf-company">
         <input id="lf-company" name="company" className="input" placeholder={t("companyPh")} autoComplete="organization" />
       </Field>
+      <Field label={t("phone")} htmlFor="lf-phone" error={fieldErrors.phone}>
+        <input
+          id="lf-phone"
+          name="phone"
+          type="tel"
+          dir="ltr"
+          className="input rtl:text-right"
+          placeholder={t("phonePh")}
+          autoComplete="tel"
+          aria-invalid={fieldErrors.phone ? true : undefined}
+          aria-describedby={ids("lf-contact-hint", fieldErrors.phone && "lf-phone-error")}
+        />
+      </Field>
+      <Field label={t("email")} htmlFor="lf-email" error={fieldErrors.email}>
+        <input
+          id="lf-email"
+          name="email"
+          type="email"
+          dir="ltr"
+          className="input rtl:text-right"
+          placeholder={t("emailPh")}
+          autoComplete="email"
+          aria-invalid={fieldErrors.email ? true : undefined}
+          aria-describedby={ids("lf-contact-hint", fieldErrors.email && "lf-email-error")}
+        />
+      </Field>
+      <p id="lf-contact-hint" className="-mt-2 text-[13px] text-iron sm:col-span-2">
+        {t("contactHint")}
+      </p>
       <Field label={t("service")} htmlFor="lf-service">
         <select id="lf-service" name="service" className="input" defaultValue={defaultService ?? services[0]?.slug}>
           {services.map((s) => (
@@ -202,13 +273,19 @@ export function LeadForm({
   );
 }
 
-function Field({ label, htmlFor, full, children }: { label: string; htmlFor: string; full?: boolean; children: React.ReactNode }) {
+/** `error` renders under the control as `<htmlFor>-error`; the control points at it with aria-describedby. */
+function Field({ label, htmlFor, full, error, children }: { label: string; htmlFor: string; full?: boolean; error?: string; children: React.ReactNode }) {
   return (
-    <div className={`grid gap-2 ${full ? "sm:col-span-2" : ""}`}>
+    <div className={`grid content-start gap-2 ${full ? "sm:col-span-2" : ""}`}>
       <label htmlFor={htmlFor} className="text-sm font-semibold text-iron">
         {label}
       </label>
       {children}
+      {error && (
+        <p id={`${htmlFor}-error`} className="text-[13px] font-medium text-red-700">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
