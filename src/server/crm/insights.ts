@@ -9,9 +9,23 @@ import { orgMonthOf } from "../kpi/period";
 /**
  * CRM aggregates for /app/crm, the Command Center and follow-ups.
  * All numbers come from SQL aggregation over scope-filtered rows. Money is summed in
- * the database (Decimal) and returned as strings. Values are reported in SAR; rows
- * in other currencies are excluded from money totals and counted separately.
+ * the database (Decimal) and returned as strings. Values are reported in the organisation's
+ * base currency (Organization.currency, SAR by default); rows in other currencies are excluded
+ * from money totals (no FX conversion).
  */
+
+/** The organisation's base currency — the only currency CRM money totals sum. */
+export async function baseCurrencyOf(organizationId: string): Promise<string> {
+  return (await prisma.organization.findUniqueOrThrow({ where: { id: organizationId }, select: { currency: true } })).currency;
+}
+
+/**
+ * "Ever qualified": `qualifiedAt` is stamped once when a lead first becomes QUALIFIED or is converted,
+ * so a qualified lead that is later lost still counts. Rows older than the column have it null and
+ * fall back to the current status.
+ */
+export const EVER_QUALIFIED: Prisma.LeadWhereInput = { OR: [{ qualifiedAt: { not: null } }, { status: { in: ["QUALIFIED", "CONVERTED"] } }] };
+export const everQualified = (l: { status: string; qualifiedAt: Date | null }) => l.qualifiedAt !== null || l.status === "QUALIFIED" || l.status === "CONVERTED";
 
 export const STALLED_DAYS = 14;
 export const QUIET_DAYS = 7;
@@ -77,14 +91,14 @@ async function computeKpis(ctx: Ctx, now: Date) {
   const oppsOk = can(ctx, "crm.opportunities.view");
   const scope = await ownedWhere(ctx);
   // month bounds in the organization's timezone (shared with the dashboard and finance KPIs)
-  const month = await orgMonthOf(ctx.organizationId, now);
+  const [month, currency] = await Promise.all([orgMonthOf(ctx.organizationId, now), oppsOk ? baseCurrencyOf(ctx.organizationId) : "SAR"]);
   const org = { organizationId: ctx.organizationId };
   const [activeLeads, openOpps, pipeline, won, wonPrev, overdueLeads, overdueOpps] = await Promise.all([
     leadsOk ? prisma.lead.count({ where: { ...org, ...scope, status: { in: ["OPEN", "QUALIFIED"] } } }) : null,
     oppsOk ? prisma.opportunity.count({ where: { ...org, ...scope, status: "OPEN" } }) : null,
-    oppsOk ? prisma.opportunity.aggregate({ where: { ...org, ...scope, status: "OPEN", currency: "SAR" }, _sum: { estimatedValue: true } }) : null,
-    oppsOk ? wonIn({ ...org, ...scope, status: "WON", currency: "SAR", wonAt: { gte: month.from, lte: month.to } }) : null,
-    oppsOk ? wonIn({ ...org, ...scope, status: "WON", currency: "SAR", wonAt: { gte: month.prevFrom, lte: month.prevTo } }) : null,
+    oppsOk ? prisma.opportunity.aggregate({ where: { ...org, ...scope, status: "OPEN", currency }, _sum: { estimatedValue: true } }) : null,
+    oppsOk ? wonIn({ ...org, ...scope, status: "WON", currency, wonAt: { gte: month.from, lte: month.to } }) : null,
+    oppsOk ? wonIn({ ...org, ...scope, status: "WON", currency, wonAt: { gte: month.prevFrom, lte: month.prevTo } }) : null,
     leadsOk ? prisma.lead.count({ where: { ...org, ...scope, status: { in: ["OPEN", "QUALIFIED"] }, nextFollowUpAt: { lt: now } } }) : null,
     oppsOk ? prisma.opportunity.count({ where: { ...org, ...scope, status: "OPEN", nextFollowUpAt: { lt: now } } }) : null
   ]);
@@ -110,17 +124,18 @@ export async function crmOverview(ctx: Ctx, days = 30) {
   const org = { organizationId: ctx.organizationId };
   const inRange: Prisma.LeadWhereInput = { ...org, ...scope, createdAt: { gte: since } };
   const oppsOk = can(ctx, "crm.opportunities.view");
+  const currency = oppsOk ? await baseCurrencyOf(ctx.organizationId) : "SAR";
 
   const [newLeads, qualified, converted, lost, bySource, byStage, valueByStage, wonAgg, kpis] = await Promise.all([
     prisma.lead.count({ where: inRange }),
-    prisma.lead.count({ where: { ...inRange, status: { in: ["QUALIFIED", "CONVERTED"] } } }),
+    prisma.lead.count({ where: { ...inRange, ...EVER_QUALIFIED } }),
     prisma.lead.count({ where: { ...inRange, status: "CONVERTED" } }),
     prisma.lead.count({ where: { ...inRange, status: "LOST" } }),
     prisma.lead.groupBy({ by: ["source"], where: inRange, _count: { _all: true }, orderBy: { _count: { source: "desc" } } }),
     oppsOk ? prisma.opportunity.groupBy({ by: ["stageId"], where: { ...org, ...scope, status: "OPEN" }, _count: { _all: true } }) : Promise.resolve([]),
-    // value totals are SAR-only (no FX conversion in Phase 2 — see docs/CRM.md)
-    oppsOk ? prisma.opportunity.groupBy({ by: ["stageId"], where: { ...org, ...scope, status: "OPEN", currency: "SAR" }, _sum: { estimatedValue: true } }) : Promise.resolve([]),
-    oppsOk ? wonIn({ ...org, ...scope, status: "WON", currency: "SAR", wonAt: { gte: since } }) : Promise.resolve(null),
+    // value totals are base-currency only (no FX conversion in Phase 2 — see docs/CRM.md)
+    oppsOk ? prisma.opportunity.groupBy({ by: ["stageId"], where: { ...org, ...scope, status: "OPEN", currency }, _sum: { estimatedValue: true } }) : Promise.resolve([]),
+    oppsOk ? wonIn({ ...org, ...scope, status: "WON", currency, wonAt: { gte: since } }) : Promise.resolve(null),
     crmKpis(ctx)
   ]);
   const stages = await prisma.pipelineStage.findMany({ where: { pipeline: { organizationId: ctx.organizationId, isDefault: true }, active: true }, orderBy: { position: "asc" } });
@@ -153,7 +168,7 @@ type Capture = { offer?: { key?: string; label?: string } | null; utm?: Record<s
 
 /**
  * Website leads by offer and by ad campaign (utm / click id captured on the site), with how many were qualified, won
- * and the won value (SAR, net: accepted quotation / signed contract, else the estimate) of the opportunity each converted into — so ad spend can be judged by real outcomes.
+ * and the won value (base currency, net: accepted quotation / signed contract, else the estimate) of the opportunity each converted into — so ad spend can be judged by real outcomes.
  */
 export async function campaignReport(ctx: Ctx, days = 90) {
   requirePermission(ctx, "crm.leads.view");
@@ -161,14 +176,15 @@ export async function campaignReport(ctx: Ctx, days = 90) {
   const since = new Date(Date.now() - days * 86400000);
   const leads = await prisma.lead.findMany({
     where: { organizationId: ctx.organizationId, ...scope, source: "WEBSITE", createdAt: { gte: since } },
-    select: { id: true, status: true, captureMeta: true }
+    select: { id: true, status: true, qualifiedAt: true, captureMeta: true }
   });
+  const currency = await baseCurrencyOf(ctx.organizationId);
   const opps = can(ctx, "crm.opportunities.view") && leads.length
     ? await prisma.opportunity.findMany({ where: { organizationId: ctx.organizationId, sourceLeadId: { in: leads.map((l) => l.id) } }, select: { id: true, sourceLeadId: true, status: true, estimatedValue: true, currency: true } })
     : [];
   const oppOf = new Map(opps.map((o) => [o.sourceLeadId, o]));
   // same won-value rule as the KPIs: accepted quotation / signed contract (net) before the estimate
-  const wonValues = (await wonValueOf(opps.filter((o) => o.status === "WON" && o.currency === "SAR"))).byId;
+  const wonValues = (await wonValueOf(opps.filter((o) => o.status === "WON" && o.currency === currency))).byId;
 
   const group = (keyOf: (m: Capture) => { key: string; label: string }) => {
     const rows = new Map<string, { label: string; leads: number; qualified: number; won: number; revenue: Prisma.Decimal | number }>();
@@ -176,7 +192,7 @@ export async function campaignReport(ctx: Ctx, days = 90) {
       const { key, label } = keyOf(l.captureMeta as Capture);
       const r = rows.get(key) ?? { label, leads: 0, qualified: 0, won: 0, revenue: 0 };
       r.leads++;
-      if (l.status === "QUALIFIED" || l.status === "CONVERTED") r.qualified++;
+      if (everQualified(l)) r.qualified++;
       const o = oppOf.get(l.id);
       if (o?.status === "WON") {
         r.won++;
@@ -206,15 +222,16 @@ export async function campaignReport(ctx: Ctx, days = 90) {
   };
 }
 
-/** Open-pipeline snapshot by stage for the Command Center (counts all currencies, sums SAR only). */
+/** Open-pipeline snapshot by stage for the Command Center (counts all currencies, sums the base currency only). */
 export async function pipelineSummary(ctx: Ctx) {
   requirePermission(ctx, "crm.opportunities.view");
   const scope = await ownedWhere(ctx);
   const where = { organizationId: ctx.organizationId, ...scope, status: "OPEN" as const };
+  const currency = await baseCurrencyOf(ctx.organizationId);
   const [stages, counts, values] = await Promise.all([
     prisma.pipelineStage.findMany({ where: { pipeline: { organizationId: ctx.organizationId, isDefault: true }, active: true, isWonStage: false, isLostStage: false }, orderBy: { position: "asc" } }),
     prisma.opportunity.groupBy({ by: ["stageId"], where, _count: { _all: true } }),
-    prisma.opportunity.groupBy({ by: ["stageId"], where: { ...where, currency: "SAR" }, _sum: { estimatedValue: true } })
+    prisma.opportunity.groupBy({ by: ["stageId"], where: { ...where, currency }, _sum: { estimatedValue: true } })
   ]);
   return stages.map((s) => ({
     key: s.key,

@@ -312,7 +312,8 @@ async function transition(ctx: Ctx, id: string, perm: "crm.leads.edit" | "crm.le
 }
 
 export const qualifyLead = (ctx: Ctx, id: string) =>
-  transition(ctx, id, "crm.leads.edit", () => ({ data: { status: "QUALIFIED" }, action: "lead.qualified", allowed: ["OPEN"] }));
+  // qualifiedAt is set once (row is locked): a lead that is lost, reopened and qualified again keeps its first date
+  transition(ctx, id, "crm.leads.edit", (lead) => ({ data: { status: "QUALIFIED", ...(!lead.qualifiedAt && { qualifiedAt: new Date() }) }, action: "lead.qualified", allowed: ["OPEN"] }));
 
 export async function markLeadLost(ctx: Ctx, id: string, reason: string) {
   const r = reqText(3, 500).safeParse(reason);
@@ -461,7 +462,7 @@ export async function convertLead(ctx: Ctx, raw: unknown) {
     await systemActivity(tx, ctx, { entityType: "OPPORTUNITY", entityId: opp.id, clientId: client.id, title: "opportunity.created_from_lead", metadata: { leadId: lead.id, leadNumber: lead.number } });
 
     // 4. lead → converted (move its notes/activity context onto the client timeline)
-    await tx.lead.update({ where: { id: lead.id }, data: { status: "CONVERTED", convertedAt: new Date(), convertedById: ctx.userId || null, convertedClientId: client.id } });
+    await tx.lead.update({ where: { id: lead.id }, data: { status: "CONVERTED", convertedAt: new Date(), convertedById: ctx.userId || null, convertedClientId: client.id, ...(!lead.qualifiedAt && { qualifiedAt: new Date() }) } });
     await tx.crmActivity.updateMany({ where: { organizationId: ctx.organizationId, entityType: "LEAD", entityId: lead.id }, data: { clientId: client.id } });
     await tx.crmNote.updateMany({ where: { organizationId: ctx.organizationId, entityType: "LEAD", entityId: lead.id }, data: { clientId: client.id } });
     await systemActivity(tx, ctx, { entityType: "LEAD", entityId: lead.id, clientId: client.id, type: "STATUS_CHANGE", title: "lead.converted", metadata: { opportunityId: opp.id, opportunityNumber: opp.number, clientId: client.id } });

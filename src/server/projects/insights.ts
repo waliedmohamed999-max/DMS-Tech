@@ -3,6 +3,7 @@ import { prisma } from "../db";
 import { can, type Ctx } from "../context";
 import { addDays, todayIn } from "../commercial/dates";
 import { projectAccess, projectWhere } from "./access";
+import { orgMonthOf } from "../kpi/period";
 
 /**
  * Delivery numbers for the Command Center, attention list, My Work and project workspace.
@@ -27,8 +28,11 @@ export function projectKpis(ctx: Ctx) {
 async function compute(ctx: Ctx) {
   const ok = can(ctx, "projects.view");
   const b = await base(ctx);
-  const t = await today(ctx);
-  const monthStart = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1));
+  // Project.completedAt is a real UTC instant, so "this month" starts at local midnight of the 1st in the
+  // organization's timezone (Asia/Riyadh: 21:00Z the day before) — the same month every other KPI uses.
+  const month = await orgMonthOf(ctx.organizationId);
+  const t = month.today;
+  const monthStart = month.from;
   const openP = { ...b, status: OPEN };
   const [byHealth, completed, overdueMilestones, blockedTasks, overdueTasks, depsWaiting, nearingTarget, myUrgent] = ok
     ? await Promise.all([
