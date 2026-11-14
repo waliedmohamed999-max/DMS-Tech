@@ -60,8 +60,16 @@ entity it concerns:
 | `activity` | Activity-feed entry (optional visibility permission) | activity feed, deterministic id |
 | `follow_up` | Lead / opportunity: sets the follow-up date; other records: FOLLOW_UP entry on the client's CRM timeline | `setLeadFollowUp`, `updateOpportunity`, `logActivity` |
 | `project_task` | Task in the project (project triggers only) | `createTask` (membership / closed-project rules apply) |
-| `assign_owner` | Lead / opportunity owner | `updateLead`, `updateOpportunity` (assign permissions apply) |
+| `assign_owner` | Lead / opportunity owner: one fixed user (`userId`) **or** a round-robin rotation over 2–10 users (`userIds`) | `updateLead`, `updateOpportunity` (assign permissions apply) |
 | `outbound_webhook` | Signed delivery to a CONNECTED outbound (CUSTOM) connection | integration outbox (`automation:<execution>:<i>` idempotency key) |
+
+**Round-robin.** `{ "type": "assign_owner", "userIds": ["<a>", "<b>", "<c>"] }` gives each matching record to the next
+user in the list (a → b → c → a …). The cursor is an atomic per-rule counter (`Sequence` key `RR:<ruleId>`), so
+concurrent executions never pick the same turn. Users who are no longer active are skipped at run time (all inactive →
+the execution fails like a single inactive owner). A record already owned by someone in the list is left alone
+(`ALREADY_OWNER`) and does not use a turn. A retry after a failed assignment takes the next turn, so one user can be
+skipped once in that case. Exactly one of `userId` / `userIds` is required; the one-assigning-rule-per-trigger
+conflict check (`RULE_CONFLICT`) is unchanged.
 
 **Run-as.** Actions run with the **current** permissions of the user who last saved the rule (`runAsUserId`)
 **minus** every high-risk permission (`AUTOMATION_DENIED_PERMISSIONS`: approvals, payments, payroll, compensation,

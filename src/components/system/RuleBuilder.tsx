@@ -72,7 +72,7 @@ export function RuleBuilder({
     const o: Record<string, unknown> = { type: a.type };
     for (const [k, v] of Object.entries(a)) {
       if (k === "type" || v === "" || v === undefined) continue;
-      o[k] = k === "inDays" ? Number(v) : v;
+      o[k] = k === "inDays" ? Number(v) : k === "userIds" ? v.split(",").filter(Boolean) : v;
     }
     if (o.type === "notify" && o.to !== "permission") delete o.permission;
     if (o.type === "notify" && o.to !== "user") delete o.userId;
@@ -223,12 +223,33 @@ export function RuleBuilder({
               </>
             )}
             {a.type === "assign_owner" && (
-              <select className={`${input} sm:col-span-2`} value={a.userId ?? ""} onChange={(e) => setAct(i, { userId: e.target.value })} aria-label={t("f.user")}>
-                <option value="">—</option>
-                {users.map((u) => (
-                  <option key={u.value} value={u.value}>{u.label}</option>
-                ))}
-              </select>
+              <>
+                <select className={`${input} sm:col-span-2`} value={a.userId ?? ""} onChange={(e) => setAct(i, { userId: e.target.value, userIds: "" })} aria-label={t("f.user")}>
+                  <option value="">—</option>
+                  {users.map((u) => (
+                    <option key={u.value} value={u.value}>{u.label}</option>
+                  ))}
+                </select>
+                {/* two or more users here = round-robin rotation (replaces the single owner above) */}
+                <label className="grid gap-1 sm:col-span-2">
+                  <span className="text-xs text-os-muted">{t("f.rotation")}</span>
+                  <select
+                    multiple
+                    size={Math.min(6, Math.max(3, users.length))}
+                    className={`${input} h-auto`}
+                    value={(a.userIds ?? "").split(",").filter(Boolean)}
+                    onChange={(e) => {
+                      const ids = [...e.target.selectedOptions].map((o) => o.value);
+                      setAct(i, ids.length > 1 ? { userIds: ids.join(","), userId: "" } : { userIds: "", userId: ids[0] ?? a.userId ?? "" });
+                    }}
+                    aria-label={t("f.rotation")}
+                  >
+                    {users.map((u) => (
+                      <option key={u.value} value={u.value}>{u.label}</option>
+                    ))}
+                  </select>
+                </label>
+              </>
             )}
             {a.type === "outbound_webhook" && (
               <select className={`${input} sm:col-span-2`} value={a.connectionId ?? ""} onChange={(e) => setAct(i, { connectionId: e.target.value })} aria-label={t("f.connection")}>

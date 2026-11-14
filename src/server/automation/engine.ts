@@ -280,7 +280,7 @@ export async function processExecution(id: string, now = new Date()): Promise<Au
       for (const [i, a] of actions.entries()) {
         if (done.has(i)) continue;
         try {
-          const out = await runAction(a, { executionId: id, ruleName: x.rule.name, eventType: x.eventType, entityType: x.entityType, entityId: x.entityId, kind, entity, runAs }, i);
+          const out = await runAction(a, { executionId: id, ruleId: x.ruleId, ruleName: x.rule.name, eventType: x.eventType, entityType: x.entityType, entityId: x.entityId, kind, entity, runAs }, i);
           next.push({ i, type: a.type, status: out.skipped ? "skipped" : "done", ref: out.ref ?? null, reason: out.skipped });
         } catch (e) {
           failure = e;

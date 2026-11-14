@@ -24,3 +24,9 @@ export async function nextNumber(tx: Tx, organizationId: string, key: "LEAD" | "
 export async function nextYearlyNumber(tx: Tx, organizationId: string, prefix: "Q" | "CTR" | "PRJ" | "INV" | "PAY" | "EXP" | "PR" | "PO", year: number): Promise<string> {
   return `${prefix}-${year}-${pad(await bump(tx, organizationId, `${prefix}-${year}`))}`;
 }
+
+/**
+ * Round-robin cursor (automation `assign_owner` with several users): the same atomic counter, one per key.
+ * Returns 1, 2, 3 … — concurrent callers never get the same value.
+ */
+export const nextRotation = (tx: Tx, organizationId: string, key: string): Promise<number> => bump(tx, organizationId, `RR:${key}`);

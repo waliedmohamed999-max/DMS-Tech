@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { pageCtx } from "@/lib/os/dal";
 import { campaignReport, crmAttention, crmOverview, type CampaignRow } from "@/server/crm/insights";
+import { leadResponseTimes, type ResponseTimeRow } from "@/server/crm/response";
 import { commercialAttention, salesMetrics } from "@/server/commercial/insights";
 import { formatMoney } from "@/lib/commercial/calc";
 import { can } from "@/server/context";
@@ -34,7 +35,7 @@ export default async function CrmOverviewPage({ searchParams }: { searchParams: 
   const locale = await getLocale();
   const t = await getTranslations("os");
   const ar = locale === "ar";
-  const [o, crmAtt, sales, comAtt, camp] = await Promise.all([crmOverview(ctx, days), crmAttention(ctx, { team: true }), salesMetrics(ctx, days), commercialAttention(ctx, { team: true }), campaignReport(ctx, days)]);
+  const [o, crmAtt, sales, comAtt, camp, resp] = await Promise.all([crmOverview(ctx, days), crmAttention(ctx, { team: true }), salesMetrics(ctx, days), commercialAttention(ctx, { team: true }), campaignReport(ctx, days), leadResponseTimes(ctx, days)]);
   const attention = [...comAtt, ...crmAtt];
   const ts = await getTranslations("os.sales.m");
   const oppsOk = can(ctx, "crm.opportunities.view");
@@ -153,8 +154,48 @@ export default async function CrmOverviewPage({ searchParams }: { searchParams: 
           )}
         </SectionCard>
       </div>
+      <ResponseTimeTable rows={resp.byOwner} overall={resp.overall} sla={resp.slaMinutes} ar={ar} locale={locale} />
       <p className="text-[11px] text-os-faint">{t("crm.overview.currencyNote")}</p>
     </div>
+  );
+}
+
+/** Median minutes from a lead's creation to its first contact, per owner (leads created in the period). */
+function ResponseTimeTable({ rows, overall, sla, ar, locale }: { rows: ResponseTimeRow[]; overall: ResponseTimeRow; sla: number; ar: boolean; locale: string }) {
+  const head = ar ? ["المالك", "العملاء", "تم التواصل", `خلال ${sla} د`, "الوسيط (دقيقة)"] : ["Owner", "Leads", "Contacted", `Within ${sla} min`, "Median (min)"];
+  const line = (r: ResponseTimeRow, label: string, strong = false) => (
+    <tr key={strong ? "__all" : r.ownerId ?? "__none"} className={`border-b border-os-line/60 last:border-0 ${strong ? "font-semibold" : ""}`}>
+      <td className="max-w-64 truncate px-4 py-2">{label}</td>
+      <td className="px-4 py-2 text-end tabular">{fmtNumber(r.leads, locale)}</td>
+      <td className="px-4 py-2 text-end tabular">{fmtNumber(r.contacted, locale)}</td>
+      <td className="px-4 py-2 text-end tabular">{fmtNumber(r.withinSla, locale)}</td>
+      <td className="px-4 py-2 text-end tabular">{r.medianMinutes == null ? "—" : fmtNumber(r.medianMinutes, locale)}</td>
+    </tr>
+  );
+  return (
+    <SectionCard title={ar ? "زمن أول تواصل مع العملاء الجدد" : "Time to first contact"}>
+      {overall.leads ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-os-line text-xs text-os-muted">
+                {head.map((h, i) => (
+                  <th key={h} className={`px-4 py-2 font-medium ${i ? "text-end" : "text-start"}`}>
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.slice(0, 12).map((r) => line(r, r.ownerName ?? (ar ? "بدون مالك" : "Unassigned")))}
+              {line(overall, ar ? "الإجمالي" : "All", true)}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <EmptyState title={ar ? "لا يوجد عملاء جدد في هذه الفترة" : "No new leads in this period"} text={ar ? "يُحسب الزمن من إنشاء العميل إلى أول اتصال أو واتساب أو بريد أو اجتماع مسجَّل." : "Measured from lead creation to the first logged call, WhatsApp, email or meeting."} />
+      )}
+    </SectionCard>
   );
 }
 

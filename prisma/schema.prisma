@@ -670,6 +670,10 @@ model Lead {
   lostReason         String?
   archivedAt         DateTime?
   lastActivityAt     DateTime?
+  /// When the current owner was assigned (null while unassigned).
+  assignedAt         DateTime?
+  /// Set once: first outbound contact (call / email / WhatsApp / meeting) or the stage first leaving NEW.
+  firstContactedAt   DateTime?
   createdById        String?
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt

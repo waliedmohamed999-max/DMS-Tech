@@ -7,6 +7,7 @@ import { sanitize, unitOfWork } from "../events/bus";
 import { clientWhere, ownedWhere } from "./scope";
 import { optDate, reqText } from "./normalize";
 import { ACTIVITY_TYPES_USER } from "@/lib/crm/services";
+import { isContactActivity, markFirstContact } from "./response";
 
 /**
  * Resolves a CRM entity the actor is allowed to see (scope-aware) and returns the
@@ -94,6 +95,8 @@ export async function logActivity(ctx: Ctx, raw: unknown) {
       }
     });
     await touch(tx, input.entityType, input.entityId);
+    // L-04: the first call / email / WhatsApp / meeting on a lead stamps its first-contact time (once)
+    if (input.entityType === "LEAD" && isContactActivity(input.type)) await markFirstContact(tx, ctx.organizationId, input.entityId, a.occurredAt);
     await uow.audit({ action: "crm.activity_logged", entityType: input.entityType, entityId: input.entityId, after: { type: a.type, title: a.title } });
     return a;
   });
