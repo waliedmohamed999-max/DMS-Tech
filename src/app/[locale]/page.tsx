@@ -32,7 +32,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
   return (
     <>
-      <Hero pill={t("heroPill")} title={t("heroTitle")} sub={t("heroSub")} locale={locale} />
+      <Hero pill={t("heroPill")} title={t("heroTitle")} sub={t("heroSub")} cta={t("heroPrimary")} whatsapp={t("heroWhatsapp")} locale={locale} />
       <LovedBy
         label={t("lovedBy")}
         items={["Zid", "Salla", "Shopify", "WhatsApp", "Meta", "TikTok", "Google Ads", "HubSpot", "Odoo", "Stripe"].map((n) => by(n)).filter((x): x is Integration => !!x)}

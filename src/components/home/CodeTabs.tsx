@@ -47,7 +47,7 @@ export default function CodeTabs() {
       <pre key={tab.id} className="h-[230px] overflow-hidden p-4 font-mono text-[13px] leading-6 text-ink motion-safe:animate-[fadeIn_.3s_ease]">
         {tab.lines.map((l, i) => (
           <div key={i} className="flex gap-4">
-            <span className="w-5 shrink-0 text-graphite">{String(i + 1).padStart(2, "0")}</span>
+            <span className="w-5 shrink-0 text-iron">{String(i + 1).padStart(2, "0")}</span>
             <span>
               {l.includes(":") ? (
                 <>

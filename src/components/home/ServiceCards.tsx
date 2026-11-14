@@ -85,7 +85,7 @@ function Visual({ slug, locale }: { slug: string; locale: string }) {
               <span className="h-2 w-1/2 rounded-full bg-[linear-gradient(90deg,#ebedef_25%,#f6f7f9_50%,#ebedef_75%)] bg-[length:200%_100%] animate-[shimmer_1.8s_linear_infinite]" />
               <span className="mt-1 h-5 w-16 rounded-full bg-ink animate-[softPulse_4s_ease-in-out_infinite]" />
             </div>
-            <span className="absolute end-2 top-7 rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[9.5px] font-semibold text-[#16a34a]">SEO 98</span>
+            <span className="absolute end-2 top-7 rounded-full bg-[#dcfce7] px-1.5 py-0.5 text-[9.5px] font-semibold text-fern">SEO 98</span>
           </div>
           <div className="absolute -top-3 end-0 h-[112px] w-[60px] overflow-hidden rounded-[14px] border-[3px] border-ink bg-white shadow-card">
             <span className="absolute start-1/2 top-1 h-1 w-5 -translate-x-1/2 rounded-full bg-ink rtl:translate-x-1/2" />
@@ -307,7 +307,7 @@ export default function ServiceCards({ services, locale, cta }: { services: Serv
               <span className="grid size-7 shrink-0 place-items-center rounded-icon sm:size-8 bg-lilac text-iris transition group-hover:bg-iris group-hover:text-white">
                 <Icon name={s.icon as IconName} size={16} />
               </span>
-              <span className="line-clamp-1 text-[11px] font-medium text-graphite sm:text-xs">{s.eyebrow}</span>
+              <span className="line-clamp-1 text-[11px] font-medium text-iron sm:text-xs">{s.eyebrow}</span>
             </div>
             <h3 className="text-[14.5px] font-semibold leading-snug tracking-[-0.3px] text-ink sm:text-[17px]">{s.title}</h3>
             <p className="line-clamp-3 text-[12.5px] leading-relaxed text-iron sm:line-clamp-none sm:text-sm">{s.summary}</p>

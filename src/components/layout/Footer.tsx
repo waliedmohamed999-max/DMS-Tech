@@ -68,7 +68,8 @@ export default async function Footer({ services }: { services: ServiceView[] }) 
         { href: whatsappLink(), label: site.phoneDisplay, external: true },
         { href: `mailto:${site.email}`, label: site.email, external: true },
         { href: site.socials.instagram, label: "Instagram", external: true },
-        { href: site.socials.linkedin, label: "LinkedIn", external: true }
+        { href: site.socials.linkedin, label: "LinkedIn", external: true },
+        { href: site.socials.x, label: "X", external: true }
       ]
     }
   ];
@@ -79,7 +80,7 @@ export default async function Footer({ services }: { services: ServiceView[] }) 
         <div className="grid gap-12 border-t border-mist py-16 lg:grid-cols-[1.3fr_repeat(4,1fr)]">
           <div className="grid content-start gap-4">
             <Image src="/images/logo.png" alt="DMS Tech" width={1200} height={435} className="h-11 w-auto" />
-            <p className="flex items-center gap-2 text-sm text-graphite">
+            <p className="flex items-center gap-2 text-sm text-iron">
               <span className="grid size-5 place-items-center rounded-full bg-iris text-white">
                 <Icon name="BadgeCheck" size={12} />
               </span>
@@ -130,7 +131,7 @@ export default async function Footer({ services }: { services: ServiceView[] }) 
               {nav("quote")}
             </Link>
           </div>
-          <span className="text-graphite">
+          <span className="text-iron">
             ©{new Date().getFullYear()} DMS Tech · {t("rights")}
           </span>
         </div>

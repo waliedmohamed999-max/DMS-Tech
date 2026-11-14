@@ -112,6 +112,8 @@ const T = {
 };
 
 const MAX = 5 * 1024 * 1024;
+/** error codes that belong to the CV file field (client checks and the server's upload verdict) */
+const isCv = (code: string) => code === "cv" || code.startsWith("CV_") || code.startsWith("FILE_");
 type Role = { slug: string; title: string };
 
 /**
@@ -142,6 +144,7 @@ export default function JobApplyForm({ locale, job, roles }: { locale: "ar" | "e
     if (missing.length) {
       setBad(missing);
       setError(t.errors[missing[0]] ?? t.required);
+      (form.elements.namedItem(isCv(missing[0]) ? "cv" : missing[0]) as HTMLElement | null)?.focus();
       return;
     }
     fd.set("elapsed", String(Date.now() - shownAt.current));
@@ -159,7 +162,8 @@ export default function JobApplyForm({ locale, job, roles }: { locale: "ar" | "e
         setFileName("");
         return;
       }
-      const issues = r.issues ?? [];
+      // the CV verdict comes back as a code of its own: flag the file field with it
+      const issues = [...(r.cv ? [r.cv] : []), ...(r.issues ?? [])];
       setBad(issues);
       setError(t.errors[r.cv ?? ""] ?? t.errors[issues[0] ?? ""] ?? t.errors[r.error ?? ""] ?? t.errors.server);
     } catch {
@@ -183,13 +187,27 @@ export default function JobApplyForm({ locale, job, roles }: { locale: "ar" | "e
     );
   }
 
-  const err = (k: string) => (bad.includes(k) ? "border-red-400 focus:border-red-500" : "");
+  const cvError = bad.find(isCv);
+  /** aria-invalid + aria-describedby for a control; its message is rendered by `message(k)` right under it */
+  const flag = (k: string, hint?: string) => {
+    const on = k === "cv" ? Boolean(cvError) : bad.includes(k);
+    return { "aria-invalid": on ? true : undefined, "aria-describedby": [hint, on && `ja-${k}-error`].filter(Boolean).join(" ") || undefined } as const;
+  };
+  const message = (k: string) => {
+    const code = k === "cv" ? cvError : bad.includes(k) ? k : undefined;
+    return code ? (
+      <p id={`ja-${k}-error`} className="text-[13px] font-medium text-red-700">
+        {t.errors[code] ?? t.required}
+      </p>
+    ) : null;
+  };
   const field = (k: string, label: string, input: React.ReactNode, full = false) => (
-    <div className={`grid gap-2 ${full ? "sm:col-span-2" : ""}`}>
+    <div className={`grid content-start gap-2 ${full ? "sm:col-span-2" : ""}`}>
       <label htmlFor={`ja-${k}`} className="text-sm font-semibold text-iron">
         {label}
       </label>
       {input}
+      {message(k)}
     </div>
   );
 
@@ -197,12 +215,11 @@ export default function JobApplyForm({ locale, job, roles }: { locale: "ar" | "e
     <form
       id="apply"
       onSubmit={onSubmit}
-      // a corrected field clears the previous error at once
-      onInput={() => {
-        if (bad.length || error) {
-          setBad([]);
-          setError("");
-        }
+      // a corrected field clears its own message and the summary at once
+      onInput={(e) => {
+        const name = (e.target as HTMLInputElement).name;
+        if (bad.length) setBad(bad.filter((b) => (name === "cv" ? !isCv(b) : b !== name)));
+        if (error) setError("");
       }}
       noValidate encType="multipart/form-data" className="card grid scroll-mt-28 gap-5 border border-mist p-6 shadow-lg sm:grid-cols-2 sm:p-10">
       <div className="grid gap-1 sm:col-span-2">
@@ -235,36 +252,40 @@ export default function JobApplyForm({ locale, job, roles }: { locale: "ar" | "e
           true
         )
       )}
-      {field("name", `${t.name} *`, <input id="ja-name" name="name" className={`input ${err("name")}`} placeholder={t.namePh} autoComplete="name" maxLength={120} />)}
-      {field("email", `${t.email} *`, <input id="ja-email" name="email" type="email" dir="ltr" className={`input rtl:text-right ${err("email")}`} autoComplete="email" maxLength={160} />)}
-      {field("phone", `${t.phone} *`, <input id="ja-phone" name="phone" type="tel" dir="ltr" className={`input rtl:text-right ${err("phone")}`} placeholder={t.phonePh} autoComplete="tel" maxLength={20} />)}
+      {field("name", `${t.name} *`, <input id="ja-name" name="name" className="input" required {...flag("name")} placeholder={t.namePh} autoComplete="name" maxLength={120} />)}
+      {field("email", `${t.email} *`, <input id="ja-email" name="email" type="email" dir="ltr" className="input rtl:text-right" required {...flag("email")} autoComplete="email" maxLength={160} />)}
+      {field("phone", `${t.phone} *`, <input id="ja-phone" name="phone" type="tel" dir="ltr" className="input rtl:text-right" required {...flag("phone")} placeholder={t.phonePh} autoComplete="tel" maxLength={20} />)}
       {field("city", t.city, <input id="ja-city" name="city" className="input" placeholder={t.cityPh} autoComplete="address-level2" maxLength={80} />)}
-      {field("experienceYears", t.experience, <input id="ja-experienceYears" name="experienceYears" type="number" min={0} max={50} dir="ltr" className={`input rtl:text-right ${err("experienceYears")}`} />)}
-      {field("noticePeriodDays", t.notice, <input id="ja-noticePeriodDays" name="noticePeriodDays" type="number" min={0} max={365} dir="ltr" className={`input rtl:text-right ${err("noticePeriodDays")}`} placeholder={t.noticePh} />)}
-      {field("linkedinUrl", t.linkedin, <input id="ja-linkedinUrl" name="linkedinUrl" type="url" dir="ltr" className={`input rtl:text-right ${err("linkedinUrl")}`} placeholder="https://linkedin.com/in/…" maxLength={300} />)}
-      {field("portfolioUrl", t.portfolio, <input id="ja-portfolioUrl" name="portfolioUrl" type="url" dir="ltr" className={`input rtl:text-right ${err("portfolioUrl")}`} placeholder="https://" maxLength={300} />)}
-      {field("salaryExpectation", t.salary, <input id="ja-salaryExpectation" name="salaryExpectation" inputMode="numeric" dir="ltr" className={`input rtl:text-right ${err("salaryExpectation")}`} maxLength={9} />, true)}
+      {field("experienceYears", t.experience, <input id="ja-experienceYears" name="experienceYears" type="number" min={0} max={50} dir="ltr" className="input rtl:text-right" {...flag("experienceYears")} />)}
+      {field("noticePeriodDays", t.notice, <input id="ja-noticePeriodDays" name="noticePeriodDays" type="number" min={0} max={365} dir="ltr" className="input rtl:text-right" {...flag("noticePeriodDays")} placeholder={t.noticePh} />)}
+      {field("linkedinUrl", t.linkedin, <input id="ja-linkedinUrl" name="linkedinUrl" type="url" dir="ltr" className="input rtl:text-right" {...flag("linkedinUrl")} placeholder="https://linkedin.com/in/…" maxLength={300} />)}
+      {field("portfolioUrl", t.portfolio, <input id="ja-portfolioUrl" name="portfolioUrl" type="url" dir="ltr" className="input rtl:text-right" {...flag("portfolioUrl")} placeholder="https://" maxLength={300} />)}
+      {field("salaryExpectation", t.salary, <input id="ja-salaryExpectation" name="salaryExpectation" inputMode="numeric" dir="ltr" className="input rtl:text-right" {...flag("salaryExpectation")} maxLength={9} />, true)}
       {field("message", t.message, <textarea id="ja-message" name="message" className="input min-h-28 resize-y" maxLength={3000} />, true)}
       <div className="grid gap-2 sm:col-span-2">
         <span className="text-sm font-semibold text-iron">{t.cv} *</span>
         <label
           htmlFor="ja-cv"
-          className={`flex cursor-pointer flex-wrap items-center gap-3 rounded-input border border-dashed bg-cloud px-4 py-4 transition hover:border-iris ${bad.some((b) => b === "cv" || b.startsWith("CV_")) ? "border-red-400" : "border-mist"}`}
+          className={`flex cursor-pointer flex-wrap items-center gap-3 rounded-input border border-dashed bg-cloud px-4 py-4 transition hover:border-iris focus-within:border-iris focus-within:ring-4 focus-within:ring-iris/15 ${cvError ? "border-red-600" : "border-mist"}`}
         >
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-iris shadow-sm">
             <Icon name="FileText" size={18} />
           </span>
           <span className="grid min-w-0 flex-1">
             <span className="truncate font-semibold text-ink">{fileName || t.cvPick}</span>
-            <span className="text-xs text-iron">{t.cvHint}</span>
+            <span id="ja-cv-hint" className="text-xs text-iron">{t.cvHint}</span>
           </span>
-          <input id="ja-cv" name="cv" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="sr-only" onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")} />
+          <input id="ja-cv" name="cv" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="sr-only" required {...flag("cv", "ja-cv-hint")} onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")} />
         </label>
+        {message("cv")}
       </div>
-      <label className={`flex items-start gap-3 text-sm text-iron sm:col-span-2 ${bad.includes("consent") ? "text-red-700" : ""}`}>
-        <input type="checkbox" name="consent" value="true" className="mt-1 size-4 accent-[#624de3]" />
-        {t.consent}
-      </label>
+      <div className="grid gap-2 sm:col-span-2">
+        <label className="flex items-start gap-3 text-sm text-iron">
+          <input type="checkbox" name="consent" value="true" className="mt-1 size-4 accent-[#624de3]" required {...flag("consent")} />
+          {t.consent} *
+        </label>
+        {message("consent")}
+      </div>
       {/* honeypot */}
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
       <div className="grid gap-3 sm:col-span-2">
