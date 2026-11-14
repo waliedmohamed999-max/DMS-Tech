@@ -12,7 +12,8 @@ import { listProjects } from "@/server/projects/projects";
 import { arAging, AGING_BUCKETS, financeKpis } from "@/server/finance/insights";
 import { formatMoney } from "@/lib/commercial/calc";
 import type { Ctx } from "@/server/context";
-import { CREATE_ITEMS, findModule } from "@/lib/os/modules";
+import { findModule } from "@/lib/os/modules";
+import { splitHeroKpis } from "@/lib/os/home-layout";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Badge, EmptyState, fmtDate, fmtMoney, fmtNumber, fmtRelative, PermissionDenied, priorityTone, SectionCard } from "@/components/os/ui";
 import ApprovalControls from "@/components/os/ApprovalControls";
@@ -191,7 +192,9 @@ export default async function CommandCenter() {
   const greet = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
   const name = ((locale === "ar" && session.user.nameAr) || session.user.name).split(" ")[0];
 
-  const quick = CREATE_ITEMS.map((c) => ({ c, mod: findModule(c.module)! })).filter(({ c, mod }) => mod && (!(c.permission ?? mod.permission) || ctx.permissions.has((c.permission ?? mod.permission)!)));
+  // placeholder ("planned" / "—") cards are never rendered; the role only orders what the viewer may already see
+  const { hero, rest } = splitHeroKpis(kpis.filter((k) => k.state === "live"), ctx.roleKeys);
+  const card = (k: Kpi) => <KpiCard key={k.key} k={k} label={t(`home.kpi.${k.key}` as "home.kpi.team")} locale={locale} t={tt} />;
 
   return (
     <div className="grid gap-6">
@@ -204,40 +207,24 @@ export default async function CommandCenter() {
           </h1>
           <p className="mt-1 text-sm text-os-muted">{t("home.subtitle")}</p>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {quick.slice(0, 8).map(({ c, mod }) =>
-            mod.live && c.href ? (
-              <Link key={c.key} href={c.href} className="os-btn-secondary h-8 px-2.5 text-xs">
-                <Icon name={c.icon} size={14} /> {c.label[locale as "ar"]}
-              </Link>
-            ) : (
-              <span key={c.key} title={t("topbar.createPlanned", { n: mod.phase })} className="os-btn-secondary pointer-events-none h-8 px-2.5 text-xs opacity-40">
-                <Icon name={c.icon} size={14} /> {c.label[locale as "ar"]}
-              </span>
-            )
-          )}
-        </div>
       </div>
-
-      {/* KPIs */}
-      <section aria-label={t("home.kpis")}>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">{t("home.kpis")}</h2>
-          <span className="text-xs text-os-faint">{t("home.vsPrev")}</span>
-        </div>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          {/* only real numbers: placeholder ("planned" / "—") cards are not rendered */}
-          {kpis.filter((k) => k.state === "live").map((k) => (
-            <KpiCard key={k.key} k={k} label={t(`home.kpi.${k.key}` as "home.kpi.team")} locale={locale} t={tt} />
-          ))}
-        </div>
-      </section>
 
       <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
         {/* Needs your attention */}
         <SectionCard title={t("home.attention")} action={attention.length ? <Badge tone="warning">{attention.length}</Badge> : undefined}>
           {attention.length === 0 ? (
-            <EmptyState icon="CircleCheck" title={t("home.attentionEmpty")} text={t("home.attentionEmptyText")} />
+            <EmptyState
+              icon="CircleCheck"
+              title={t("home.attentionEmpty")}
+              text={t("home.attentionEmptyText")}
+              action={
+                can(ctx, "projects.tasks.view") ? (
+                  <Link href="/app/my-work" className="os-btn-secondary h-8 px-3 text-xs">
+                    {t("home.openMyWork")}
+                  </Link>
+                ) : undefined
+              }
+            />
           ) : (
             <ul className="divide-y divide-os-line">
               {attention.map((a) => (
@@ -272,6 +259,26 @@ export default async function CommandCenter() {
           {activity.items.length ? <ActivityList items={activity.items.slice(0, 8)} /> : <EmptyState icon="ChartLine" title={t("home.activityEmpty")} text={t("activity.emptyText")} />}
         </SectionCard>
       </div>
+
+      {/* Hero KPIs: up to four, chosen for the viewer's role; the rest fold away below */}
+      {hero.length > 0 && (
+        <section aria-labelledby="home-kpis">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <h2 id="home-kpis" className="text-sm font-semibold">{t("home.kpis")}</h2>
+            <span className="text-xs text-os-faint">{t("home.vsPrev")}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">{hero.map(card)}</div>
+          {rest.length > 0 && (
+            <details className="group/all mt-3">
+              <summary className="flex w-fit cursor-pointer list-none items-center gap-1.5 rounded-md px-2 py-1.5 text-[13px] text-os-muted hover:bg-os-surface hover:text-os-text [&::-webkit-details-marker]:hidden">
+                <Icon name="ChevronDown" size={14} className="-rotate-90 transition group-open/all:rotate-0 rtl:rotate-90 rtl:group-open/all:rotate-0" />
+                {t("home.allKpis", { n: rest.length })}
+              </summary>
+              <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">{rest.map(card)}</div>
+            </details>
+          )}
+        </section>
+      )}
 
       {/* Live pipeline (Phase 2) + modules that unlock in later phases — explicitly not faked */}
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">

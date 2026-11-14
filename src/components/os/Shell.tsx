@@ -35,6 +35,29 @@ function useLocalBool(key: string, initial: boolean) {
 
 const isActive = (pathname: string, href: string) => (href === "/app" ? pathname === "/app" : pathname === href || pathname.startsWith(href + "/"));
 
+/** A JSON UI preference kept in localStorage; unreadable or blocked storage just means the default. */
+function useLocalJson<T>(key: string, initial: T, valid: (x: unknown) => x is T) {
+  const [v, setV] = useState(initial);
+  useEffect(() => {
+    try {
+      const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? "null");
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate a per-viewer UI preference after mount
+      if (valid(parsed)) setV(parsed);
+    } catch {}
+  }, [key, valid]);
+  const set = (x: T) => {
+    setV(x);
+    try {
+      localStorage.setItem(key, JSON.stringify(x));
+    } catch {}
+  };
+  return [v, set] as const;
+}
+const isStringArray = (x: unknown): x is string[] => Array.isArray(x) && x.every((s) => typeof s === "string");
+const isBoolRecord = (x: unknown): x is Record<string, boolean> => typeof x === "object" && x !== null && !Array.isArray(x) && Object.values(x).every((b) => typeof b === "boolean");
+const NO_PINS: string[] = [];
+const NO_GROUP_STATE: Record<string, boolean> = {};
+
 // ---------------------------------------------------------------------------
 // Sidebar
 // ---------------------------------------------------------------------------
@@ -44,7 +67,51 @@ function Sidebar({ groups, collapsed, onCollapse, mobileOpen, onNavigate }: { gr
   const t = useTranslations("os.nav");
   // Arabic has no letter case and must not be letter-spaced: keep the uppercase/tracked label style for Latin only
   const groupLabelCase = useLocale() === "ar" ? "" : "uppercase tracking-[0.08em]";
-  const [closed, setClosed] = useState<Record<string, boolean>>({});
+  const groupLabel = `flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[11px] font-semibold text-os-faint ${groupLabelCase}`;
+  // the viewer's own choices: pinned item keys, and which groups they opened / closed by hand
+  const [pins, setPins] = useLocalJson("os.sidebar.pins", NO_PINS, isStringArray);
+  const [groupOpen, setGroupOpen] = useLocalJson("os.sidebar.groups", NO_GROUP_STATE, isBoolRecord);
+
+  const allItems = groups.flatMap((g) => g.items);
+  // only the most specific match is active (/app/finance vs /app/finance/invoices)
+  const activeKey = allItems.find((it) => isActive(pathname, it.href) && !allItems.some((o) => o.href.length > it.href.length && o.href.startsWith(it.href) && isActive(pathname, o.href)))?.key;
+  // pins only ever resolve against the permission-filtered nav: a stale key shows nothing
+  const pinned = pins.map((k) => allItems.find((it) => it.key === k)).filter((it): it is ShellNavItem => Boolean(it));
+  const togglePin = (key: string) => setPins(pins.includes(key) ? pins.filter((k) => k !== key) : [...pins, key]);
+
+  const item = (it: ShellNavItem, markCurrent: boolean) => {
+    const active = it.key === activeKey;
+    const isPinned = pins.includes(it.key);
+    return (
+      <li key={it.key} className="group/item relative">
+        <Link
+          href={it.href}
+          onClick={onNavigate}
+          aria-current={active && markCurrent ? "page" : undefined}
+          title={collapsed ? it.label : undefined}
+          className={`flex h-8 items-center gap-2.5 rounded-md ps-2 pe-8 text-[13.5px] transition ${
+            active ? "bg-os-raised text-os-text shadow-[inset_2px_0_0_var(--color-iris)] rtl:shadow-[inset_-2px_0_0_var(--color-iris)]" : "text-os-muted hover:bg-os-surface hover:text-os-text"
+          } ${collapsed ? "lg:justify-center lg:px-0" : ""}`}
+        >
+          <Icon name={it.icon} size={16} className={active ? "text-iris-light" : ""} />
+          <span className={`flex-1 truncate ${collapsed ? "lg:hidden" : ""}`}>{it.label}</span>
+          {!it.live && !collapsed && <span className="rounded border border-os-line px-1 text-[10px] text-os-faint">{t("planned")}</span>}
+        </Link>
+        <button
+          type="button"
+          onClick={() => togglePin(it.key)}
+          aria-pressed={isPinned}
+          aria-label={t(isPinned ? "unpin" : "pin", { name: it.label })}
+          title={t(isPinned ? "unpin" : "pin", { name: it.label })}
+          className={`absolute end-1 top-1 grid size-6 place-items-center rounded transition hover:bg-os-line hover:text-os-text focus-visible:opacity-100 group-hover/item:opacity-100 max-lg:opacity-100 ${
+            isPinned ? "text-iris-light" : "text-os-faint lg:opacity-0"
+          } ${collapsed ? "lg:hidden" : ""}`}
+        >
+          <Icon name="Star" size={13} className={isPinned ? "fill-current" : ""} />
+        </button>
+      </li>
+    );
+  };
 
   return (
     <aside
@@ -63,47 +130,28 @@ function Sidebar({ groups, collapsed, onCollapse, mobileOpen, onNavigate }: { gr
       </div>
 
       <nav className="flex-1 overflow-y-auto px-2.5 py-3" aria-label="OS">
+        {pinned.length > 0 && (
+          <div className="mb-2">
+            {/* shortcuts to items that also live in their group below: aria-current stays on the group entry only */}
+            <p className={`${groupLabel} ${collapsed ? "lg:hidden" : ""}`}>{t("pinned")}</p>
+            <ul className="grid gap-0.5" aria-label={t("pinned")}>
+              {pinned.map((it) => item(it, false))}
+            </ul>
+          </div>
+        )}
         {groups.map((g) => {
-          const isClosed = closed[g.key] && !collapsed;
+          // closed by default, except the group holding the current page; a manual toggle wins and is remembered
+          const open = collapsed || (groupOpen[g.key] ?? g.items.some((it) => it.key === activeKey));
           return (
             <div key={g.key} className="mb-2">
               {!collapsed && (
-                <button
-                  type="button"
-                  onClick={() => setClosed((c) => ({ ...c, [g.key]: !c[g.key] }))}
-                  className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-[11px] font-semibold text-os-faint hover:text-os-muted ${groupLabelCase}`}
-                  aria-expanded={!isClosed}
-                >
+                <button type="button" onClick={() => setGroupOpen({ ...groupOpen, [g.key]: !open })} className={`${groupLabel} hover:text-os-muted`} aria-expanded={open}>
                   {g.label}
-                  <Icon name="ChevronDown" size={13} className={`transition ${isClosed ? "-rotate-90 rtl:rotate-90" : ""}`} />
+                  <Icon name="ChevronDown" size={13} className={`transition ${open ? "" : "-rotate-90 rtl:rotate-90"}`} />
                 </button>
               )}
               {collapsed && <div className="mx-3 my-2 hidden h-px bg-os-line lg:block" />}
-              {!isClosed && (
-                <ul className="grid gap-0.5">
-                  {g.items.map((it) => {
-                    // only the most specific match is active (/app/finance vs /app/finance/invoices)
-                    const active = isActive(pathname, it.href) && !groups.some((gg) => gg.items.some((o) => o.href.length > it.href.length && o.href.startsWith(it.href) && isActive(pathname, o.href)));
-                    return (
-                      <li key={it.key}>
-                        <Link
-                          href={it.href}
-                          onClick={onNavigate}
-                          aria-current={active ? "page" : undefined}
-                          title={collapsed ? it.label : undefined}
-                          className={`group flex h-8 items-center gap-2.5 rounded-md px-2 text-[13.5px] transition ${
-                            active ? "bg-os-raised text-os-text shadow-[inset_2px_0_0_var(--color-iris)] rtl:shadow-[inset_-2px_0_0_var(--color-iris)]" : "text-os-muted hover:bg-os-surface hover:text-os-text"
-                          } ${collapsed ? "lg:justify-center lg:px-0" : ""}`}
-                        >
-                          <Icon name={it.icon} size={16} className={active ? "text-iris-light" : ""} />
-                          <span className={`flex-1 truncate ${collapsed ? "lg:hidden" : ""}`}>{it.label}</span>
-                          {!it.live && !collapsed && <span className="rounded border border-os-line px-1 text-[10px] text-os-faint">{t("planned")}</span>}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+              {open && <ul className="grid gap-0.5">{g.items.map((it) => item(it, true))}</ul>}
             </div>
           );
         })}
