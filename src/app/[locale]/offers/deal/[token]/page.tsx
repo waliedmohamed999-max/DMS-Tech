@@ -85,7 +85,7 @@ export default async function DealPage({ params }: Props) {
               ))}
             </ul>
             <div className="grid gap-1 border-t border-mist pt-4">
-              <span className="text-sm text-graphite">{c.dealTotal}</span>
+              <span className="text-sm text-iron">{c.dealTotal}</span>
               {d.total ? (
                 <span className="text-3xl font-bold" dir="ltr">
                   {d.total}
@@ -93,7 +93,7 @@ export default async function DealPage({ params }: Props) {
               ) : (
                 <span className="font-semibold text-iris">{c.dealOnRequest}</span>
               )}
-              <span className="text-xs text-graphite">{c.vatNote}</span>
+              <span className="text-xs text-iron">{c.vatNote}</span>
             </div>
             <p className="flex items-center gap-2 text-sm text-iron">
               <Icon name="CalendarClock" size={15} className="text-iris" /> {c.dealValid}: {valid}

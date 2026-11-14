@@ -62,7 +62,7 @@ export function PriceBlock({ t, labels, size = "md" }: { t: Pick<TierView, "pric
     <span className="grid gap-1">
       <span className="flex flex-wrap items-center gap-2">
         {labels.billing[t.billing] !== t.period && <span className="w-fit rounded-full bg-lilac px-2.5 py-0.5 text-[11px] font-bold text-iris">{labels.billing[t.billing]}</span>}
-        {lead && <span className="text-xs text-graphite">{lead}</span>}
+        {lead && <span className="text-xs text-iron">{lead}</span>}
       </span>
       <span className="flex flex-wrap items-baseline gap-1.5">
         <span className={`${size === "lg" ? "text-4xl" : "text-2xl"} font-bold tabular`} dir="ltr">
@@ -79,7 +79,7 @@ export function PriceBlock({ t, labels, size = "md" }: { t: Pick<TierView, "pric
         </span>
       )}
       {t.priceVat && (
-        <span className="text-xs text-graphite">
+        <span className="text-xs text-iron">
           <span dir="ltr">{t.priceVat}</span> {labels.inclVat}
         </span>
       )}
@@ -239,7 +239,7 @@ export function PackagesBrowser({ groups, labels, locale, anchor = "packages" }:
             <div className="grid content-start gap-1.5 border-t border-mist pt-3">
               {t.excludes.length > 0 && (
                 <>
-                  <span className="text-xs font-semibold text-graphite">{labels.notIncluded}</span>
+                  <span className="text-xs font-semibold text-iron">{labels.notIncluded}</span>
                   {t.excludes.map((x) => (
                     <span key={x} className="flex items-start gap-2 text-[13px] text-iron">
                       <Icon name="X" size={14} className="mt-0.5 shrink-0 text-graphite" />
@@ -324,7 +324,7 @@ export function ShareLink({ title, offer, labels }: { title: string; offer?: str
   const url = () => window.location.href.split("#")[0];
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm font-semibold text-graphite">{labels.share}:</span>
+      <span className="text-sm font-semibold text-iron">{labels.share}:</span>
       <button
         type="button"
         className="btn-ghost"

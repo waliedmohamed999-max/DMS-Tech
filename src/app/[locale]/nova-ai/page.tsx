@@ -93,7 +93,7 @@ export default async function NovaPage({ params }: { params: Promise<{ locale: s
       {/* 2 — channels */}
       <section className="border-b border-mist py-10">
         <div className="container-site flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
-          <span className="text-sm font-semibold text-graphite">{c.channelsTitle}</span>
+          <span className="text-sm font-semibold text-iron">{c.channelsTitle}</span>
           {c.channels.map((ch) => (
             <span key={ch.name} className="inline-flex items-center gap-2 text-[15px] font-semibold text-ink" dir="ltr">
               {ch.slug ? <BrandIcon slug={ch.slug} size={18} colored /> : <Icon name="Mail" size={18} className="text-[#0078D4]" />}
@@ -161,7 +161,7 @@ export default async function NovaPage({ params }: { params: Promise<{ locale: s
                 <span className="badge-icon">
                   <Icon name={a.icon} />
                 </span>
-                <p className="text-sm text-graphite">{a.text}</p>
+                <p className="text-sm text-iron">{a.text}</p>
                 <h3 className="text-xl font-bold">{a.title}</h3>
                 <blockquote className="mt-2 rounded-xl border-s-4 border-iris bg-lilac/50 px-4 py-3 text-[15px] leading-relaxed text-ink">«{a.quote}»</blockquote>
               </div>

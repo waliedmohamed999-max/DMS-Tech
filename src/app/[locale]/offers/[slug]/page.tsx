@@ -171,7 +171,7 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
       {item.kind === "offer" && item.oldPrice ? (
         <div className="grid gap-1">
           <span className="flex flex-wrap items-center gap-2">
-            <span className="text-xl font-semibold text-graphite line-through decoration-2" dir="ltr">
+            <span className="text-xl font-semibold text-iron line-through decoration-2" dir="ltr">
               {item.oldPrice}
             </span>
             {item.percent && (
@@ -183,7 +183,7 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
           <span className="text-4xl font-bold" dir="ltr">
             {item.price}
           </span>
-          <span className="text-xs text-graphite">
+          <span className="text-xs text-iron">
             <span dir="ltr">{item.priceVat}</span> {c.inclVat}
           </span>
           {item.saving && (
@@ -195,7 +195,7 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
       ) : (
         <PriceBlock t={item} labels={priceLabels} size="lg" />
       )}
-      <span className="text-xs text-graphite">{c.vatNote}</span>
+      <span className="text-xs text-iron">{c.vatNote}</span>
       <div className="grid gap-2">
         <a href="#order" className="btn btn-primary w-full justify-center">
           {quoteLed ? c.customQuote : c.orderNow} <Icon name={arrow} size={16} />
@@ -449,7 +449,7 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
                     <span className="text-sm text-iron">{x.tagline}</span>
                   </div>
                   <span className="grid border-y border-mist py-3">
-                    {x.from && <span className="text-xs text-graphite">{x.indicative ? c.indicative : c.from}</span>}
+                    {x.from && <span className="text-xs text-iron">{x.indicative ? c.indicative : c.from}</span>}
                     <span className="flex flex-wrap items-baseline gap-1.5">
                       <b className="text-2xl" dir="ltr">
                         {x.price ?? c.onRequest}
@@ -598,11 +598,11 @@ export default async function OfferItemPage({ params, searchParams }: Props) {
       <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-mist bg-white/95 px-4 py-3 shadow-[0_-6px_20px_rgba(0,0,0,.08)] backdrop-blur md:hidden">
         <span className="grid min-w-0 flex-1 leading-tight">
           {item.oldPrice && (
-            <span className="text-xs text-graphite line-through" dir="ltr">
+            <span className="text-xs text-iron line-through" dir="ltr">
               {item.oldPrice}
             </span>
           )}
-          {lead && <span className="text-[11px] text-graphite">{lead}</span>}
+          {lead && <span className="text-[11px] text-iron">{lead}</span>}
           <b className="truncate text-lg" dir="ltr">
             {item.price ?? c.onRequest}
           </b>

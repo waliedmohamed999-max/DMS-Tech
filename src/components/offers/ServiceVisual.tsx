@@ -32,7 +32,7 @@ function Web({ l }: { l: Lc }) {
           {[0, 1, 2].map((d) => (
             <span key={d} className="size-2 rounded-full bg-line" />
           ))}
-          <span className="ms-2 flex-1 truncate rounded-full bg-cloud px-2 py-0.5 text-[10px] text-graphite">yourcompany.sa</span>
+          <span className="ms-2 flex-1 truncate rounded-full bg-cloud px-2 py-0.5 text-[10px] text-iron">yourcompany.sa</span>
         </div>
         <div className="grid gap-2 p-3">
           <div className="flex items-center justify-between">
@@ -86,7 +86,7 @@ function Store({ l }: { l: Lc }) {
           <b className="text-[11px]">{pick(l, "عطر العود الفاخر", "Premium oud perfume")}</b>
           <span className="flex items-center justify-between text-[11px]">
             <b className="text-iris">349 {pick(l, "ر.س", "SAR")}</b>
-            <span className="text-[9px] text-graphite line-through">449</span>
+            <span className="text-[9px] text-iron line-through">449</span>
           </span>
           <span className="rounded-md bg-ink py-1 text-center text-[10px] font-bold text-white">{pick(l, "أضف للسلة", "Add to cart")}</span>
         </div>
@@ -98,7 +98,7 @@ function Store({ l }: { l: Lc }) {
           </span>
           <span className="grid leading-tight">
             <b>{pick(l, "طلب جديد #1024", "New order #1024")}</b>
-            <span className="text-[10px] text-graphite">349 {pick(l, "ر.س · مدى", "SAR · mada")}</span>
+            <span className="text-[10px] text-iron">349 {pick(l, "ر.س · مدى", "SAR · mada")}</span>
           </span>
         </span>
       </Float>
@@ -137,7 +137,7 @@ function Marketing({ l }: { l: Lc }) {
           ].map(([k, v]) => (
             <span key={k} className="rounded-md bg-cloud px-1 py-1.5">
               <b className="block text-[12px] text-iris">{v}</b>
-              <span className="text-[9px] text-graphite">{k}</span>
+              <span className="text-[9px] text-iron">{k}</span>
             </span>
           ))}
         </div>
@@ -215,13 +215,13 @@ function Team({ l }: { l: Lc }) {
           </span>
           <span className="grid leading-tight">
             <b className="text-[11px]">{role}</b>
-            <span className="text-[10px] text-graphite">{task}</span>
+            <span className="text-[10px] text-iron">{task}</span>
           </span>
           <span className="ms-auto size-2 rounded-full bg-fern" />
         </div>
       ))}
       <div className="grid gap-1">
-        <span className="flex justify-between text-[10px] text-graphite">
+        <span className="flex justify-between text-[10px] text-iron">
           <span>{pick(l, "إنجاز السبرنت", "Sprint progress")}</span>
           <b className="text-ink">72%</b>
         </span>
@@ -273,7 +273,7 @@ function Design({ l }: { l: Lc }) {
             ))}
           </span>
           <b className="text-[18px] leading-none">Aa</b>
-          <span className="text-[10px] text-graphite">{pick(l, "الألوان والخطوط", "Colours & fonts")}</span>
+          <span className="text-[10px] text-iron">{pick(l, "الألوان والخطوط", "Colours & fonts")}</span>
           <span className="grid grid-cols-2 gap-1">
             {[0, 1].map((d) => (
               <span key={d} className="h-8 rounded-md bg-gradient-to-br from-lilac to-white ring-1 ring-mist" />
@@ -314,7 +314,7 @@ function Dashboard({ l }: { l: Lc }) {
         <div className="grid grid-cols-3 gap-1.5">
           {kpis.map(([k, v, d]) => (
             <span key={k} className="rounded-md bg-cloud px-1.5 py-1.5">
-              <span className="block text-[9px] text-graphite">{k}</span>
+              <span className="block text-[9px] text-iron">{k}</span>
               <b className="block text-[12px]" dir="ltr">
                 {v}
               </b>
@@ -363,7 +363,7 @@ export function ServiceVisual({ service, locale, className = "" }: { service: st
       <span className="absolute -end-10 -top-10 size-40 rounded-full bg-iris/10 blur-2xl" />
       <Scene l={l} />
       {/* sample screens, not a real client: labelled so nobody reads them as results */}
-      <span className="absolute bottom-2 start-2 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-medium text-graphite backdrop-blur-sm">{pick(l, "مثال توضيحي", "Illustration")}</span>
+      <span className="absolute bottom-2 start-2 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-medium text-iron backdrop-blur-sm">{pick(l, "مثال توضيحي", "Illustration")}</span>
     </div>
   );
 }
