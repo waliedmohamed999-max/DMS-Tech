@@ -504,28 +504,68 @@ export async function listSubscriptions(ctx: Ctx, raw: unknown) {
   return { rows, filters: f, today };
 }
 
-/** Headline numbers: MRR / ARR (active, ending and paused excluded), counts, renewals, new and churn in 30 days. */
+/**
+ * Headline numbers: MRR / ARR, counts, renewals, new and churn in 30 days.
+ *
+ * MRR counts ACTIVE and ENDING subscriptions (ENDING = cancelled but still billed until the term
+ * ends); PAUSED and ENDED are excluded. Money is never added across currencies: `mrr`, `arr` and
+ * `churnedMrr` are in the organization's base currency (`currency`) only, and every currency —
+ * base included — is reported on its own in `byCurrency`. `otherCurrencies` is the non-base part,
+ * for a "+ USD 500.00" style note. Counts cover all currencies.
+ */
 export async function subscriptionMetrics(ctx: Ctx) {
   requirePermission(ctx, "subscriptions.view");
   const today = await orgToday(ctx.organizationId);
   const since = addDays(today, -30);
-  const all = await prisma.subscription.findMany({ where: { organizationId: ctx.organizationId }, select: { status: true, price: true, interval: true, termEndDate: true, startDate: true, endedAt: true, recurringInvoiceId: true, currency: true } });
-  let mrr = new Prisma.Decimal(0);
+  const [org, all] = await Promise.all([
+    prisma.organization.findUniqueOrThrow({ where: { id: ctx.organizationId }, select: { currency: true } }),
+    prisma.subscription.findMany({ where: { organizationId: ctx.organizationId }, select: { status: true, price: true, interval: true, termEndDate: true, startDate: true, endedAt: true, recurringInvoiceId: true, currency: true } })
+  ]);
+  const zero = new Prisma.Decimal(0);
+  const per = new Map<string, { mrr: Prisma.Decimal; churnedMrr: Prisma.Decimal; subscriptions: number }>();
+  const bucket = (currency: string) => {
+    let b = per.get(currency);
+    if (!b) per.set(currency, (b = { mrr: zero, churnedMrr: zero, subscriptions: 0 }));
+    return b;
+  };
+  bucket(org.currency);
   const counts = { ACTIVE: 0, PAUSED: 0, ENDING: 0, ENDED: 0 };
-  let renewing = 0, fresh = 0, churned = 0, unbilled = 0, churnedMrr = new Prisma.Decimal(0);
+  let renewing = 0, fresh = 0, churned = 0, unbilled = 0;
   for (const s of all) {
     counts[s.status]++;
-    if (s.status === "ACTIVE" || s.status === "ENDING") mrr = mrr.plus(monthlyValue(s.price, s.interval));
+    if (s.status === "ACTIVE" || s.status === "ENDING") {
+      const b = bucket(s.currency);
+      b.mrr = b.mrr.plus(monthlyValue(s.price, s.interval));
+      b.subscriptions++;
+    }
     if (s.status === "ACTIVE" && s.termEndDate && s.termEndDate >= today && s.termEndDate <= addDays(today, RENEWAL_NOTICE_DAYS)) renewing++;
     if (s.startDate >= since && s.startDate <= today) fresh++;
     if (s.status === "ENDED" && s.endedAt && s.endedAt >= since) {
       churned++;
-      churnedMrr = churnedMrr.plus(monthlyValue(s.price, s.interval));
+      const b = bucket(s.currency);
+      b.churnedMrr = b.churnedMrr.plus(monthlyValue(s.price, s.interval));
     }
     if (s.status !== "ENDED" && !s.recurringInvoiceId) unbilled++;
   }
   const base = counts.ACTIVE + counts.ENDING + counts.PAUSED + churned;
-  return { mrr: mrr.toFixed(2), arr: mrr.times(12).toFixed(2), counts, renewing, fresh, churned, churnedMrr: churnedMrr.toFixed(2), churnRate: base ? Math.round((churned / base) * 1000) / 10 : 0, unbilled, currency: all[0]?.currency ?? "SAR" };
+  const byCurrency = [...per.entries()]
+    .map(([currency, b]) => ({ currency, mrr: b.mrr.toFixed(2), arr: b.mrr.times(12).toFixed(2), churnedMrr: b.churnedMrr.toFixed(2), subscriptions: b.subscriptions }))
+    .sort((x, y) => (x.currency === org.currency ? -1 : y.currency === org.currency ? 1 : x.currency.localeCompare(y.currency)));
+  const own = byCurrency[0];
+  return {
+    mrr: own.mrr,
+    arr: own.arr,
+    counts,
+    renewing,
+    fresh,
+    churned,
+    churnedMrr: own.churnedMrr,
+    churnRate: base ? Math.round((churned / base) * 1000) / 10 : 0,
+    unbilled,
+    currency: org.currency,
+    byCurrency,
+    otherCurrencies: byCurrency.slice(1).filter((c) => c.subscriptions > 0 || Number(c.churnedMrr) > 0)
+  };
 }
 
 export async function getSubscription(ctx: Ctx, id: string) {

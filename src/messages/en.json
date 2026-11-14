@@ -530,6 +530,9 @@
       "kpi": {
         "collected": "Collected",
         "receivables": "Receivables",
+        "overdueInvoices": "Overdue invoices",
+        "overdueAmount": "Overdue amount",
+        "mrr": "Monthly recurring (MRR)",
         "expenses": "Expenses",
         "pipeline": "Pipeline value",
         "activeClients": "Active clients",

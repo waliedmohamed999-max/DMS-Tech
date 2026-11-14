@@ -20,6 +20,8 @@ import { opsAttention, opsDashboard } from "../ops/insights";
 import { opsSearch } from "../ops/search";
 import { integrationsAttention, integrationsSearch } from "../integrations/insights";
 import { sweepOpsIfDue } from "../ops/sweep";
+import { subscriptionMetrics } from "../subscriptions/subscriptions";
+import { orgMonthOf, type OrgMonth } from "../kpi/period";
 
 /**
  * Command Center data. KPIs are provider functions: a provider either returns real
@@ -33,67 +35,106 @@ export type Kpi =
   | { key: string; state: "forbidden" };
 
 type Provider = { key: string; permission?: Permission; run(ctx: Ctx, range: Range): Promise<Kpi> };
-type Range = { from: Date; to: Date; prevFrom: Date; prevTo: Date };
+/** The org-timezone month (see kpi/period.ts): `from`/`to` are instants, `dateFrom`/`dateTo` business dates. */
+type Range = OrgMonth;
 
-export function monthRange(now = new Date()): Range {
-  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const prevFrom = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
-  const elapsed = now.getTime() - from.getTime();
-  return { from, to: now, prevFrom, prevTo: new Date(prevFrom.getTime() + elapsed) };
+/** "This month" for the Command Center — one definition, in the organization's timezone. */
+export const orgMonthRange = (ctx: Ctx, now = new Date()): Promise<Range> => orgMonthOf(ctx.organizationId, now);
+
+// finance figures are shared by several cards: one computation per range (current / comparison)
+type FinKpis = Awaited<ReturnType<typeof financeKpis>>;
+const finMemo = new WeakMap<Range, { cur?: Promise<FinKpis>; prev?: Promise<FinKpis> }>();
+function fin(ctx: Ctx, r: Range, which: "cur" | "prev"): Promise<FinKpis> {
+  let m = finMemo.get(r);
+  if (!m) finMemo.set(r, (m = {}));
+  // DATE columns → org-local business dates; "today" (overdue) follows the same clock
+  return (m[which] ??= which === "cur" ? financeKpis(ctx, { from: r.dateFrom, to: r.dateTo }, r.to) : financeKpis(ctx, { from: r.prevDateFrom, to: r.prevDateTo }, r.to));
 }
-
+const FORBIDDEN = (key: string): Kpi => ({ key, state: "forbidden" });
 
 const PROVIDERS: Provider[] = [
-  // Phase 5 — billed / collected / outstanding / spent (company currency; never labelled revenue)
+  // Phase 5 — billed / collected / outstanding / spent (company currency; never labelled revenue).
+  // financeKpis applies the finance module's own checks: invoice record scope, and payments /
+  // expenses only with their view permission + finance.records.all (null → the card is withheld).
   ...(["invoiced", "collected", "receivables", "expenses"] as const).map(
     (key): Provider => ({
       key,
       permission: "dashboard.finance_kpis",
       async run(ctx, r) {
-        const [cur, prev] = await Promise.all([financeKpis(ctx, { from: r.from, to: r.to }), key === "receivables" ? Promise.resolve(null) : financeKpis(ctx, { from: r.prevFrom, to: r.prevTo })]);
-        const pick = (k: Awaited<ReturnType<typeof financeKpis>> | null) => (k ? Number(key === "invoiced" ? k.invoiced : key === "collected" ? (k.collected ?? 0) : key === "receivables" ? k.outstanding : (k.expenses ?? 0)) : null);
+        const [cur, prev] = await Promise.all([fin(ctx, r, "cur"), key === "receivables" ? Promise.resolve(null) : fin(ctx, r, "prev")]);
+        const raw = (k: FinKpis) => (key === "invoiced" ? k.invoiced : key === "collected" ? k.collected : key === "receivables" ? k.outstanding : k.expenses);
+        const value = raw(cur);
+        if (value === null) return FORBIDDEN(key); // not "0": the viewer may not see payments / expenses
+        const before = prev ? raw(prev) : null;
         const href = key === "receivables" ? "/app/finance/receivables" : key === "expenses" ? "/app/finance/expenses" : key === "collected" ? "/app/finance/payments" : "/app/finance/invoices";
-        return { key, state: "live", value: pick(cur) ?? 0, previous: pick(prev), format: "currency", href, hint: key === "receivables" && cur.overdueCount ? `${cur.overdue}` : undefined };
+        return { key, state: "live", value: Number(value), previous: before === null ? null : Number(before), format: "currency", href, hint: key === "receivables" && cur.overdueCount ? `${cur.overdue}` : undefined };
       }
     })
   ),
   {
+    // open invoices past their due date (org-local today) with a balance — count; the amount is its own card
+    key: "overdueInvoices",
+    permission: "dashboard.finance_kpis",
+    async run(ctx, r) {
+      const k = await fin(ctx, r, "cur");
+      return { key: "overdueInvoices", state: "live", value: k.overdueCount, format: "number", href: "/app/finance/receivables", hint: k.overdue };
+    }
+  },
+  {
+    key: "overdueAmount",
+    permission: "dashboard.finance_kpis",
+    async run(ctx, r) {
+      const k = await fin(ctx, r, "cur");
+      return { key: "overdueAmount", state: "live", value: Number(k.overdue), format: "currency", href: "/app/finance/receivables", hint: String(k.overdueCount) };
+    }
+  },
+  {
+    // MRR in the organization's currency only (other currencies are listed on /app/subscriptions, never added in)
+    key: "mrr",
+    permission: "dashboard.finance_kpis",
+    async run(ctx) {
+      if (!can(ctx, "subscriptions.view")) return FORBIDDEN("mrr");
+      const k = await subscriptionMetrics(ctx);
+      return { key: "mrr", state: "live", value: Number(k.mrr), format: "currency", href: "/app/subscriptions", hint: k.otherCurrencies.length ? k.otherCurrencies.map((c) => `${c.mrr} ${c.currency}`).join(" + ") : undefined };
+    }
+  },
+  {
     key: "activeLeads",
     permission: "crm.leads.view",
-    async run(ctx) {
-      const k = await crmKpis(ctx);
+    async run(ctx, r) {
+      const k = await crmKpis(ctx, r.to);
       return { key: "activeLeads", state: "live", value: k.activeLeads ?? 0, format: "number", href: "/app/crm/leads?status=active" };
     }
   },
   {
     key: "openOpps",
     permission: "crm.opportunities.view",
-    async run(ctx) {
-      const k = await crmKpis(ctx);
+    async run(ctx, r) {
+      const k = await crmKpis(ctx, r.to);
       return { key: "openOpps", state: "live", value: k.openOpps ?? 0, format: "number", href: "/app/crm/opportunities?status=OPEN" };
     }
   },
   {
     key: "pipeline",
     permission: "crm.opportunities.view",
-    async run(ctx) {
-      const k = await crmKpis(ctx);
+    async run(ctx, r) {
+      const k = await crmKpis(ctx, r.to);
       return { key: "pipeline", state: "live", value: Number(k.pipelineValue ?? 0), format: "currency", href: "/app/crm/pipeline" };
     }
   },
   {
     key: "wonThisMonth",
     permission: "crm.opportunities.view",
-    async run(ctx) {
-      const k = await crmKpis(ctx);
+    async run(ctx, r) {
+      const k = await crmKpis(ctx, r.to);
       return { key: "wonThisMonth", state: "live", value: Number(k.wonThisMonth ?? 0), previous: Number(k.wonPrevPeriod ?? 0), format: "currency", href: "/app/crm/opportunities?status=WON" };
     }
   },
   {
     key: "overdueFollowUps",
     permission: "crm.leads.view",
-    async run(ctx) {
-      const k = await crmKpis(ctx);
+    async run(ctx, r) {
+      const k = await crmKpis(ctx, r.to);
       return { key: "overdueFollowUps", state: "live", value: k.overdueFollowUps ?? 0, format: "number", href: "/app/crm/follow-ups" };
     }
   },
@@ -209,9 +250,11 @@ const PROVIDERS: Provider[] = [
   }
 ];
 
+/** Live KPIs the viewer may see. Cards a finer finance / subscription check withholds are left out, not zeroed. */
 export async function getKpis(ctx: Ctx, now = new Date()): Promise<Kpi[]> {
-  const range = monthRange(now);
-  return Promise.all(PROVIDERS.filter((p) => !p.permission || can(ctx, p.permission)).map((p) => p.run(ctx, range)));
+  const range = await orgMonthRange(ctx, now);
+  const all = await Promise.all(PROVIDERS.filter((p) => !p.permission || can(ctx, p.permission)).map((p) => p.run(ctx, range)));
+  return all.filter((k) => k.state !== "forbidden");
 }
 
 export type AttentionItem = {

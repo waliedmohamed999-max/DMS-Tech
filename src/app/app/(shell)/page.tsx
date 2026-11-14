@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getLocale, getTranslations } from "next-intl/server";
 import { pageCtx, requireSession } from "@/lib/os/dal";
-import { getAttention, getKpis, type Kpi } from "@/server/dashboard/service";
+import { getAttention, getKpis, orgMonthRange, type Kpi } from "@/server/dashboard/service";
 import { listActivity } from "@/server/feed";
 import { pipelineSummary } from "@/server/crm/insights";
 import { can } from "@/server/context";
@@ -25,6 +25,9 @@ const KPI_ICONS: Record<string, IconName> = {
   invoiced: "FileText",
   collected: "CreditCard",
   receivables: "Clock",
+  overdueInvoices: "CalendarClock",
+  overdueAmount: "CalendarClock",
+  mrr: "ChartLine",
   expenses: "ShoppingBag",
   pipeline: "ChartColumn",
   wonThisMonth: "Trophy",
@@ -45,7 +48,7 @@ const KPI_ICONS: Record<string, IconName> = {
   auditEvents: "ShieldCheck",
   failedEvents: "CircleX"
 };
-const KPI_ALERTS = new Set(["overdueFollowUps", "projectsAtRisk", "failedEvents"]);
+const KPI_ALERTS = new Set(["overdueFollowUps", "projectsAtRisk", "failedEvents", "overdueInvoices", "overdueAmount"]);
 
 function KpiCard({ k, label, locale, t }: { k: Kpi; label: string; locale: string; t: (k: string, v?: Record<string, string | number>) => string }) {
   if (k.state === "planned") {
@@ -137,8 +140,8 @@ async function ProjectsPanel({ ctx }: { ctx: Ctx }) {
 async function FinancePanel({ ctx, locale }: { ctx: Ctx; locale: string }) {
   const t = await getTranslations("os");
   const tf = await getTranslations("os.finance");
-  const now = new Date();
-  const [k, aging] = await Promise.all([financeKpis(ctx, { from: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)), to: now }), arAging(ctx)]);
+  const month = await orgMonthRange(ctx); // same org-timezone month as the KPI cards
+  const [k, aging] = await Promise.all([financeKpis(ctx, { from: month.dateFrom, to: month.dateTo }, month.to), arAging(ctx)]);
   const m = (v: string) => formatMoney(v, locale, k.currency);
   const cells: [string, string, string, string?][] = [
     [tf("k.invoiced"), m(k.invoiced), "/app/finance/invoices"],
@@ -223,7 +226,8 @@ export default async function CommandCenter() {
           <span className="text-xs text-os-faint">{t("home.vsPrev")}</span>
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-          {kpis.map((k) => (
+          {/* only real numbers: placeholder ("planned" / "—") cards are not rendered */}
+          {kpis.filter((k) => k.state === "live").map((k) => (
             <KpiCard key={k.key} k={k} label={t(`home.kpi.${k.key}` as "home.kpi.team")} locale={locale} t={tt} />
           ))}
         </div>
