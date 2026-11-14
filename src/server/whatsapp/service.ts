@@ -9,6 +9,7 @@ import { clientWhere, ownedWhere } from "../crm/scope";
 import { createLeadTx, leadCreateSchema } from "../crm/leads";
 import { createTicket, ticketWhere } from "../ops/support";
 import { addNote } from "../crm/activities";
+import { markFirstContact } from "../crm/response";
 import { enqueue, registerFailureHook, registerOutboxHandler } from "../integrations/outbox";
 import { connectionFor, recordExecution } from "../integrations/registry";
 import { whatsapp as wa } from "../integrations/adapters";
@@ -300,6 +301,8 @@ export async function sendReply(ctx: Ctx, id: string, raw: unknown) {
     const msg = await tx.whatsAppMessage.create({ data: { organizationId: ctx.organizationId, conversationId: id, direction: "OUTBOUND", messageType: input.templateId ? "template" : "text", body, status: "QUEUED", createdById: ctx.userId || null } });
     await enqueue(tx, ctx.organizationId, { provider: "WHATSAPP", connectionId: conn.id, eventType: "whatsapp.send", idempotencyKey: `wa:msg:${msg.id}`, entityType: "WhatsAppMessage", entityId: msg.id, payload: { messageId: msg.id, message } });
     await tx.whatsAppConversation.update({ where: { id }, data: { lastMessageAt: new Date() } });
+    // L-04: an operator reply to a conversation linked to a lead is that lead's first contact (set once)
+    if (c.leadId) await markFirstContact(tx, ctx.organizationId, c.leadId);
     await uow.audit({ action: "whatsapp.message_sent", entityType: "WhatsAppConversation", entityId: id, after: { messageId: msg.id, type: msg.messageType, queued: true } });
     return { id: msg.id };
   });

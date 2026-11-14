@@ -87,6 +87,7 @@ export async function createLeadTx(tx: Tx, uow: Uow, ctx: Ctx, input: z.output<t
       budgetMax: input.budgetMax ?? null,
       currency: input.currency ?? "SAR",
       ownerId: input.ownerId ?? null,
+      assignedAt: input.ownerId ? new Date() : null,
       priority: input.priority,
       stage: input.stage ?? "NEW",
       nextFollowUpAt: input.nextFollowUpAt ?? null,
@@ -273,7 +274,9 @@ export async function updateLead(ctx: Ctx, raw: unknown) {
       ...(d.stage !== undefined && { stage: d.stage }),
       ...(d.nextFollowUpAt !== undefined && { nextFollowUpAt: d.nextFollowUpAt }),
       ...(d.notes !== undefined && { notes: d.notes }),
-      ...(ownerChanged && { owner: input.ownerId ? { connect: { id: input.ownerId } } : { disconnect: true } })
+      ...(ownerChanged && { owner: input.ownerId ? { connect: { id: input.ownerId } } : { disconnect: true }, assignedAt: input.ownerId ? new Date() : null }),
+      // L-04: the stage first leaving NEW (attempted / contacted / …) is a contact action — set once (row is locked)
+      ...(d.stage && d.stage !== "NEW" && before.stage === "NEW" && !before.firstContactedAt && { firstContactedAt: new Date() })
     };
     if (!(contactRequired({ email: d.email === undefined ? before.email : d.email, phone: d.phone === undefined ? before.phone : d.phone, whatsapp: d.whatsapp === undefined ? before.whatsapp : d.whatsapp })))
       throw invalid("CONTACT_REQUIRED");

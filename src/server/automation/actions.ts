@@ -7,6 +7,7 @@ import { usersWithAll } from "../events/subscribers";
 import { setLeadFollowUp, updateLead } from "../crm/leads";
 import { updateOpportunity } from "../crm/opportunities";
 import { logActivity } from "../crm/activities";
+import { nextRotation } from "../crm/sequence";
 import { createTask } from "../projects/work";
 import { enqueue } from "../integrations/outbox";
 import { addDays, todayIn, ymd } from "../commercial/dates";
@@ -48,7 +49,8 @@ export const actionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("activity"), message: text(200), visibility: z.string().max(60).optional() }).strict(),
   z.object({ type: z.literal("follow_up"), inDays: z.number().int().min(0).max(90), title: text(200) }).strict(),
   z.object({ type: z.literal("project_task"), title: text(300), inDays: z.number().int().min(0).max(180), priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM") }).strict(),
-  z.object({ type: z.literal("assign_owner"), userId: z.string().min(1).max(40) }).strict(),
+  // one fixed owner (`userId`) OR a rotation (`userIds`, 2–10 users, round-robin) — exactly one of the two
+  z.object({ type: z.literal("assign_owner"), userId: z.string().min(1).max(40).optional(), userIds: z.array(z.string().min(1).max(40)).min(2).max(10).optional() }).strict(),
   z.object({ type: z.literal("outbound_webhook"), connectionId: z.string().min(1).max(40) }).strict()
 ]);
 export type Action = z.infer<typeof actionSchema>;
@@ -79,7 +81,12 @@ export async function validateActions(organizationId: string, raw: unknown, kind
       if (act.to === "user" && !(await activeUser(organizationId, act.userId))) throw invalid("ACTION_INVALID:notify.user");
     }
     if (act.type === "activity" && act.visibility && !isPermission(act.visibility)) throw invalid("ACTION_INVALID:activity.visibility");
-    if (act.type === "assign_owner" && !(await activeUser(organizationId, act.userId))) throw invalid("ACTION_INVALID:assign_owner.user");
+    if (act.type === "assign_owner") {
+      if (Boolean(act.userId) === Boolean(act.userIds)) throw invalid("ACTION_INVALID:assign_owner");
+      const pool = act.userIds ?? [act.userId!];
+      if (new Set(pool).size !== pool.length) throw invalid("ACTION_INVALID:assign_owner.duplicate");
+      for (const id of pool) if (!(await activeUser(organizationId, id))) throw invalid("ACTION_INVALID:assign_owner.user");
+    }
     if (act.type === "outbound_webhook") {
       const c = await prisma.integrationConnection.findFirst({ where: { id: act.connectionId, organizationId, provider: "CUSTOM" } });
       if (!c) throw invalid("ACTION_INVALID:outbound_webhook.connection");
@@ -91,7 +98,7 @@ export async function validateActions(organizationId: string, raw: unknown, kind
 
 const activeUser = (organizationId: string, id?: string) => (id ? prisma.user.findFirst({ where: { id, organizationId, status: "ACTIVE", deletedAt: null }, select: { id: true } }) : null);
 
-export type ActionContext = { executionId: string; ruleName: string; eventType: string; entityType: string | null; entityId: string | null; kind: EntityKind; entity: Loaded; runAs: Ctx };
+export type ActionContext = { executionId: string; ruleId: string; ruleName: string; eventType: string; entityType: string | null; entityId: string | null; kind: EntityKind; entity: Loaded; runAs: Ctx };
 export type ActionOutcome = { ref?: string | null; skipped?: string };
 
 /** Execute one action. Throws on failure (recorded by the engine). Idempotent where the target allows it. */
@@ -144,11 +151,21 @@ export async function runAction(a: Action, x: ActionContext, index: number): Pro
       return { ref: (t as { id: string }).id };
     }
     case "assign_owner": {
-      if (x.entity.ownerUserId === a.userId) return { skipped: "ALREADY_OWNER" };
-      if (x.kind === "lead" && x.entity.leadId) await updateLead(x.runAs, { id: x.entity.leadId, ownerId: a.userId });
-      else if (x.kind === "opportunity" && x.entity.opportunityId) await updateOpportunity(x.runAs, { id: x.entity.opportunityId, ownerId: a.userId });
-      else return { skipped: "NOT_ASSIGNABLE" };
-      return { ref: a.userId };
+      const pool = a.userIds ?? [a.userId!];
+      // already owned by the target (or by a member of the rotation): nothing to do, and the rotation does not advance
+      if (x.entity.ownerUserId && pool.includes(x.entity.ownerUserId)) return { skipped: "ALREADY_OWNER" };
+      if (!(x.kind === "lead" && x.entity.leadId) && !(x.kind === "opportunity" && x.entity.opportunityId)) return { skipped: "NOT_ASSIGNABLE" };
+      let userId = pool[0];
+      if (a.userIds) {
+        // round-robin over the users who are still active, in the rule's order; the cursor is an atomic per-rule counter
+        const rows = await prisma.user.findMany({ where: { id: { in: pool }, organizationId: org, status: "ACTIVE", deletedAt: null }, select: { id: true } });
+        const active = pool.filter((id) => rows.some((r) => r.id === id));
+        if (!active.length) throw invalid("ACTION_INVALID:assign_owner.user");
+        userId = active[((await nextRotation(prisma, org, x.ruleId)) - 1) % active.length];
+      }
+      if (x.kind === "lead") await updateLead(x.runAs, { id: x.entity.leadId!, ownerId: userId });
+      else await updateOpportunity(x.runAs, { id: x.entity.opportunityId!, ownerId: userId });
+      return { ref: userId };
     }
     case "outbound_webhook": {
       const c = await prisma.integrationConnection.findFirst({ where: { id: a.connectionId, organizationId: org, provider: "CUSTOM" } });

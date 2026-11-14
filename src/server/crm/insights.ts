@@ -3,6 +3,7 @@ import { prisma } from "../db";
 import { can, requirePermission, type Ctx } from "../context";
 import { ownedWhere } from "./scope";
 import { followUpWindow } from "./leads";
+import { uncontactedLeads } from "./response";
 
 /**
  * CRM aggregates for /app/crm, the Command Center and follow-ups.
@@ -238,6 +239,7 @@ export type CrmAttention = { id: string; priority: "LOW" | "MEDIUM" | "HIGH" | "
  * Deterministic CRM attention rules. Overdue follow-ups are personal (owner = me) on the
  * Command Center; `team: true` (CRM overview) widens them to the caller's record scope so
  * the list matches the scoped "overdue follow-ups" KPI. Stalled / quiet deals are always scoped.
+ * New leads with no first contact after 60 minutes come from `uncontactedLeads` (./response).
  */
 export async function crmAttention(ctx: Ctx, opts: { team?: boolean } = {}): Promise<CrmAttention[]> {
   const out: CrmAttention[] = [];
@@ -246,6 +248,7 @@ export async function crmAttention(ctx: Ctx, opts: { team?: boolean } = {}): Pro
   const scope = await ownedWhere(ctx);
   const mine = opts.team ? scope : { ownerId: ctx.userId };
   if (can(ctx, "crm.leads.view")) {
+    out.push(...(await uncontactedLeads(ctx, { team: opts.team, now })));
     const leads = await prisma.lead.findMany({ where: { ...org, ...mine, status: { in: ["OPEN", "QUALIFIED"] }, nextFollowUpAt: { lt: now } }, orderBy: { nextFollowUpAt: "asc" }, take: 5, include: { owner: { select: { name: true } } } });
     for (const l of leads) out.push({ id: `lfu-${l.id}`, priority: l.priority === "URGENT" ? "URGENT" : "HIGH", category: "lead_followup", title: `${l.number} · ${l.name}`, owner: opts.team ? l.owner?.name : undefined, dueAt: l.nextFollowUpAt, href: `/app/crm/leads/${l.id}` });
   }

@@ -485,6 +485,7 @@
         "project": "Project",
         "contract": "Contract",
         "lead_followup": "Lead follow-up overdue",
+        "lead_no_contact": "New lead — no first contact after 60 minutes",
         "opp_followup": "Opportunity follow-up overdue",
         "opp_stalled": "Opportunity stuck in stage 14+ days",
         "opp_quiet": "High-value deal with no activity for 7 days",
@@ -4444,6 +4445,7 @@
         "title": "Title",
         "inDays": "Due in (days)",
         "connection": "Outbound connection",
+        "rotation": "Or rotate between several users (round-robin) — select two or more",
         "reason": "Reason"
       },
       "save": "Save rule",
